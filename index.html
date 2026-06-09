@@ -3,355 +3,465 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Naturale Art Catering | Mahakarya Rasa Keluarga</title>
-    <!-- Fonts: DM Serif Display (Judul Artistik) & Jost (Body Modern) -->
-    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
-    <!-- FontAwesome Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <title>Naturale Art Catering — Mahakarya Rasa Keluarga</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400;1,500&family=Nunito:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <!-- 1. GLOBAL BACKGROUND & ORNAMENTS -->
-    <!-- Efek kertas/tepung halus tetap dipertahankan -->
-    <div class="texture-overlay"></div>
-    <!-- Elemen grafis latar belakang (Batik/Floral subtle) yang tidak mengganggu -->
-    <div class="bg-ornament bg-ornament-top-left"></div>
-    <div class="bg-ornament bg-ornament-bottom-right"></div>
+<!-- ============================================================
+     PROMO POPUP
+============================================================ -->
+<div id="promo-popup" class="promo-popup">
+    <div class="popup-box">
+        <div class="popup-image">
+            <img src="https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=600&q=80" alt="Promo Naturale">
+        </div>
+        <div class="popup-content">
+            <span class="label-tag">Spesial Bulan Ini</span>
+            <h2 id="popup-title">Kelembutan Tradisi</h2>
+            <p id="popup-desc">Rasakan legitnya bolu jadul resep rahasia keluarga kami. Dapatkan diskon 20% untuk pemesanan pertama hari ini.</p>
+            <button class="btn-popup-cta" onclick="goToStoreFromPopup()">Klaim Promo Sekarang</button>
+        </div>
+        <button class="popup-close" onclick="closePopup()" aria-label="Tutup popup">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+</div>
 
-    <!-- 2. PROMO POPUP (Desain lebih elegan) -->
-    <div id="promo-popup" class="popup-overlay">
-        <div class="popup-content art-border">
-            <button class="close-popup" onclick="closePopup()"><i class="fas fa-times"></i></button>
-            <div class="popup-grid">
-                <div class="popup-img-box">
-                    <img src="https://images.unsplash.com/photo-1578985545062-69928b1d9587?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80" alt="Promo Naturale">
-                    <div class="img-badge">Save 20%</div>
+<!-- ============================================================
+     NAVBAR
+============================================================ -->
+<nav class="navbar" id="navbar">
+    <div class="nav-logo">
+        <span class="nav-logo-main">Naturale</span>
+        <span class="nav-logo-sub">Art Catering</span>
+    </div>
+
+    <ul class="nav-links" id="nav-links">
+        <li><span class="nav-item active" onclick="switchView('profile')">Cerita Kami</span></li>
+        <li><span class="nav-item" onclick="switchView('store')">Katalog</span></li>
+        <li><span class="nav-item" onclick="scrollToContact()">Lokasi &amp; Kontak</span></li>
+    </ul>
+
+    <div class="nav-right">
+        <button class="cart-trigger" onclick="toggleCart()" aria-label="Keranjang belanja">
+            <i class="fas fa-shopping-bag"></i>
+            <span class="cart-badge" id="cart-count">0</span>
+        </button>
+        <button class="hamburger" onclick="toggleMenu()" aria-label="Menu navigasi">
+            <span></span><span></span><span></span>
+        </button>
+    </div>
+</nav>
+
+<!-- ============================================================
+     VIEW 1 — PROFILE / CERITA KAMI
+============================================================ -->
+<main id="view-profile" class="view-section active">
+
+    <!-- HERO -->
+    <section class="hero">
+        <div class="hero-image">
+            <img src="https://images.unsplash.com/photo-1464349095431-e9a21285b5f3?w=1920&q=80"
+                 alt="Hidangan Naturale Art Catering"
+                 id="hero-img">
+        </div>
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+            <span class="hero-tag anim-fade-up">Est. 2019 · Handcrafted with love</span>
+            <h1 class="hero-title anim-fade-up delay-1" id="hero-title">
+                Seni Rasa<br><em>Keluarga Nusantara</em>
+            </h1>
+            <p class="hero-desc anim-fade-up delay-2" id="hero-desc">
+                Dikurasi dari bahan lokal terbaik, menghadirkan estetika dalam setiap suapan.
+            </p>
+            <button class="hero-cta anim-fade-up delay-3" onclick="switchView('store')">
+                Jelajahi Menu <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+        <div class="scroll-hint">Scroll</div>
+    </section>
+
+    <!-- ABOUT / PROFIL -->
+    <section class="section container">
+        <div class="about-grid">
+            <div class="about-image-stack anim-fade-up">
+                <img class="about-img-main"
+                     src="https://images.unsplash.com/photo-1556910103-1c02745a30bf?w=600&q=80"
+                     alt="Dapur Naturale"
+                     id="profile-img">
+                <img class="about-img-float"
+                     src="https://images.unsplash.com/photo-1612203985729-70726954388c?w=300&q=80"
+                     alt="Detail masakan">
+            </div>
+            <div class="about-text anim-fade-up delay-2">
+                <span class="accent-line"></span>
+                <span class="label-tag">Dari Tangan Penuh Kasih</span>
+                <h2 id="profile-title">Dapur Ibu Sarah</h2>
+                <p id="profile-desc">
+                    Bermula dari resep turun-temurun, kami percaya bahwa makanan bukanlah sekadar pengisi perut, melainkan seni yang mengikat kehangatan keluarga.
+                </p>
+                <p>
+                    Setiap tumpeng yang kami hias dan bolu yang kami panggang diracik dengan dedikasi penuh—menggunakan bahan alami pilihan langsung dari petani lokal.
+                </p>
+                <div class="about-stats">
+                    <div class="stat-block">
+                        <h3>100<span style="font-size:1.2rem">%</span></h3>
+                        <p>Bahan Alami</p>
+                    </div>
+                    <div class="stat-block">
+                        <h3>5<span style="font-size:1.2rem">+</span></h3>
+                        <p>Tahun Berkarya</p>
+                    </div>
+                    <div class="stat-block">
+                        <h3>800<span style="font-size:1.2rem">+</span></h3>
+                        <p>Pesanan Bahagia</p>
+                    </div>
                 </div>
-                <div class="popup-text">
-                    <span class="subtitle-script">Spesial Bulan Ini</span>
-                    <h2>Kelembutan Tradisi</h2>
-                    <p>Rasakan legitnya bolu jadul resep rahasia keluarga kami. Dapatkan diskon 20% untuk pemesanan pertama Anda hari ini.</p>
-                    <button class="btn-primary" onclick="goToStoreFromPopup()">Klaim Promo Sekarang</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- VALUES -->
+    <section class="section values-section">
+        <div class="container">
+            <div class="section-header">
+                <span class="label-tag">Komitmen Kami</span>
+                <h2>Kualitas tanpa kompromi.</h2>
+                <p>Setiap detail kami pikirkan agar pengalaman makan Anda menjadi lebih bermakna.</p>
+            </div>
+            <div class="values-grid">
+                <div class="value-card">
+                    <div class="value-icon"><i class="fas fa-seedling"></i></div>
+                    <h4>Bahan Segar Pilihan</h4>
+                    <p>Sayuran dan bumbu dipetik langsung dari petani lokal setiap pagi tanpa perantara.</p>
                 </div>
+                <div class="value-card">
+                    <div class="value-icon"><i class="fas fa-ban"></i></div>
+                    <h4>Bebas Pengawet</h4>
+                    <p>Kesehatan Anda prioritas utama. Kami gunakan teknik alami untuk menjaga kualitas makanan.</p>
+                </div>
+                <div class="value-card">
+                    <div class="value-icon"><i class="fas fa-paint-brush"></i></div>
+                    <h4>Plating Artistik</h4>
+                    <p>Dikemas indah dengan nilai estetika tinggi—setiap sajian adalah karya yang layak difoto.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- TESTIMONIALS -->
+    <section class="section container">
+        <div class="section-header">
+            <span class="label-tag">Kata Mereka</span>
+            <h2>Kisah rasa para pelanggan.</h2>
+        </div>
+        <div class="testi-grid">
+            <div class="testi-card">
+                <div class="testi-stars">★★★★★</div>
+                <blockquote id="testi1-text">
+                    "Tumpengnya luar biasa cantik! Rasanya juga sangat otentik, bumbu ayam lengkuasnya meresap sampai ke tulang."
+                </blockquote>
+                <div class="testi-author">
+                    <div class="testi-avatar">AR</div>
+                    <div class="testi-info">
+                        <h5 id="testi1-name">Amanda R.</h5>
+                        <p>Acara Syukuran Keluarga</p>
+                    </div>
+                </div>
+            </div>
+            <div class="testi-card">
+                <div class="testi-stars">★★★★★</div>
+                <blockquote id="testi2-text">
+                    "Bolu tape kejunya lumer di mulut. Packagingnya elegan banget, cocok buat hampers mertua. Pasti pesan lagi!"
+                </blockquote>
+                <div class="testi-author">
+                    <div class="testi-avatar">DF</div>
+                    <div class="testi-info">
+                        <h5 id="testi2-name">dr. Faisal</h5>
+                        <p>Pelanggan Setia</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<!-- ============================================================
+     VIEW 2 — STORE / KATALOG MENU
+============================================================ -->
+<main id="view-store" class="view-section">
+
+    <div class="store-header">
+        <span class="label-tag">Sajian Spesial</span>
+        <h1>Katalog Menu</h1>
+        <p>Pilih hidangan terbaik untuk melengkapi setiap momen berharga Anda.</p>
+    </div>
+
+    <!-- CATEGORY PILLS -->
+    <div class="category-bar" id="category-bar">
+        <button class="cat-pill active" data-cat="all" onclick="filterMenu('all')">
+            Semua Menu
+        </button>
+        <button class="cat-pill" data-cat="berat" onclick="filterMenu('berat')">
+            <i class="fas fa-bowl-rice"></i> Nasi Kotak &amp; Berat
+        </button>
+        <button class="cat-pill" data-cat="catering" onclick="filterMenu('catering')">
+            <i class="fas fa-concierge-bell"></i> Catering / Prasmanan
+        </button>
+        <button class="cat-pill" data-cat="kue" onclick="filterMenu('kue')">
+            <i class="fas fa-cake-candles"></i> Kue Premium
+        </button>
+        <button class="cat-pill" data-cat="manis" onclick="filterMenu('manis')">
+            <i class="fas fa-cookie"></i> Jajanan Manis
+        </button>
+    </div>
+
+    <!-- PROMO HIGHLIGHT -->
+    <div class="promo-strip">
+        <div class="promo-inner">
+            <div class="promo-image">
+                <img src="https://images.unsplash.com/photo-1596450523028-293d0ba7a262?w=600&q=80"
+                     alt="Promo Menu Unggulan" id="h-img">
+            </div>
+            <div class="promo-body">
+                <span class="promo-badge" id="h-badge-text">HOT PROMO</span>
+                <h3 id="h-title">Tumpeng Kuning Premium</h3>
+                <p id="h-desc">Porsi 10 orang. Ayam lengkuas, perkedel, telur rawis, orek tempe, dan urap sayur segar. Pesan sekarang dapatkan bonus puding buah!</p>
+                <div class="promo-pricing">
+                    <span class="price-old" id="h-price-old">Rp 500.000</span>
+                    <span class="price-new" id="h-price-new">Rp 450.000</span>
+                </div>
+                <button class="btn-promo" onclick="addHighlightToCart()">
+                    Pesan Promo Ini <i class="fas fa-arrow-right"></i>
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- 3. NAVBAR -->
-    <nav class="navbar" id="navbar">
-        <div class="logo">
-            <span class="logo-text">Naturale<span class="dot">.</span></span>
-            <span class="logo-sub">Art Catering</span>
+    <!-- PRODUCT GRID -->
+    <section class="menu-section container">
+        <div class="product-grid" id="main-product-grid">
+            <!-- Rendered by JS -->
         </div>
-        <ul class="nav-links">
-            <li><a href="#" onclick="switchView('profile')" class="nav-item active">Cerita Kami</a></li>
-            <li><a href="#" onclick="switchView('store')" class="nav-item">Katalog Menu</a></li>
-            <li><a href="#contact" onclick="scrollToContact()" class="nav-item">Lokasi & Kontak</a></li>
-        </ul>
-        <div class="nav-icons" id="nav-icons">
-            <div class="cart-btn" onclick="toggleCart()">
-                <div class="cart-box">
-                    <i class="fas fa-shopping-bag"></i>
-                    <span id="cart-count">0</span>
-                </div>
-            </div>
-        </div>
-        <div class="hamburger" onclick="toggleMenu()">
-            <div class="bar"></div><div class="bar"></div><div class="bar"></div>
-        </div>
-    </nav>
+    </section>
 
-    <!-- ==========================================
-         VIEW 1: PROFILE / CERITA KAMI
-    =========================================== -->
-    <main id="view-profile" class="view-section active">
-        
-        <!-- Hero Section: Desain baru yang lebih menyatu dan elegan -->
-        <header class="hero-section">
-            <div class="hero-image-bg">
-                <img src="https://images.unsplash.com/photo-1484723091739-30a097e8f929?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80" alt="Naturale Food" id="hero-img">
-            </div>
-            <div class="hero-content-box fade-up">
-                <span class="badge-gold">Est. 2019</span>
-                <h1 id="hero-title">Seni Rasa<br><i>Keluarga Nusantara</i></h1>
-                <p id="hero-desc">Dikurasi dari bahan lokal terbaik, menghadirkan estetika dalam setiap suapan.</p>
-                <button class="btn-primary mt-4" onclick="switchView('store')">Jelajahi Rasa</button>
-            </div>
-            <!-- Elemen lengkungan estetik di bawah hero -->
-            <div class="hero-curve-bottom"></div>
-        </header>
+</main>
 
-        <!-- Profil Cerita -->
-        <section class="section container">
-            <div class="profile-layout">
-                <div class="profile-image-container">
-                    <div class="image-frame-gold"></div>
-                    <img src="https://images.unsplash.com/photo-1556910103-1c02745a30bf?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80" alt="Dapur Keluarga" class="main-img" id="profile-img">
-                    <img src="https://images.unsplash.com/photo-1606787620819-8bdf0c44c293?ixlib=rb-1.2.1&auto=format&fit=crop&w=300&q=80" alt="Bumbu" class="float-img">
-                </div>
-                <div class="profile-desc">
-                    <span class="subtitle-script">Dari Tangan Penuh Kasih</span>
-                    <h2 id="profile-title">Dapur Ibu Sarah</h2>
-                    <p id="profile-desc">Bermula dari resep turun-temurun, kami percaya bahwa makanan bukanlah sekadar pengisi perut, melainkan seni yang mengikat kehangatan keluarga. Setiap tumpeng yang kami hias dan bolu yang kami panggang diracik dengan dedikasi tinggi.</p>
-                    
-                    <div class="stats-row">
-                        <div class="stat-item">
-                            <i class="fas fa-leaf"></i>
-                            <div>
-                                <h3>100%</h3>
-                                <p>Bahan Alami</p>
-                            </div>
-                        </div>
-                        <div class="stat-item">
-                            <i class="fas fa-award"></i>
-                            <div>
-                                <h3>5+</h3>
-                                <p>Tahun Berkarya</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+<!-- ============================================================
+     FOOTER — LOKASI & KONTAK
+============================================================ -->
+<footer id="contact">
+    <div class="footer-top">
+        <div class="footer-brand">
+            <h2>Naturale</h2>
+            <p id="footer-desc">
+                Menghadirkan kehangatan rasa rumah ke dalam setiap acara Anda dengan sentuhan artistik dan bahan berkualitas tinggi.
+            </p>
+            <div class="social-row">
+                <a href="#" class="social-icon" aria-label="Instagram">
+                    <i class="fab fa-instagram"></i>
+                </a>
+                <a href="#" class="social-icon" aria-label="TikTok">
+                    <i class="fab fa-tiktok"></i>
+                </a>
+                <a href="#" class="social-icon" aria-label="WhatsApp">
+                    <i class="fab fa-whatsapp"></i>
+                </a>
             </div>
-        </section>
-
-        <!-- Tambahan 1: Mengapa Memilih Kami (Value Proposition) -->
-        <section class="section bg-soft">
-            <div class="container text-center">
-                <span class="subtitle-script">Komitmen Kami</span>
-                <h2 class="section-heading">Kualitas Tanpa Kompromi</h2>
-                <div class="features-grid">
-                    <div class="feature-card">
-                        <div class="f-icon"><i class="fas fa-seedling"></i></div>
-                        <h4>Bahan Segar Pilihan</h4>
-                        <p>Sayuran dan bumbu dipetik langsung dari petani lokal setiap pagi.</p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="f-icon"><i class="fas fa-ban"></i></div>
-                        <h4>Tanpa Pengawet</h4>
-                        <p>Kesehatan Anda adalah prioritas. Kami menggunakan teknik alami untuk menjaga ketahanan makanan.</p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="f-icon"><i class="fas fa-paint-brush"></i></div>
-                        <h4>Plating Artistik</h4>
-                        <p>Dikemas dengan nilai estetika tinggi, cocok untuk acara spesial Anda.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Tambahan 2: Testimoni Pelanggan (Social Proof) -->
-        <section class="section container">
-            <div class="text-center">
-                <span class="subtitle-script">Kata Mereka</span>
-                <h2 class="section-heading">Kisah Rasa Pelanggan</h2>
-            </div>
-            <div class="testimonial-grid">
-                <div class="testi-card">
-                    <div class="stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-                    <p id="testi1-text">"Tumpengnya luar biasa cantik! Rasanya juga sangat otentik, bumbu ayam lengkuasnya meresap sampai ke tulang."</p>
-                    <h4 id="testi1-name">- Amanda R. (Acara Syukuran)</h4>
-                </div>
-                <div class="testi-card">
-                    <div class="stars"><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i></div>
-                    <p id="testi2-text">"Bolu tape kejunya lumer di mulut. Packagingnya elegan banget, cocok buat hampers mertua."</p>
-                    <h4 id="testi2-name">- dr. Faisal</h4>
-                </div>
-            </div>
-        </section>
-    </main>
-
-    <!-- ==========================================
-         VIEW 2: STORE / KATALOG MENU
-    =========================================== -->
-    <main id="view-store" class="view-section">
-        
-        <div class="store-hero">
-            <span class="subtitle-script">Sajian Spesial</span>
-            <h1>Katalog Menu</h1>
-            <p>Pilih hidangan terbaik untuk melengkapi momen berharga Anda.</p>
         </div>
 
-        <!-- SEARCH & SORT TOOLBAR -->
-        <div class="store-tools container">
-            <div class="search-wrapper">
-                <input id="menu-search" type="search" placeholder="Cari menu, bahan, atau kategori..." oninput="handleSearch()">
-            </div>
-            <div class="sort-wrapper">
-                <label for="sort-menu">Urutkan:</label>
-                <select id="sort-menu" onchange="handleSort()">
-                    <option value="default">Rekomendasi</option>
-                    <option value="price-asc">Harga Terendah</option>
-                    <option value="price-desc">Harga Tertinggi</option>
-                </select>
-            </div>
-            <div class="results-indicator" id="results-count">Memuat menu...</div>
-        </div>
-
-        <!-- MENU BAR KATEGORI (Permintaan Khusus) -->
-        <div class="menu-category-wrapper">
-            <ul class="menu-category-bar">
-                <li class="cat-btn active" data-category="all" onclick="filterMenu('all', this)">Semua Menu</li>
-                <li class="cat-btn" data-category="berat" onclick="filterMenu('berat', this)"><i class="fas fa-bowl-rice"></i> Nasi Kotak & Berat</li>
-                <li class="cat-btn" data-category="catering" onclick="filterMenu('catering', this)"><i class="fas fa-concierge-bell"></i> Catering/Prasmanan</li>
-                <li class="cat-btn" data-category="kue" onclick="filterMenu('kue', this)"><i class="fas fa-cake-candles"></i> Kue Premium</li>
-                <li class="cat-btn" data-category="manis" onclick="filterMenu('manis', this)"><i class="fas fa-cookie"></i> Jajanan Manis</li>
+        <div class="footer-col">
+            <h4>Hubungi Kami</h4>
+            <ul>
+                <li>
+                    <i class="fab fa-whatsapp"></i>
+                    <span id="footer-wa">+62 812-3456-7890</span>
+                </li>
+                <li>
+                    <i class="fas fa-envelope"></i>
+                    <span id="footer-email">order@naturalecatering.com</span>
+                </li>
+                <li>
+                    <i class="fas fa-clock"></i>
+                    <span>Buka setiap hari<br>08.00 – 17.00 WIB</span>
+                </li>
             </ul>
         </div>
 
-        <!-- Highlight Menu Dinamis -->
-        <div class="highlight-section container" id="highlight-container">
-            <div class="highlight-banner fade-up">
-                <div class="highlight-badge" id="h-badge-text">HOT PROMO</div>
-                <div class="h-img-box">
-                    <img src="https://images.unsplash.com/photo-1596450523028-293d0ba7a262?ixlib=rb-1.2.1&auto=format&fit=crop&w=600&q=80" alt="Highlight Menu" id="h-img">
-                </div>
-                <div class="h-details">
-                    <span class="subtitle-script">Rekomendasi Spesial</span>
-                    <h3 id="h-title">Tumpeng Kuning Premium</h3>
-                    <p id="h-desc">Porsi 10 Orang. Ayam lengkuas, perkedel, telur rawis, orek tempe, dan urap sayur segar. Pesan sekarang dapatkan bonus puding buah!</p>
-                    <div class="h-action">
-                        <div class="h-price-box">
-                            <span class="h-price-normal" id="h-price-old">Rp 500.000</span>
-                            <span class="h-price-promo" id="h-price-new">Rp 450.000</span>
-                        </div>
-                        <button class="btn-primary" style="background: var(--accent); color: var(--primary); border: none; font-weight: 600;" onclick="addHighlightToCart()">Pesan Promo Ini</button>
-                    </div>
+        <div class="footer-col">
+            <h4>Lokasi Dapur</h4>
+            <ul>
+                <li>
+                    <i class="fas fa-map-marker-alt"></i>
+                    <span>Jl. Senopati No. 88<br>Kebayoran Baru, Jakarta Selatan</span>
+                </li>
+            </ul>
+            <div style="margin-top: 1.5rem;">
+                <div class="map-frame">
+                    <iframe
+                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15865.253036400383!2d106.80287535!3d-6.22238495!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e69f14f61b7e615%3A0x6272551579483321!2sSenopati%2C%20Kebayoran%20Baru%2C%20South%20Jakarta%20City%2C%20Jakarta!5e0!3m2!1sen!2sid!4v1629876543210!5m2!1sen!2sid"
+                        allowfullscreen=""
+                        loading="lazy"
+                        title="Lokasi Naturale Art Catering">
+                    </iframe>
                 </div>
             </div>
-        </div>
-
-        <!-- Wadah Produk -->
-        <section class="menu-section container">
-            <div class="product-grid" id="main-product-grid">
-                <!-- Produk akan di-render oleh JavaScript di sini -->
-            </div>
-        </section>
-
-    </main>
-
-    <!-- ==========================================
-         FOOTER & LOKASI
-    =========================================== -->
-    <footer id="contact">
-        <!-- SVG Wave Elegan untuk Footer -->
-        <div class="wave-footer-top">
-            <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M0,64L80,69.3C160,75,320,85,480,80C640,75,800,53,960,42.7C1120,32,1280,32,1360,32L1440,32L1440,120L1360,120C1280,120,1120,120,960,120C800,120,640,120,480,120C320,120,160,120,80,120L0,120Z" fill="#3A4F41"/>
-            </svg>
-        </div>
-        <div class="footer-content container">
-            <div class="footer-grid">
-                <div class="footer-brand">
-                    <h2>Naturale<span style="color:var(--accent)">.</span></h2>
-                    <p id="footer-desc" class="mt-2">Menghadirkan kehangatan rasa rumah ke dalam setiap acara Anda dengan sentuhan artistik dan bahan berkualitas tinggi.</p>
-                    <div class="social-links mt-3">
-                        <a href="#"><i class="fab fa-instagram"></i></a>
-                        <a href="#"><i class="fab fa-tiktok"></i></a>
-                        <a href="#"><i class="fab fa-whatsapp"></i></a>
-                    </div>
-                </div>
-                
-                <div class="footer-contact">
-                    <h3>Hubungi Kami</h3>
-                    <ul>
-                        <li><i class="fab fa-whatsapp"></i> <span id="footer-wa">+62 812-3456-7890</span></li>
-                        <li><i class="fas fa-envelope"></i> <span id="footer-email">order@naturalecatering.com</span></li>
-                        <li><i class="fas fa-clock"></i> Buka Setiap Hari: 08.00 - 17.00 WIB</li>
-                    </ul>
-                </div>
-
-                <div class="footer-map-box">
-                    <h3>Lokasi Dapur</h3>
-                    <p><i class="fas fa-map-marker-alt"></i> Jl. Senopati No. 88, Kebayoran Baru, Jakarta Selatan</p>
-                    <div class="map-frame mt-2">
-                        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15865.253036400383!2d106.80287535!3d-6.22238495!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e69f14f61b7e615%3A0x6272551579483321!2sSenopati%2C%20Kebayoran%20Baru%2C%20South%20Jakarta%20City%2C%20Jakarta!5e0!3m2!1sen!2sid!4v1629876543210!5m2!1sen!2sid" allowfullscreen="" loading="lazy"></iframe>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="footer-bottom">
-            <p>&copy; 2024 Naturale Art Catering. Crafted with Passion.</p>
-        </div>
-    </footer>
-
-    <!-- ==========================================
-         SIDEBAR CART & CHECKOUT SYSTEM
-    =========================================== -->
-    <div class="cart-sidebar" id="cart-sidebar">
-        <div class="cart-header">
-            <h3><i class="fas fa-shopping-basket"></i> Keranjang Pesanan</h3>
-            <button class="close-cart" onclick="toggleCart()"><i class="fas fa-times"></i></button>
-        </div>
-        
-        <div class="cart-items-wrapper" id="cart-items-container">
-            <!-- Item keranjang via JS -->
-            <div class="empty-cart-msg">Keranjang Anda masih kosong.</div>
-        </div>
-
-        <!-- TAMBAHAN: Sistem Form Checkout & Pilihan Pembayaran -->
-        <div class="checkout-section">
-            <div class="checkout-form">
-                <label for="order-name">Nama Pemesan</label>
-                <input type="text" id="order-name" placeholder="Contoh: Ibu Lina" required>
-
-                <label for="order-phone">Nomor WhatsApp</label>
-                <input type="tel" id="order-phone" placeholder="Contoh: 081234567890" required>
-
-                <label for="order-date">Tanggal Acara</label>
-                <input type="date" id="order-date">
-
-                <label for="order-type">Jenis Acara</label>
-                <select id="order-type">
-                    <option value="Ulang Tahun">Ulang Tahun</option>
-                    <option value="Syukuran">Syukuran</option>
-                    <option value="Meeting Kantor">Meeting Kantor</option>
-                    <option value="Pernikahan">Pernikahan</option>
-                    <option value="Acara Lainnya">Acara Lainnya</option>
-                </select>
-
-                <label for="order-address">Alamat / Lokasi Acara</label>
-                <textarea id="order-address" rows="3" placeholder="Alamat lengkap acara"></textarea>
-
-                <label for="order-notes">Catatan Tambahan</label>
-                <textarea id="order-notes" rows="3" placeholder="Contoh: Tambah sambal, porsi lebih besar, paket hemat"></textarea>
-            </div>
-
-            <div class="total-row">
-                <span>Subtotal:</span>
-                <span id="cart-total" class="price-highlight">Rp 0</span>
-            </div>
-            
-            <div class="payment-methods">
-                <p class="payment-title">Pilih Metode Pembayaran:</p>
-                <div class="payment-options">
-                    <label class="pay-radio">
-                        <input type="radio" name="payment" value="Transfer Bank" checked>
-                        <span class="pay-btn"><i class="fas fa-university"></i> Transfer Bank</span>
-                    </label>
-                    <label class="pay-radio">
-                        <input type="radio" name="payment" value="SeaBank">
-                        <span class="pay-btn"><i class="fas fa-building-columns"></i> SeaBank</span>
-                    </label>
-                    <label class="pay-radio">
-                        <input type="radio" name="payment" value="DANA">
-                        <span class="pay-btn"><i class="fas fa-wallet"></i> DANA</span>
-                    </label>
-                    <label class="pay-radio">
-                        <input type="radio" name="payment" value="OVO/ShopeePay">
-                        <span class="pay-btn"><i class="fas fa-qrcode"></i> E-Wallet Lain</span>
-                    </label>
-                </div>
-            </div>
-
-            <button class="checkout-btn" onclick="processCheckout()">
-                Lanjutkan ke WhatsApp <i class="fab fa-whatsapp"></i>
-            </button>
-            <p class="checkout-note">*Admin akan mengkonfirmasi ongkir dan ketersediaan tanggal setelah pesan terkirim.</p>
         </div>
     </div>
-    <div class="overlay" id="overlay" onclick="toggleCart()"></div>
+    <div class="footer-bottom">
+        <span>&copy; 2024 Naturale Art Catering</span>
+        <span>Crafted with Passion &amp; Local Ingredients</span>
+    </div>
+</footer>
 
-    <script src="script.js"></script>
+<!-- ============================================================
+     CART SIDEBAR
+============================================================ -->
+<div id="overlay" class="overlay" onclick="toggleCart()"></div>
+
+<div class="cart-sidebar" id="cart-sidebar">
+    <div class="cart-head">
+        <h3>Keranjang Pesanan</h3>
+        <button class="cart-close" onclick="toggleCart()" aria-label="Tutup keranjang">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+
+    <div class="cart-items" id="cart-items-container">
+        <div class="cart-empty">
+            <i class="fas fa-shopping-bag"></i>
+            <p>Keranjang Anda masih kosong.</p>
+        </div>
+    </div>
+
+    <div class="cart-footer">
+        <div class="checkout-fields">
+            <div>
+                <label class="cf-label" for="order-name">Nama Pemesan</label>
+                <input class="cf-input" type="text" id="order-name" placeholder="Contoh: Ibu Sari">
+            </div>
+            <div>
+                <label class="cf-label" for="order-phone">Nomor WhatsApp</label>
+                <input class="cf-input" type="tel" id="order-phone" placeholder="08xxxxxxxxxx">
+            </div>
+            <div>
+                <label class="cf-label" for="order-date">Tanggal Dibutuhkan</label>
+                <input class="cf-input" type="date" id="order-date">
+            </div>
+            <div>
+                <label class="cf-label" for="order-type">Tujuan Pemesanan</label>
+                <select class="cf-input" id="order-type">
+                    <option value="Konsumsi Pribadi/Keluarga">Konsumsi Pribadi/Keluarga</option>
+                    <option value="Kirim Hadiah/Hampers">Kirim Hadiah/Hampers</option>
+                    <option value="Bekal Harian">Bekal Harian</option>
+                    <option value="Meeting Kantor">Meeting Kantor</option>
+                    <option value="Syukuran">Syukuran / Tasyakuran</option>
+                    <option value="Ulang Tahun">Ulang Tahun</option>
+                    <option value="Pernikahan">Pernikahan</option>
+                    <option value="Kebutuhan Lainnya">Kebutuhan Lainnya</option>
+                </select>
+            </div>
+            <div>
+                <label class="cf-label" for="fulfillment-type">Cara Pemenuhan</label>
+                <select class="cf-input" id="fulfillment-type">
+                    <option value="Antar ke alamat">Antar ke alamat</option>
+                    <option value="Ambil sendiri di dapur">Ambil sendiri di dapur</option>
+                    <option value="Koordinasi dengan admin">Koordinasi dengan admin</option>
+                </select>
+            </div>
+            <div>
+                <label class="cf-label" for="order-address">Alamat / Titik Pengambilan</label>
+                <textarea class="cf-input" id="order-address" placeholder="Alamat lengkap pengiriman atau catatan titik ambil"></textarea>
+            </div>
+            <div>
+                <label class="cf-label" for="order-notes">Catatan Tambahan</label>
+                <textarea class="cf-input" id="order-notes" placeholder="Jam kirim, alergi, request packaging, ucapan hampers, dll."></textarea>
+            </div>
+        </div>
+
+        <div class="total-line">
+            <span>Subtotal</span>
+            <span class="total-amount" id="cart-total">Rp 0</span>
+        </div>
+
+        <span class="pay-section-label">Metode Pembayaran</span>
+        <div class="pay-grid">
+            <label class="pay-option">
+                <input type="radio" name="payment" value="Transfer Bank" checked>
+                <span class="pay-label">Transfer Bank</span>
+            </label>
+            <label class="pay-option">
+                <input type="radio" name="payment" value="Cash/COD">
+                <span class="pay-label">Cash / COD</span>
+            </label>
+            <label class="pay-option">
+                <input type="radio" name="payment" value="SeaBank">
+                <span class="pay-label">SeaBank</span>
+            </label>
+            <label class="pay-option">
+                <input type="radio" name="payment" value="DANA">
+                <span class="pay-label">DANA</span>
+            </label>
+            <label class="pay-option">
+                <input type="radio" name="payment" value="OVO/ShopeePay">
+                <span class="pay-label">E-Wallet Lain</span>
+            </label>
+        </div>
+
+        <button class="btn-whatsapp" onclick="processCheckout()">
+            <i class="fab fa-whatsapp"></i> Lanjutkan ke WhatsApp
+        </button>
+        <p class="cart-note">
+            *Admin akan konfirmasi ongkir &amp; ketersediaan setelah pesan terkirim.
+        </p>
+    </div>
+</div>
+
+<div id="product-detail-modal" class="product-detail-modal" role="dialog" aria-modal="true" aria-labelledby="detail-title">
+    <div class="detail-box">
+        <button class="detail-close" onclick="closeProductDetail()" aria-label="Tutup detail menu">
+            <i class="fas fa-times"></i>
+        </button>
+        <div class="detail-image">
+            <img id="detail-image" src="" alt="">
+        </div>
+        <div class="detail-content">
+            <span class="detail-badge" id="detail-category">Menu</span>
+            <h2 id="detail-title">Detail Menu</h2>
+            <p id="detail-desc"></p>
+            <div class="detail-meta">
+                <div>
+                    <span>Satuan</span>
+                    <strong id="detail-unit">-</strong>
+                </div>
+                <div>
+                    <span>Minimal Order</span>
+                    <strong id="detail-min-order">1</strong>
+                </div>
+                <div>
+                    <span>Harga</span>
+                    <strong id="detail-price">Rp 0</strong>
+                </div>
+            </div>
+            <div class="detail-order-row">
+                <label for="detail-quantity">Jumlah Pesanan</label>
+                <input type="number" id="detail-quantity" min="1" value="1">
+                <button class="btn-detail-cart" onclick="addDetailToCart()">
+                    <i class="fas fa-shopping-bag"></i> Tambah ke Keranjang
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="site-toast-root" class="site-toast-root" aria-live="polite" aria-atomic="true"></div>
+
+<script src="script.js"></script>
 </body>
 </html>
