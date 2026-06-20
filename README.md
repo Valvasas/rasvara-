@@ -1,13 +1,16 @@
 # Annie Catering
 
-Simple catering website with a static frontend and an Express backend.
+Marketplace-style catering website with a static frontend and an Express backend.
 
 ## Structure
 
-- `public/` - customer site, admin UI, styles, client scripts, and public uploads.
-- `backend/` - Express API, auth/session handling, data storage, and deployment config.
-- `backend/data/data.json` - current menu, order, ledger, and website settings data.
-- `public/uploads/` - images uploaded from the admin panel.
+- `public/` - all browser-facing pages, styles, scripts, icons, brand assets, and public uploads.
+- `backend/` - Express API, auth/session handling, order/customer/vendor/admin endpoints, and server config.
+- `backend/data/data.json` - local runtime data for menus, orders, ledger, reviews, vendors, and website settings.
+- `public/uploads/` - images served to visitors and uploaded from admin/vendor tools.
+- `firebase.json` - Firebase Hosting config; it serves the `public/` directory.
+
+Root-level HTML/CSS/JS files are intentionally not used. Keep frontend changes inside `public/`.
 
 ## Local Testing
 
@@ -26,4 +29,9 @@ Open:
 - `http://localhost:3000/admin`
 - `http://localhost:3000/api/health`
 
-Use `backend/.env.example` as the production environment template. Static hosting alone is not enough because the frontend calls `/api/*`.
+## Maintenance Notes
+
+- Do not commit `backend/node_modules/`, `.env`, or `backend/data/*.json`.
+- Use `backend/.env.example` as the production environment template.
+- Static hosting alone is not enough because the frontend calls `/api/*`.
+- If dependencies are missing locally, run `npm install` from `backend/`.

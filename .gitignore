@@ -9,6 +9,7 @@ firebase-debug.*.log*
 
 # Firebase cache
 .firebase/
+.sixth/
 
 # Firebase config
 
@@ -70,5 +71,5 @@ backend/.env
 backend/data/*.tmp
 backend/data/*.json
 
-# dataconnect generated files
+# Generated local service files
 .dataconnect

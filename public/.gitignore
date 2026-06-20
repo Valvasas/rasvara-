@@ -1,4 +1,0 @@
-backend/node_modules/
-backend/.env
-backend/data.json.tmp
-npm-debug.log*

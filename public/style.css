@@ -313,30 +313,6 @@ ul { list-style: none; }
     outline-offset: 3px;
 }
 
-.buyer-login-link {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.45rem;
-    min-height: 38px;
-    padding: 0 0.9rem;
-    border: 1px solid var(--sand-light);
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.62);
-    color: var(--sage-dark);
-    box-shadow: 0 8px 18px rgba(44, 44, 42, 0.05);
-    font-size: 0.76rem;
-    font-weight: 900;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    white-space: nowrap;
-    transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
-}
-.buyer-login-link:hover {
-    transform: translateY(-1px);
-    border-color: rgba(74, 107, 88, 0.35);
-    background: var(--white);
-}
 
 .nav-item {
     font-size: 0.82rem;
@@ -1658,77 +1634,72 @@ ul { list-style: none; }
     color: var(--muted);
     max-width: 520px;
 }
-.buyer-dashboard-shell {
+.tracking-shell {
     display: grid;
     gap: 1rem;
 }
-.buyer-auth-card,
-.buyer-dashboard,
-.buyer-panel {
+.tracking-saved-panel,
+.tracking-help-card {
     border: 1px solid var(--sand-light);
     border-radius: 8px;
     background: var(--white);
     box-shadow: var(--shadow-sm);
 }
-.buyer-auth-card {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
-    gap: 1rem;
-    align-items: stretch;
-    padding: clamp(1rem, 3vw, 1.4rem);
-}
-.buyer-auth-head {
-    display: grid;
-    align-content: center;
-}
-.buyer-auth-head h2,
-.buyer-dashboard-head h2 {
-    font-size: clamp(1.8rem, 4vw, 2.7rem);
-}
-.buyer-auth-head p,
-.buyer-dashboard-head p {
-    color: var(--muted);
-    max-width: 560px;
-}
-.buyer-login-form {
-    box-shadow: none;
-    background: var(--cream);
-}
-.buyer-auth-note {
-    grid-column: 1 / -1;
-    display: flex;
-    align-items: center;
-    gap: 0.65rem;
-    padding: 0.8rem 0.9rem;
-    border-radius: 8px;
-    background: rgba(124, 154, 138, 0.1);
-    color: var(--sage-dark);
-    font-size: 0.84rem;
-    font-weight: 800;
-}
-.buyer-dashboard {
-    display: grid;
-    gap: 1rem;
+.tracking-saved-panel {
     padding: clamp(1rem, 3vw, 1.3rem);
 }
-.buyer-dashboard-head,
-.buyer-panel-head,
-.buyer-order-top,
-.buyer-order-bottom {
+.tracking-panel-head,
+.saved-tracking-card {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 1rem;
 }
-.buyer-dashboard-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.55rem;
-    justify-content: flex-end;
+.tracking-panel-head h2 {
+    font-size: clamp(1.6rem, 4vw, 2.35rem);
 }
-.buyer-dashboard-actions button,
-.buyer-panel-head button,
-.buyer-order-bottom button {
+.tracking-panel-head p {
+    color: var(--muted);
+    max-width: 560px;
+}
+.saved-tracking-list {
+    display: grid;
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+.saved-tracking-card {
+    align-items: center;
+    padding: 0.9rem;
+    border: 1px solid var(--sand-light);
+    border-radius: 8px;
+    background: var(--cream);
+}
+.saved-tracking-card div {
+    min-width: 0;
+}
+.saved-tracking-card span {
+    color: var(--terracotta);
+    font-size: 0.74rem;
+    font-weight: 900;
+}
+.saved-tracking-card h3 {
+    font-family: var(--font-body);
+    color: var(--charcoal);
+    font-size: 1rem;
+    font-weight: 900;
+    overflow-wrap: anywhere;
+}
+.saved-tracking-card p {
+    color: var(--muted);
+    font-size: 0.8rem;
+}
+.saved-tracking-card strong {
+    flex: 0 0 auto;
+    color: var(--sage-dark);
+    font-size: 1rem;
+}
+.saved-tracking-card button,
+.tracking-help-card button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1741,191 +1712,36 @@ ul { list-style: none; }
     font-size: 0.74rem;
     font-weight: 900;
 }
-.buyer-dashboard-actions button.ghost {
-    background: var(--cream);
-    color: var(--terracotta);
-    border: 1px solid var(--terra-light);
-}
-.buyer-stats {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 0.75rem;
-}
-.buyer-stat {
-    min-width: 0;
-    display: grid;
-    gap: 0.25rem;
-    padding: 1rem;
-    border: 1px solid var(--sand-light);
-    border-radius: 8px;
-    background: linear-gradient(180deg, var(--cream), var(--white));
-}
-.buyer-stat span {
-    width: 34px;
-    height: 34px;
-    display: grid;
-    place-items: center;
-    border-radius: 50%;
-    background: rgba(124, 154, 138, 0.12);
-    color: var(--sage-dark);
-}
-.buyer-stat small {
-    color: var(--muted);
-    font-size: 0.72rem;
-    font-weight: 900;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-}
-.buyer-stat strong {
-    color: var(--charcoal);
-    font-size: clamp(1rem, 2vw, 1.35rem);
-    overflow-wrap: anywhere;
-}
-.buyer-dashboard-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1.5fr) minmax(260px, 0.8fr);
-    gap: 1rem;
-}
-.buyer-panel {
-    min-width: 0;
-    padding: 1rem;
-}
-.buyer-panel-large,
-.buyer-panel-full {
-    grid-column: auto;
-}
-.buyer-panel-full {
-    grid-column: 1 / -1;
-}
-.buyer-panel h3 {
-    font-family: var(--font-body);
-    font-size: 1.05rem;
-    font-weight: 900;
-}
-.buyer-order-list {
-    display: grid;
-    gap: 0.75rem;
-    margin-top: 0.8rem;
-}
-.buyer-order-card {
-    display: grid;
-    gap: 0.8rem;
-    padding: 0.9rem;
-    border: 1px solid var(--sand-light);
-    border-radius: 8px;
-    background: var(--cream);
-}
-.buyer-order-top span {
-    color: var(--terracotta);
-    font-size: 0.72rem;
-    font-weight: 900;
-}
-.buyer-order-top h4 {
-    font-family: var(--font-body);
-    font-size: 0.98rem;
-    font-weight: 900;
-    overflow-wrap: anywhere;
-}
-.buyer-order-top p {
-    color: var(--muted);
-    font-size: 0.78rem;
-}
-.buyer-order-top > strong {
-    flex: 0 0 auto;
-    padding: 0.35rem 0.65rem;
-    border-radius: 999px;
-    background: rgba(196, 124, 90, 0.1);
-    color: var(--terracotta);
-    font-size: 0.72rem;
-    font-weight: 900;
-}
-.buyer-mini-steps {
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 0.35rem;
-}
-.buyer-mini-steps span {
-    height: 6px;
-    border-radius: 999px;
-    background: var(--sand-light);
-}
-.buyer-mini-steps span.completed { background: var(--sage-dark); }
-.buyer-mini-steps span.active { background: var(--terracotta); }
-.buyer-mini-steps span.cancelled { background: var(--terra-dark); }
-.buyer-order-bottom {
-    align-items: center;
-}
-.buyer-order-bottom b {
-    color: var(--sage-dark);
-}
-.buyer-help-list {
-    display: grid;
-    gap: 0.65rem;
-    margin-top: 0.8rem;
-}
-.buyer-help-list button {
-    display: flex;
-    align-items: center;
-    gap: 0.65rem;
-    min-height: 44px;
-    padding: 0 0.85rem;
-    border: 1px solid var(--sand-light);
-    border-radius: 8px;
-    background: var(--cream);
-    color: var(--sage-dark);
-    font-weight: 900;
-    text-align: left;
-}
-.buyer-history-table {
-    display: grid;
-    gap: 0.45rem;
-    margin-top: 0.8rem;
-}
-.buyer-history-row {
-    display: grid;
-    grid-template-columns: 1fr 1.2fr 0.8fr 1fr;
-    gap: 0.8rem;
-    align-items: center;
-    min-height: 48px;
-    padding: 0 0.85rem;
-    border: 1px solid var(--sand-light);
-    border-radius: 8px;
-    background: var(--cream);
-    color: var(--ink);
-    text-align: left;
-}
-.buyer-history-row span {
-    color: var(--terracotta);
-    font-weight: 900;
-}
-.buyer-history-row strong {
-    color: var(--charcoal);
-    font-size: 0.84rem;
-    overflow-wrap: anywhere;
-}
-.buyer-history-row small {
-    color: var(--muted);
-}
-.buyer-history-row b {
-    color: var(--sage-dark);
-    text-align: right;
-}
-.buyer-empty {
+.tracking-empty {
     display: grid;
     place-items: center;
     align-content: center;
     gap: 0.6rem;
-    min-height: 160px;
+    min-height: 170px;
     padding: 1rem;
     color: var(--muted);
     text-align: center;
 }
-.buyer-empty i {
+.tracking-empty i {
     color: var(--terracotta);
     font-size: 1.8rem;
 }
-.buyer-manual-track {
-    margin-top: 0.5rem;
+.tracking-actions {
+    display: grid;
+    gap: 1rem;
+}
+.tracking-help-card {
+    display: grid;
+    gap: 0.65rem;
+    padding: 1rem;
+}
+.tracking-help-card button {
+    width: 100%;
+    border-radius: 8px;
+    justify-content: flex-start;
+    background: var(--cream);
+    color: var(--sage-dark);
+    border: 1px solid var(--sand-light);
 }
 .progress-layout {
     display: grid;

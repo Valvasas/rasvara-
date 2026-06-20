@@ -18,8 +18,8 @@ let catalogSort = 'featured';
 let catalogView = 'storefront';
 let catalogAvailability = 'all';
 let catalogMaxPrice = '';
-let customerCsrfToken = '';
-let customerDashboardData = null;
+const SAVED_TRACKING_KEY = 'annie_tracking_orders';
+let lastSuccessfulOrder = null;
 const vendorReviewsCache = new Map();
 const ORDER_PROGRESS_STATUSES = [
     'Menunggu Persetujuan',
@@ -214,7 +214,8 @@ async function initApp() {
         renderSellerRail();
         renderProducts();
         renderHighlight();
-        await restoreCustomerSession();
+        renderSavedTrackingOrders();
+        openTrackingFromUrl();
         openRouteFromHash();
     } catch (error) {
         console.error('Gagal memuat data:', error);
@@ -1029,6 +1030,7 @@ function buildWhatsAppMessage(orderDetails) {
     message += `\nTotal: ${formatRupiah(orderDetails.total)}\n`;
     message += `\nDetail Pemesanan:\n`;
     if (orderDetails.id) message += `ID Pesanan: ${orderDetails.id}\n`;
+    if (orderDetails.trackingToken) message += `Link Progress: ${getTrackingUrl(orderDetails.trackingToken)}\n`;
     message += `Nama: ${orderDetails.customerName}\n`;
     message += `WA: ${orderDetails.phone}\n`;
     if (orderDetails.eventDate) message += `Tanggal Deadline Pesanan: ${orderDetails.eventDate}\n`;
@@ -1037,7 +1039,7 @@ function buildWhatsAppMessage(orderDetails) {
     message += `Alamat/Titik Ambil: ${orderDetails.address}\n`;
     if (orderDetails.notes) message += `Catatan: ${orderDetails.notes}\n`;
     message += `Metode Pembayaran: ${orderDetails.paymentMethod}\n\n`;
-    message += `Mohon konfirmasi ketersediaan menu, ongkos kirim, estimasi waktu pengantaran, dan update progress pesanan.`;
+    message += `Simpan pesan ini sebagai bukti pesanan. Mohon konfirmasi ketersediaan menu, ongkos kirim, estimasi waktu pengantaran, dan update progress pesanan.`;
     return message;
 }
 
@@ -1096,8 +1098,10 @@ async function processCheckout() {
         const trackPhone = document.getElementById('track-phone');
         if (trackOrderId) trackOrderId.value = data.order.id || '';
         if (trackPhone) trackPhone.value = phone;
-        await loginBuyerWithCredentials(phone, data.order.id, { silent: true });
-        showToast(`Pesanan #${data.order.id} berhasil dibuat. Progress bisa dicek di menu Progress Pembelian.`, 'success');
+        saveTrackingOrder(data.order);
+        renderSavedTrackingOrders();
+        showOrderSuccess(data.order);
+        showToast(`Pesanan #${data.order.id} berhasil dibuat. Link progress sudah disiapkan.`, 'success');
         cart = [];
         saveCart();
         document.getElementById('order-name').value = '';
@@ -1168,212 +1172,108 @@ function formatPhoneDisplay(value = '') {
     return digits.startsWith('62') ? `+${digits}` : digits;
 }
 
-function updateBuyerNav(customer = null) {
-    const label = document.getElementById('buyer-nav-label');
-    if (!label) return;
-    label.textContent = customer ? 'Dashboard' : 'Login Pembeli';
+function getTrackingUrl(token = '') {
+    if (!token) return window.location.origin;
+    return `${window.location.origin}${window.location.pathname}#progress?t=${encodeURIComponent(token)}`;
 }
 
-function showBuyerDashboard(isLoggedIn) {
-    const authCard = document.getElementById('buyer-auth-card');
-    const dashboard = document.getElementById('buyer-dashboard');
-    if (authCard) authCard.hidden = Boolean(isLoggedIn);
-    if (dashboard) dashboard.hidden = !isLoggedIn;
-}
-
-async function restoreCustomerSession() {
+function getSavedTrackingOrders() {
     try {
-        const response = await fetch(`${API_URL}/customer/session`);
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) {
-            customerCsrfToken = '';
-            customerDashboardData = null;
-            updateBuyerNav(null);
-            showBuyerDashboard(false);
-            return false;
-        }
-        customerCsrfToken = data.csrfToken || '';
-        customerDashboardData = data;
-        renderBuyerDashboard(data);
-        return true;
+        const orders = JSON.parse(localStorage.getItem(SAVED_TRACKING_KEY) || '[]');
+        return Array.isArray(orders) ? orders.filter((order) => order && order.id && order.trackingToken) : [];
     } catch (error) {
-        customerCsrfToken = '';
-        customerDashboardData = null;
-        updateBuyerNav(null);
-        showBuyerDashboard(false);
-        return false;
+        return [];
     }
 }
 
-function openBuyerLogin() {
-    switchView('progress');
-    setTimeout(() => {
-        const target = customerDashboardData ? document.getElementById('buyer-dashboard') : document.getElementById('buyer-auth-card');
-        target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 120);
+function saveTrackingOrder(order = {}) {
+    if (!order.id || !order.trackingToken) return;
+    const saved = getSavedTrackingOrders().filter((item) => String(item.id) !== String(order.id));
+    const summary = {
+        id: order.id,
+        trackingToken: order.trackingToken,
+        customerName: order.customerName || 'Pembeli',
+        phoneMasked: maskPhone(order.phone || ''),
+        total: Number(order.total || 0),
+        status: order.status || 'Menunggu Persetujuan',
+        createdAt: order.createdAt || new Date().toISOString(),
+        itemCount: (order.cartItems || []).reduce((sum, item) => sum + Number(item.quantity || 0), 0)
+    };
+    localStorage.setItem(SAVED_TRACKING_KEY, JSON.stringify([summary, ...saved].slice(0, 8)));
 }
 
-async function loginBuyer(event) {
-    event?.preventDefault();
-    const phone = getInputValue('buyer-login-phone');
-    const orderId = getInputValue('buyer-login-order-id');
-    await loginBuyerWithCredentials(phone, orderId);
+function maskPhone(value = '') {
+    const digits = String(value || '').replace(/\D/g, '');
+    if (digits.length <= 5) return digits || '-';
+    return `${digits.slice(0, 4)}****${digits.slice(-3)}`;
 }
 
-async function loginBuyerWithCredentials(phone, orderId, options = {}) {
-    if (!phone || !orderId) {
-        if (!options.silent) showToast('Isi nomor WhatsApp dan ID pesanan terakhir.', 'error');
-        return false;
-    }
-
-    try {
-        const response = await fetch(`${API_URL}/customer/login`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ phone, orderId })
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message || 'Login pembeli gagal.');
-        customerCsrfToken = data.csrfToken || '';
-        customerDashboardData = data;
-        renderBuyerDashboard(data);
-        if (!options.silent) showToast('Dashboard pembeli berhasil dibuka.', 'success');
-        return true;
-    } catch (error) {
-        if (!options.silent) showToast(error.message || 'Login pembeli gagal.', 'error');
-        return false;
-    }
-}
-
-async function refreshBuyerDashboard() {
-    const restored = await restoreCustomerSession();
-    showToast(restored ? 'Dashboard pembeli diperbarui.' : 'Sesi pembeli belum aktif.', restored ? 'success' : 'error');
-}
-
-async function logoutBuyer() {
-    try {
-        await fetch(`${API_URL}/customer/logout`, {
-            method: 'POST',
-            headers: customerCsrfToken ? { 'x-csrf-token': customerCsrfToken } : {}
-        });
-    } catch (error) {
-        console.warn('Logout pembeli gagal:', error);
-    }
-    customerCsrfToken = '';
-    customerDashboardData = null;
-    updateBuyerNav(null);
-    showBuyerDashboard(false);
-    showToast('Kamu sudah keluar dari dashboard pembeli.', 'success');
-}
-
-function renderBuyerDashboard(data = {}) {
-    const customer = data.customer || {};
-    const dashboard = data.dashboard || {};
-    const summary = dashboard.summary || {};
-    const orders = Array.isArray(dashboard.orders) ? dashboard.orders : [];
-    const activeOrders = Array.isArray(dashboard.activeOrders) ? dashboard.activeOrders : [];
-
-    updateBuyerNav(customer);
-    showBuyerDashboard(true);
-    setText('buyer-greeting', `Halo, ${customer.name || 'Pembeli'}`);
-    setText('buyer-phone-label', `Login sebagai ${formatPhoneDisplay(customer.phone)}`);
-
-    const stats = document.getElementById('buyer-stats');
-    if (stats) {
-        stats.innerHTML = [
-            { label: 'Total pesanan', value: Number(summary.orderCount || 0), icon: 'fa-receipt' },
-            { label: 'Order aktif', value: Number(summary.activeOrderCount || 0), icon: 'fa-route' },
-            { label: 'Selesai', value: Number(summary.completedOrderCount || 0), icon: 'fa-circle-check' },
-            { label: 'Total belanja', value: formatRupiah(summary.totalSpend || 0), icon: 'fa-wallet' }
-        ].map((item) => `
-            <div class="buyer-stat">
-                <span><i class="fas ${item.icon}"></i></span>
-                <small>${escapeHtml(item.label)}</small>
-                <strong>${escapeHtml(item.value)}</strong>
+function renderSavedTrackingOrders() {
+    const root = document.getElementById('saved-tracking-list');
+    if (!root) return;
+    const orders = getSavedTrackingOrders();
+    if (!orders.length) {
+        root.innerHTML = `
+            <div class="tracking-empty">
+                <i class="fas fa-receipt"></i>
+                <p>Belum ada pesanan tersimpan di browser ini. Setelah checkout, bukti pesanan akan muncul di sini otomatis.</p>
             </div>
-        `).join('');
+        `;
+        return;
     }
-
-    const activeRoot = document.getElementById('buyer-active-orders');
-    if (activeRoot) {
-        activeRoot.innerHTML = activeOrders.length
-            ? activeOrders.map(renderBuyerOrderCard).join('')
-            : `<div class="buyer-empty"><i class="fas fa-mug-hot"></i><p>Tidak ada order aktif. Riwayat pesanan tetap tersimpan di bawah.</p></div>`;
-    }
-
-    const historyRoot = document.getElementById('buyer-order-history');
-    if (historyRoot) {
-        historyRoot.innerHTML = orders.length
-            ? orders.map((order) => `
-                <button class="buyer-history-row" onclick="showBuyerOrderDetail(${Number(order.id)})">
-                    <span>#${escapeHtml(order.id)}</span>
-                    <strong>${escapeHtml(order.status || 'Menunggu Persetujuan')}</strong>
-                    <small>${escapeHtml(formatShortDate(order.createdAt))}</small>
-                    <b>${formatRupiah(order.total || 0)}</b>
-                </button>
-            `).join('')
-            : `<div class="buyer-empty"><i class="fas fa-receipt"></i><p>Belum ada pesanan untuk nomor ini.</p></div>`;
-    }
-
-    if (orders[0]) renderOrderProgress(orders[0]);
-}
-
-function renderBuyerOrderCard(order = {}) {
-    const firstItem = (order.cartItems || [])[0];
-    const itemCount = (order.cartItems || []).reduce((sum, item) => sum + Number(item.quantity || 0), 0);
-    return `
-        <article class="buyer-order-card">
-            <div class="buyer-order-top">
-                <div>
-                    <span>#${escapeHtml(order.id)}</span>
-                    <h4>${escapeHtml(firstItem?.name || 'Pesanan catering')}</h4>
-                    <p>${itemCount} item · ${escapeHtml(formatOrderDate(order.createdAt))}</p>
-                </div>
-                <strong>${escapeHtml(order.status || 'Menunggu Persetujuan')}</strong>
+    root.innerHTML = orders.map((order) => `
+        <article class="saved-tracking-card">
+            <div>
+                <span>#${escapeHtml(order.id)}</span>
+                <h3>${escapeHtml(order.customerName || 'Pembeli')}</h3>
+                <p>${escapeHtml(formatOrderDate(order.createdAt))} · ${Number(order.itemCount || 0)} item · ${escapeHtml(order.phoneMasked || '-')}</p>
             </div>
-            <div class="buyer-mini-steps">
-                ${(order.progressSteps || []).map((step) => `<span class="${escapeHtml(step.state || '')}" title="${escapeHtml(step.label)}"></span>`).join('')}
-            </div>
-            <div class="buyer-order-bottom">
-                <b>${formatRupiah(order.total || 0)}</b>
-                <button onclick="showBuyerOrderDetail(${Number(order.id)})">Lihat detail</button>
-            </div>
+            <strong>${formatRupiah(order.total || 0)}</strong>
+            <button onclick="loadProgressByToken('${escapeHtml(order.trackingToken)}')"><i class="fas fa-route"></i> Cek</button>
         </article>
-    `;
+    `).join('');
 }
 
-function showBuyerOrderDetail(orderId) {
-    const orders = customerDashboardData?.dashboard?.orders || [];
-    const order = orders.find((item) => Number(item.id) === Number(orderId));
-    if (!order) {
-        showToast('Pesanan tidak ditemukan di sesi pembeli.', 'error');
-        return;
+function clearSavedTrackingOrders() {
+    localStorage.removeItem(SAVED_TRACKING_KEY);
+    renderSavedTrackingOrders();
+    showToast('Daftar pesanan tersimpan di perangkat ini dibersihkan.', 'success');
+}
+
+function getTrackingTokenFromUrl() {
+    const hash = window.location.hash || '';
+    if (hash.startsWith('#progress')) {
+        const queryIndex = hash.indexOf('?');
+        if (queryIndex !== -1) return new URLSearchParams(hash.slice(queryIndex + 1)).get('t') || '';
     }
-    renderOrderProgress(order);
-    document.getElementById('progress-result')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    return new URLSearchParams(window.location.search).get('t') || '';
 }
 
-async function trackOrderProgress(event) {
-    event?.preventDefault();
-    const orderId = getInputValue('track-order-id');
-    const phone = getInputValue('track-phone');
+function openTrackingFromUrl() {
+    const token = getTrackingTokenFromUrl();
+    if (!token) return false;
+    switchView('progress');
+    loadProgressByToken(token);
+    return true;
+}
+
+async function loadProgressByToken(token = '') {
     const result = document.getElementById('progress-result');
-
-    if (!orderId || !phone) {
-        showToast('Isi ID pesanan dan nomor WhatsApp yang dipakai saat checkout.', 'error');
+    if (!token) {
+        showToast('Link progress tidak valid.', 'error');
         return;
     }
-
     if (result) {
         result.innerHTML = '<div class="progress-empty"><i class="fas fa-spinner fa-spin"></i><p>Mengambil progress pesanan...</p></div>';
     }
-
     try {
-        const params = new URLSearchParams({ orderId, phone });
-        const response = await fetch(`${API_URL}/orders/track?${params.toString()}`);
+        const response = await fetch(`${API_URL}/orders/progress/${encodeURIComponent(token)}`);
         const data = await response.json();
-        if (!response.ok) throw new Error(data.message || 'Pesanan tidak ditemukan.');
+        if (!response.ok) throw new Error(data.message || 'Link progress tidak ditemukan.');
+        saveTrackingOrder({ ...data.order, trackingToken: token });
+        renderSavedTrackingOrders();
         renderOrderProgress(data.order);
+        document.getElementById('progress-result')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (error) {
         if (result) {
             result.innerHTML = `
@@ -1385,6 +1285,82 @@ async function trackOrderProgress(event) {
         }
         showToast(error.message || 'Gagal memuat progress pesanan.', 'error');
     }
+}
+
+async function recoverTrackingLink(event) {
+    event?.preventDefault();
+    const orderId = getInputValue('track-order-id');
+    const phone = getInputValue('track-phone');
+    const result = document.getElementById('progress-result');
+
+    if (!orderId || !phone) {
+        showToast('Isi ID pesanan dan nomor WhatsApp yang dipakai saat checkout.', 'error');
+        return;
+    }
+
+    if (result) {
+        result.innerHTML = '<div class="progress-empty"><i class="fas fa-spinner fa-spin"></i><p>Memulihkan link progress...</p></div>';
+    }
+
+    try {
+        const response = await fetch(`${API_URL}/orders/recover-link`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ orderId, phone })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Pesanan tidak ditemukan.');
+        saveTrackingOrder(data.order);
+        renderSavedTrackingOrders();
+        renderOrderProgress(data.order);
+        showToast('Link progress berhasil dipulihkan dan disimpan di perangkat ini.', 'success');
+    } catch (error) {
+        if (result) {
+            result.innerHTML = `
+                <div class="progress-empty error">
+                    <i class="fas fa-circle-exclamation"></i>
+                    <p>${escapeHtml(error.message || 'Gagal memuat progress pesanan.')}</p>
+                </div>
+            `;
+        }
+        showToast(error.message || 'Gagal memuat progress pesanan.', 'error');
+    }
+}
+
+function showOrderSuccess(order = {}) {
+    lastSuccessfulOrder = order;
+    setText('success-order-id', `#${order.id || '-'}`);
+    setText('success-order-total', formatRupiah(order.total || 0));
+    setText('success-order-status', order.status || 'Menunggu Persetujuan');
+    const modal = document.getElementById('order-success-modal');
+    if (modal) modal.classList.add('show');
+}
+
+function closeOrderSuccess() {
+    const modal = document.getElementById('order-success-modal');
+    if (modal) modal.classList.remove('show');
+}
+
+async function copySuccessOrderId() {
+    if (!lastSuccessfulOrder?.id) return;
+    try {
+        await navigator.clipboard.writeText(String(lastSuccessfulOrder.id));
+        showToast('ID pesanan disalin.', 'success');
+    } catch (error) {
+        showToast(`ID Pesanan: ${lastSuccessfulOrder.id}`, 'info');
+    }
+}
+
+function openSuccessTracking() {
+    if (!lastSuccessfulOrder?.trackingToken) return;
+    closeOrderSuccess();
+    window.location.hash = `progress?t=${encodeURIComponent(lastSuccessfulOrder.trackingToken)}`;
+    openTrackingFromUrl();
+}
+
+function sendSuccessWhatsApp() {
+    if (!lastSuccessfulOrder) return;
+    window.open(buildWhatsAppLink(buildWhatsAppMessage(lastSuccessfulOrder)), '_blank', 'noopener');
 }
 
 function renderOrderProgress(order = {}) {
@@ -1478,6 +1454,7 @@ function toggleMenu() {
 window.addEventListener('DOMContentLoaded', initApp);
 window.addEventListener('load', () => setTimeout(hideSiteLoader, 1200));
 window.addEventListener('popstate', () => {
+    if (openTrackingFromUrl()) return;
     if (openRouteFromHash()) return;
     if (activeDetailProductId) {
         closeProductDetail({ skipHash: true });

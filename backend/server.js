@@ -128,6 +128,14 @@ function verifyPassword(password, stored = '') {
   return safeEqual(actual, expected);
 }
 
+function createTrackingToken() {
+  return crypto.randomBytes(32).toString('base64url');
+}
+
+function sanitizeTrackingToken(value = '') {
+  return String(value || '').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 96);
+}
+
 function createAdminSession() {
   const payload = {
     sub: 'admin',
@@ -142,18 +150,6 @@ function createVendorSession(vendorId) {
   const payload = {
     sub: 'vendor',
     vendorId: Number(vendorId),
-    csrf: crypto.randomBytes(24).toString('base64url'),
-    exp: Date.now() + SESSION_TTL_MS
-  };
-  const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
-  return { token: `${body}.${sign(body)}`, csrf: payload.csrf };
-}
-
-function createCustomerSession(phone) {
-  const normalizedPhone = sanitizePhoneForMatch(phone);
-  const payload = {
-    sub: 'customer',
-    phone: normalizedPhone,
     csrf: crypto.randomBytes(24).toString('base64url'),
     exp: Date.now() + SESSION_TTL_MS
   };
@@ -230,21 +226,6 @@ function getVendorSession(req) {
   }
 }
 
-function getCustomerSession(req) {
-  const token = parseCookies(req.headers.cookie || '').customer_session;
-  if (!token || !token.includes('.')) return null;
-  const [body, signature] = token.split('.');
-  if (!body || !signature || !safeEqual(sign(body), signature)) return null;
-
-  try {
-    const payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));
-    if (payload.sub !== 'customer' || !payload.phone || Date.now() > Number(payload.exp || 0)) return null;
-    return payload;
-  } catch (error) {
-    return null;
-  }
-}
-
 function requireAdmin(req, res, next) {
   const session = getAdminSession(req);
   if (!session) {
@@ -286,23 +267,6 @@ function requireVendor(req, res, next) {
   next();
 }
 
-function requireCustomer(req, res, next) {
-  const session = getCustomerSession(req);
-  if (!session) {
-    return res.status(401).json({ ok: false, message: 'Sesi pembeli tidak aktif. Silakan login ulang.' });
-  }
-
-  if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
-    const csrf = req.get('x-csrf-token');
-    if (!csrf || csrf !== session.csrf) {
-      return res.status(403).json({ ok: false, message: 'Token keamanan tidak valid. Login ulang lalu coba lagi.' });
-    }
-  }
-
-  req.customerSession = session;
-  next();
-}
-
 function adminCookie(token) {
   const parts = [
     `admin_session=${encodeURIComponent(token)}`,
@@ -335,24 +299,6 @@ function vendorCookie(token) {
 
 function clearVendorCookie() {
   const parts = ['vendor_session=', 'HttpOnly', 'SameSite=Strict', 'Path=/', 'Max-Age=0'];
-  if (isProduction) parts.push('Secure');
-  return parts.join('; ');
-}
-
-function customerCookie(token) {
-  const parts = [
-    `customer_session=${encodeURIComponent(token)}`,
-    'HttpOnly',
-    'SameSite=Strict',
-    'Path=/',
-    `Max-Age=${Math.floor(SESSION_TTL_MS / 1000)}`
-  ];
-  if (isProduction) parts.push('Secure');
-  return parts.join('; ');
-}
-
-function clearCustomerCookie() {
-  const parts = ['customer_session=', 'HttpOnly', 'SameSite=Strict', 'Path=/', 'Max-Age=0'];
   if (isProduction) parts.push('Secure');
   return parts.join('; ');
 }
@@ -548,6 +494,7 @@ function normalizeOrder(order = {}, menus = []) {
     totalCost: Number(order.totalCost || totalCost),
     profit: Number(order.profit ?? ((order.total || total) - (order.totalCost || totalCost))),
     status,
+    trackingToken: sanitizeTrackingToken(order.trackingToken || ''),
     statusHistory,
     updatedAt: order.updatedAt || statusHistory[statusHistory.length - 1]?.at || createdAt,
     createdAt
@@ -722,10 +669,11 @@ function buildSalesSummary(orders, startDate, endDate) {
   };
 }
 
-function publicOrder(order) {
-  const { totalCost, profit, cartItems = [], ...safeOrder } = order;
+function publicOrder(order, options = {}) {
+  const { totalCost, profit, trackingToken, cartItems = [], ...safeOrder } = order;
   return {
     ...safeOrder,
+    ...(options.includeTrackingToken && trackingToken ? { trackingToken } : {}),
     cartItems: cartItems.map(({ costPrice, ...item }) => item)
   };
 }
@@ -741,49 +689,8 @@ function orderMatchesPhone(order, phone = '') {
   return target && sanitizePhoneForMatch(order.phone).endsWith(target.slice(-10));
 }
 
-function getCustomerOrders(orders = [], phone = '') {
-  return (orders || [])
-    .filter((order) => orderMatchesPhone(order, phone))
-    .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-}
-
-function buildCustomerDashboard(orders = []) {
-  const safeOrders = orders.map(buildOrderProgress);
-  const activeOrders = safeOrders.filter((order) => !['Selesai', 'Batal'].includes(order.status));
-  const completedOrders = safeOrders.filter((order) => order.status === 'Selesai');
-  const totalSpend = safeOrders
-    .filter((order) => order.status !== 'Batal')
-    .reduce((sum, order) => sum + Number(order.total || 0), 0);
-  const favoriteVendors = new Map();
-  safeOrders.forEach((order) => {
-    (order.cartItems || []).forEach((item) => {
-      const name = item.vendorName || 'Annie Official';
-      const current = favoriteVendors.get(name) || { name, count: 0, spend: 0 };
-      current.count += Number(item.quantity || 0);
-      current.spend += Number(item.price || 0) * Number(item.quantity || 0);
-      favoriteVendors.set(name, current);
-    });
-  });
-
-  return {
-    orders: safeOrders,
-    activeOrders,
-    recentOrders: safeOrders.slice(0, 6),
-    summary: {
-      orderCount: safeOrders.length,
-      activeOrderCount: activeOrders.length,
-      completedOrderCount: completedOrders.length,
-      totalSpend,
-      lastOrderAt: safeOrders[0]?.createdAt || ''
-    },
-    insights: {
-      favoriteVendors: [...favoriteVendors.values()].sort((a, b) => b.count - a.count).slice(0, 3)
-    }
-  };
-}
-
-function buildOrderProgress(order) {
-  const safeOrder = publicOrder(order);
+function buildOrderProgress(order, options = {}) {
+  const safeOrder = publicOrder(order, options);
   const currentIndex = ORDER_STATUS_STEPS.indexOf(order.status);
   return {
     ...safeOrder,
@@ -948,23 +855,9 @@ app.post('/api/reviews', (req, res) => {
   res.json({ ok: true, review });
 });
 
-app.get('/api/customer/session', requireCustomer, (req, res) => {
-  const data = loadData();
-  const orders = getCustomerOrders(data.orders || [], req.customerSession.phone);
-  res.json({
-    ok: true,
-    csrfToken: req.customerSession.csrf,
-    customer: {
-      phone: req.customerSession.phone,
-      name: orders[0]?.customerName || 'Pembeli'
-    },
-    dashboard: buildCustomerDashboard(orders)
-  });
-});
-
-app.post('/api/customer/login', (req, res) => {
+app.post('/api/orders/recover-link', (req, res) => {
   if (isLoginRateLimited(req)) {
-    return res.status(429).json({ ok: false, message: 'Terlalu banyak percobaan login. Coba lagi beberapa menit lagi.' });
+    return res.status(429).json({ ok: false, message: 'Terlalu banyak percobaan. Coba lagi beberapa menit lagi.' });
   }
 
   const data = loadData();
@@ -981,23 +874,15 @@ app.post('/api/customer/login', (req, res) => {
   }
 
   clearLoginAttempts(req);
-  const session = createCustomerSession(phone);
-  const orders = getCustomerOrders(data.orders || [], phone);
-  res.setHeader('Set-Cookie', customerCookie(session.token));
+  if (!order.trackingToken) {
+    order.trackingToken = createTrackingToken();
+    order.updatedAt = new Date().toISOString();
+    saveData(data);
+  }
   res.json({
     ok: true,
-    csrfToken: session.csrf,
-    customer: {
-      phone: sanitizePhoneForMatch(phone),
-      name: order.customerName || orders[0]?.customerName || 'Pembeli'
-    },
-    dashboard: buildCustomerDashboard(orders)
+    order: buildOrderProgress(order, { includeTrackingToken: true })
   });
-});
-
-app.post('/api/customer/logout', requireCustomer, (req, res) => {
-  res.setHeader('Set-Cookie', clearCustomerCookie());
-  res.json({ ok: true });
 });
 
 app.get('/api/admin/session', (req, res) => {
@@ -1693,12 +1578,26 @@ app.post('/api/orders', (req, res) => {
     totalCost,
     profit: total - totalCost,
     status: 'Menunggu Persetujuan',
+    trackingToken: createTrackingToken(),
     createdAt: new Date().toISOString()
   }, data.menus || []);
 
   data.orders.unshift(order);
   saveData(data);
-  res.json({ ok: true, order: publicOrder(order) });
+  res.json({ ok: true, order: publicOrder(order, { includeTrackingToken: true }) });
+});
+
+app.get('/api/orders/progress/:token', (req, res) => {
+  const data = loadData();
+  const token = sanitizeTrackingToken(req.params.token || '');
+  if (!token || token.length < 24) {
+    return res.status(400).json({ ok: false, message: 'Link progress tidak valid.' });
+  }
+  const order = data.orders.find((item) => item.trackingToken && safeEqual(item.trackingToken, token));
+  if (!order) {
+    return res.status(404).json({ ok: false, message: 'Link progress tidak ditemukan atau sudah tidak berlaku.' });
+  }
+  res.json({ ok: true, order: buildOrderProgress(order) });
 });
 
 app.get('/api/orders/track', (req, res) => {
@@ -1712,7 +1611,12 @@ app.get('/api/orders/track', (req, res) => {
   if (!order || !orderMatchesPhone(order, phone)) {
     return res.status(404).json({ ok: false, message: 'Pesanan tidak ditemukan. Cek lagi ID pesanan dan nomor WhatsApp.' });
   }
-  res.json({ ok: true, order: buildOrderProgress(order) });
+  if (!order.trackingToken) {
+    order.trackingToken = createTrackingToken();
+    order.updatedAt = new Date().toISOString();
+    saveData(data);
+  }
+  res.json({ ok: true, order: buildOrderProgress(order, { includeTrackingToken: true }) });
 });
 
 app.put('/api/orders/:id', requireAdmin, (req, res) => {

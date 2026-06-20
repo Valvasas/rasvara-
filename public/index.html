@@ -63,7 +63,6 @@
         <li><span class="nav-item active" onclick="switchView('store')">Katalog</span></li>
         <li><span class="nav-item" onclick="switchView('progress')">Progress Pembelian</span></li>
         <li><span class="nav-item" onclick="scrollToContact()">Lokasi &amp; Kontak</span></li>
-        <li><button class="buyer-login-link" onclick="openBuyerLogin()"><i class="fas fa-user"></i><span id="buyer-nav-label">Login Pembeli</span></button></li>
         <li><a class="vendor-cta" href="/vendor"><i class="fas fa-store"></i><span>Jadi Pedagang</span></a></li>
     </ul>
 
@@ -332,97 +331,44 @@
 <main id="view-progress" class="view-section">
     <section class="progress-page container">
         <div class="progress-hero">
-            <span class="label-tag">Dashboard Pembeli</span>
-            <h1>Ruang Pesanan Kamu</h1>
-            <p>Login sekali untuk melihat pesanan milik nomor WhatsApp kamu saja, lengkap dengan status, riwayat, dan bantuan cepat.</p>
+            <span class="label-tag">Progress Pesanan</span>
+            <h1>Lacak tanpa login ribet</h1>
+            <p>Gunakan magic link dari WhatsApp atau pesanan yang tersimpan otomatis di browser ini. ID pesanan tetap tersedia sebagai cadangan.</p>
         </div>
 
-        <div class="buyer-dashboard-shell">
-            <aside class="buyer-auth-card" id="buyer-auth-card">
-                <div class="buyer-auth-head">
-                    <span class="label-tag">Login Aman</span>
-                    <h2>Masuk sebagai pembeli</h2>
-                    <p>Gunakan nomor WhatsApp dan ID pesanan terakhir. Sistem hanya membuka order yang cocok dengan nomor itu.</p>
-                </div>
-                <form class="progress-card buyer-login-form" onsubmit="loginBuyer(event)">
-                    <label for="buyer-login-phone">Nomor WhatsApp</label>
-                    <input type="tel" id="buyer-login-phone" placeholder="08xxxxxxxxxx" autocomplete="tel" required>
-                    <label for="buyer-login-order-id">ID Pesanan Terakhir</label>
-                    <input type="number" id="buyer-login-order-id" placeholder="Contoh: 1780914435460" required>
-                    <button type="submit"><i class="fas fa-right-to-bracket"></i> Masuk Dashboard</button>
-                </form>
-                <div class="buyer-auth-note">
-                    <i class="fas fa-shield-heart"></i>
-                    <span>Tidak perlu password. ID pesanan berfungsi sebagai kunci verifikasi ringan.</span>
-                </div>
-            </aside>
-
-            <section class="buyer-dashboard" id="buyer-dashboard" hidden>
-                <div class="buyer-dashboard-head">
+        <div class="tracking-shell">
+            <section class="tracking-saved-panel">
+                <div class="tracking-panel-head">
                     <div>
-                        <span class="label-tag">Akun Pembeli</span>
-                        <h2 id="buyer-greeting">Halo, Pembeli</h2>
-                        <p id="buyer-phone-label">Nomor belum login.</p>
+                        <span class="label-tag">Tersimpan di perangkat</span>
+                        <h2>Pesanan terakhir</h2>
+                        <p>Pesanan baru otomatis tersimpan di browser ini, jadi pembeli tidak perlu mengingat ID.</p>
                     </div>
-                    <div class="buyer-dashboard-actions">
-                        <button onclick="refreshBuyerDashboard()"><i class="fas fa-rotate"></i> Refresh</button>
-                        <button class="ghost" onclick="logoutBuyer()"><i class="fas fa-arrow-right-from-bracket"></i> Keluar</button>
-                    </div>
+                    <button class="btn-mini-link" onclick="clearSavedTrackingOrders()">Bersihkan</button>
                 </div>
-
-                <div class="buyer-stats" id="buyer-stats"></div>
-
-                <div class="buyer-dashboard-grid">
-                    <article class="buyer-panel buyer-panel-large">
-                        <div class="buyer-panel-head">
-                            <div>
-                                <span class="label-tag">Order Aktif</span>
-                                <h3>Status terbaru</h3>
-                            </div>
-                            <button onclick="switchView('store')">Pesan lagi</button>
-                        </div>
-                        <div id="buyer-active-orders" class="buyer-order-list"></div>
-                    </article>
-
-                    <article class="buyer-panel">
-                        <div class="buyer-panel-head">
-                            <div>
-                                <span class="label-tag">Bantuan</span>
-                                <h3>Butuh dibantu?</h3>
-                            </div>
-                        </div>
-                        <div class="buyer-help-list">
-                            <button onclick="openWhatsAppChat('Halo, saya butuh bantuan terkait pesanan saya.')"><i class="fab fa-whatsapp"></i> Chat admin</button>
-                            <button onclick="scrollToContact()"><i class="fas fa-location-dot"></i> Lihat kontak</button>
-                            <button onclick="switchView('store')"><i class="fas fa-bowl-food"></i> Tambah pesanan</button>
-                        </div>
-                    </article>
-
-                    <article class="buyer-panel buyer-panel-full">
-                        <div class="buyer-panel-head">
-                            <div>
-                                <span class="label-tag">Riwayat</span>
-                                <h3>Pesanan kamu</h3>
-                            </div>
-                        </div>
-                        <div id="buyer-order-history" class="buyer-history-table"></div>
-                    </article>
-                </div>
+                <div id="saved-tracking-list" class="saved-tracking-list"></div>
             </section>
 
-            <section class="progress-layout buyer-manual-track">
-                <form class="progress-card" onsubmit="trackOrderProgress(event)">
-                    <label for="track-order-id">Cek manual ID Pesanan</label>
-                    <input type="number" id="track-order-id" placeholder="Contoh: 1780914435460" required>
-                    <label for="track-phone">Nomor WhatsApp</label>
-                    <input type="tel" id="track-phone" placeholder="08xxxxxxxxxx" required>
-                    <button type="submit"><i class="fas fa-magnifying-glass"></i> Cek Satu Pesanan</button>
-                    <p>Fallback kalau kamu belum mau login. Hasil hanya untuk kombinasi ID dan nomor yang cocok.</p>
-                </form>
+            <section class="progress-layout">
+                <aside class="tracking-actions">
+                    <form class="progress-card" onsubmit="recoverTrackingLink(event)">
+                        <label for="track-order-id">Pulihkan link dengan ID Pesanan</label>
+                        <input type="number" id="track-order-id" placeholder="Contoh: 1780914435460" required>
+                        <label for="track-phone">Nomor WhatsApp</label>
+                        <input type="tel" id="track-phone" placeholder="08xxxxxxxxxx" required>
+                        <button type="submit"><i class="fas fa-key"></i> Pulihkan Link</button>
+                        <p>Fallback kalau pesan WhatsApp/link progress hilang. Sistem hanya cocokkan kombinasi ID dan nomor.</p>
+                    </form>
+                    <div class="tracking-help-card">
+                        <span class="label-tag">Bantuan cepat</span>
+                        <button onclick="openWhatsAppChat('Halo, saya butuh bantuan melacak pesanan saya.')"><i class="fab fa-whatsapp"></i> Chat admin</button>
+                        <button onclick="switchView('store')"><i class="fas fa-bowl-food"></i> Pesan lagi</button>
+                    </div>
+                </aside>
                 <div id="progress-result" class="progress-result">
                     <div class="progress-empty">
                         <i class="fas fa-route"></i>
-                        <span>Login untuk dashboard lengkap, atau cek satu pesanan secara manual.</span>
+                        <span>Pilih pesanan tersimpan, buka magic link, atau pulihkan link dengan ID pesanan.</span>
                     </div>
                 </div>
             </section>
@@ -646,6 +592,37 @@
                 *Admin akan konfirmasi ongkir &amp; ketersediaan setelah pesan terkirim.
             </p>
         </aside>
+    </div>
+</div>
+
+<div id="order-success-modal" class="order-success-modal" role="dialog" aria-modal="true" aria-labelledby="order-success-title">
+    <div class="order-success-box">
+        <button class="checkout-close" onclick="closeOrderSuccess()" aria-label="Tutup bukti pesanan">
+            <i class="fas fa-times"></i>
+        </button>
+        <div class="order-success-icon"><i class="fas fa-check"></i></div>
+        <span class="label-tag">Pesanan Dibuat</span>
+        <h2 id="order-success-title">Bukti pesanan siap</h2>
+        <p>Magic link progress sudah dibuat. Simpan pesan WhatsApp atau gunakan tombol di bawah untuk cek ulang kapan saja.</p>
+        <div class="order-success-summary">
+            <div>
+                <span>ID Pesanan</span>
+                <strong id="success-order-id">-</strong>
+            </div>
+            <div>
+                <span>Total</span>
+                <strong id="success-order-total">Rp 0</strong>
+            </div>
+            <div>
+                <span>Status</span>
+                <strong id="success-order-status">Menunggu Persetujuan</strong>
+            </div>
+        </div>
+        <div class="order-success-actions">
+            <button onclick="copySuccessOrderId()"><i class="fas fa-copy"></i> Salin ID</button>
+            <button onclick="openSuccessTracking()"><i class="fas fa-route"></i> Cek Progress</button>
+            <button class="solid" onclick="sendSuccessWhatsApp()"><i class="fab fa-whatsapp"></i> Kirim WhatsApp</button>
+        </div>
     </div>
 </div>
 
