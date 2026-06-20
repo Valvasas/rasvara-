@@ -6,6 +6,15 @@ const multer = require('multer');
 
 require('dotenv').config({ path: path.join(__dirname, '.env'), quiet: true });
 
+const { validateEnv } = require('./src/config/env');
+const customerAuthRoutes = require('./src/modules/auth/customerAuth.routes');
+const cartRoutes = require('./src/modules/cart/cart.routes');
+const checkoutRoutes = require('./src/modules/checkout/checkout.routes');
+const customerOrderRoutes = require('./src/modules/orders/customerOrder.routes');
+const paymentRoutes = require('./src/modules/payments/payment.routes');
+const vendorMarketplaceOrderRoutes = require('./src/modules/vendors/vendorMarketplaceOrder.routes');
+const { createStorageAdapter, IMAGE_MIME_EXT } = require('./src/services/storage');
+
 const app = express();
 const DATA_DIR = path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'data.json');
@@ -21,12 +30,6 @@ const MAX_JSON_SIZE = process.env.MAX_JSON_SIZE || '150kb';
 const MAX_IMAGE_SIZE = Number(process.env.MAX_IMAGE_SIZE || 1024 * 1024 * 3);
 const LOGIN_WINDOW_MS = Number(process.env.LOGIN_WINDOW_MS || 1000 * 60 * 15);
 const LOGIN_MAX_ATTEMPTS = Number(process.env.LOGIN_MAX_ATTEMPTS || 5);
-const IMAGE_MIME_EXT = new Map([
-  ['image/jpeg', '.jpg'],
-  ['image/png', '.png'],
-  ['image/webp', '.webp'],
-  ['image/gif', '.gif']
-]);
 const ORDER_STATUSES = new Set([
   'Menunggu Persetujuan',
   'Disetujui',
@@ -60,6 +63,15 @@ const PUBLIC_FILES = new Set([
   '/vendor-bookkeeping.js'
 ]);
 const loginAttempts = new Map();
+const envReport = validateEnv(process.env);
+if (!envReport.ok) {
+  console.error(`Konfigurasi environment belum aman:\n- ${envReport.errors.join('\n- ')}`);
+  if (isProduction) process.exit(1);
+}
+const storageAdapter = createStorageAdapter({
+  driver: process.env.STORAGE_DRIVER || 'local',
+  maxImageSize: MAX_IMAGE_SIZE
+});
 
 if (isProduction && (!ADMIN_PIN || !ADMIN_PASSWORD || !SESSION_SECRET)) {
   console.error('ADMIN_PIN, ADMIN_PASSWORD, dan ADMIN_SESSION_SECRET wajib diset di production.');
@@ -77,8 +89,7 @@ if (!fs.existsSync(UPLOAD_DIR)) {
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, UPLOAD_DIR),
   filename: (req, file, cb) => {
-    const ext = IMAGE_MIME_EXT.get(file.mimetype) || path.extname(file.originalname || '').toLowerCase();
-    cb(null, `${Date.now()}-${crypto.randomUUID()}${ext}`);
+    cb(null, storageAdapter.buildFileName(file));
   }
 });
 
@@ -86,10 +97,12 @@ const upload = multer({
   storage,
   limits: { fileSize: MAX_IMAGE_SIZE, files: 1, fields: 4, parts: 6 },
   fileFilter: (req, file, cb) => {
-    if (!IMAGE_MIME_EXT.has(file.mimetype)) {
-      return cb(new Error('Format gambar harus JPG, PNG, WEBP, atau GIF.'));
+    try {
+      storageAdapter.validateImage(file);
+      cb(null, true);
+    } catch (error) {
+      return cb(error);
     }
-    cb(null, true);
   }
 });
 
@@ -419,7 +432,7 @@ function normalizeMenu(menu = {}, vendors = []) {
     ...menu,
     id: Number(menu.id) || Date.now(),
     vendorId: vendor ? vendor.id : vendorId || 0,
-    vendorName: vendor ? vendor.storeName : sanitizeText(menu.vendorName || 'Annie Official', 'Annie Official', 100),
+    vendorName: vendor ? vendor.storeName : sanitizeText(menu.vendorName || 'Rasvara Official', 'Rasvara Official', 100),
     name: sanitizeText(menu.name),
     category: sanitizeText(menu.category || 'berat'),
     desc: sanitizeText(menu.desc || ''),
@@ -443,7 +456,7 @@ function normalizeOrder(order = {}, menus = []) {
     return {
       id: Number(item.id),
       vendorId: Number(menu?.vendorId || item.vendorId || 0),
-      vendorName: sanitizeText(menu?.vendorName || item.vendorName || 'Annie Official', 'Annie Official', 100),
+      vendorName: sanitizeText(menu?.vendorName || item.vendorName || 'Rasvara Official', 'Rasvara Official', 100),
       name: sanitizeText(item.name || menu?.name || 'Menu'),
       category: sanitizeText(item.category || menu?.category || ''),
       quantity,
@@ -561,9 +574,9 @@ function sanitizeSettings(settings = {}) {
 
 function sanitizeBusinessSettings(business = {}, legacy = {}) {
   return {
-    brandName: sanitizeText(business.brandName || legacy.brandName || 'Naturale', 'Naturale', 80),
+    brandName: sanitizeText(business.brandName || legacy.brandName || 'Rasvara', 'Rasvara', 80),
     brandSubtitle: sanitizeText(business.brandSubtitle || legacy.brandSubtitle || 'Art Catering', 'Art Catering', 80),
-    legalName: sanitizeText(business.legalName || legacy.legalName || 'Naturale Art Catering', 'Naturale Art Catering', 120),
+    legalName: sanitizeText(business.legalName || legacy.legalName || 'Rasvara Catering', 'Rasvara Catering', 120),
     tagline: sanitizeText(business.tagline || legacy.tagline || 'Mahakarya Rasa Keluarga', 'Mahakarya Rasa Keluarga', 160),
     whatsapp: sanitizeText(business.whatsapp || legacy.footerWa || '', '', 40),
     phone: sanitizeText(business.phone || legacy.phone || '', '', 40),
@@ -620,7 +633,7 @@ function buildOrderItems(cartItems, menus) {
     return {
       id: menu.id,
       vendorId: menu.vendorId || 0,
-      vendorName: menu.vendorName || 'Annie Official',
+      vendorName: menu.vendorName || 'Rasvara Official',
       name: menu.name,
       category: menu.category,
       quantity,
@@ -764,6 +777,13 @@ app.set('trust proxy', 1);
 app.use(setSecurityHeaders);
 app.use(requestLogger);
 app.use(express.json({ limit: MAX_JSON_SIZE }));
+app.use('/api/auth', customerAuthRoutes);
+app.use('/api/customers', customerAuthRoutes);
+app.use('/api/cart', cartRoutes);
+app.use('/api/checkout', checkoutRoutes);
+app.use('/api/orders', customerOrderRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/vendor/marketplace', requireVendor, vendorMarketplaceOrderRoutes);
 
 app.use((req, res, next) => {
   const normalizedPath = req.path.replace(/\\/g, '/');
@@ -775,6 +795,41 @@ app.use((req, res, next) => {
 
 app.get('/api/health', (req, res) => {
   res.json({ ok: true, status: 'healthy' });
+});
+
+app.get('/api/ready', async (req, res) => {
+  if (!process.env.DATABASE_URL) {
+    return res.status(503).json({
+      ok: false,
+      status: 'not_ready',
+      checks: {
+        database: 'DATABASE_URL belum dikonfigurasi',
+        storage: storageAdapter.explain()
+      }
+    });
+  }
+
+  try {
+    const { getPrisma } = require('./src/services/prisma');
+    await getPrisma().$queryRaw`SELECT 1`;
+    return res.json({
+      ok: true,
+      status: 'ready',
+      checks: {
+        database: 'ok',
+        storage: storageAdapter.explain()
+      }
+    });
+  } catch (error) {
+    return res.status(503).json({
+      ok: false,
+      status: 'not_ready',
+      checks: {
+        database: 'Prisma/database belum siap',
+        storage: storageAdapter.explain()
+      }
+    });
+  }
 });
 
 app.get('/api/menus', (req, res) => {
@@ -800,11 +855,11 @@ app.get('/api/vendors', (req, res) => {
   const officialMenus = data.menus.filter((menu) => !menu.vendorId && menu.availability !== 'draft');
   const officialVendor = {
     id: 0,
-    storeName: 'Annie Official',
+    storeName: 'Rasvara Official',
     ownerName: 'Admin Marketplace',
     whatsapp: data.settings?.business?.whatsapp || data.settings?.footerWa || '',
     address: data.settings?.business?.address || '',
-    bio: 'Etalase resmi Annie Marketplace untuk menu utama, paket catering, dan produk pilihan admin.',
+    bio: 'Etalase resmi Rasvara Marketplace untuk menu utama, paket catering, dan produk pilihan admin.',
     avatar: '',
     status: 'active',
     createdAt: '',

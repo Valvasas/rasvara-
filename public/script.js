@@ -2,7 +2,7 @@ const API_URL = '/api';
 const DEFAULT_WHATSAPP_NUMBER = '6281234567890';
 let products = [];
 let vendors = [];
-let cart = (JSON.parse(localStorage.getItem('annie_cart') || '[]') || []).map(item => ({
+let cart = (JSON.parse(localStorage.getItem('rasvara_cart') || '[]') || []).map(item => ({
     ...item,
     quantity: item.quantity || item.qty || 1
 }));
@@ -18,7 +18,7 @@ let catalogSort = 'featured';
 let catalogView = 'storefront';
 let catalogAvailability = 'all';
 let catalogMaxPrice = '';
-const SAVED_TRACKING_KEY = 'annie_tracking_orders';
+const SAVED_TRACKING_KEY = 'rasvara_tracking_orders';
 let lastSuccessfulOrder = null;
 const vendorReviewsCache = new Map();
 const ORDER_PROGRESS_STATUSES = [
@@ -110,7 +110,7 @@ const getUnitLabel = (product = {}) => {
     return product.isPackage ? `Paketan - per ${unit}` : `Satuan - per ${unit}`;
 };
 
-const getVendorName = (product = {}) => product.vendor?.storeName || product.vendorName || 'Annie Official';
+const getVendorName = (product = {}) => product.vendor?.storeName || product.vendorName || 'Rasvara Official';
 const getVendorId = (product = {}) => Number(product.vendor?.id ?? product.vendorId ?? 0);
 const isProductOrderable = (product = {}) => product.availability !== 'sold_out' && product.availability !== 'draft';
 const getInitials = (value = 'TK') => String(value).trim().split(/\s+/).slice(0, 2).map((word) => word[0] || '').join('').toUpperCase() || 'TK';
@@ -122,7 +122,7 @@ const getVendorWhatsapp = (vendor = {}) => vendor.whatsapp || getBusinessSetting
 const getVendorAddress = (vendor = {}) => vendor.address || getBusinessSettings().address || '';
 const getSellerRating = (vendor = {}) => Number(vendor.averageRating || 0).toFixed(1);
 const getProductHash = (itemId) => `produk-${itemId}`;
-const getMapSearchLink = (address = '') => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address || 'Annie Catering')}`;
+const getMapSearchLink = (address = '') => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address || 'Rasvara Catering')}`;
 
 const buildSellerChatMessage = (vendor = {}, product = null) => {
     const productLine = product ? `Saya mau tanya produk "${product.name}". ` : '';
@@ -289,7 +289,7 @@ function applySettings() {
     const footerEmailLink = document.getElementById('footer-email-link');
     const footerMap = document.getElementById('footer-map');
 
-    const legalName = business.legalName || `${business.brandName || 'Naturale'} ${business.brandSubtitle || 'Art Catering'}`.trim();
+    const legalName = business.legalName || `${business.brandName || 'Rasvara'} ${business.brandSubtitle || 'Catering'}`.trim();
     const seoTitle = business.seoTitle || `${legalName} — ${business.tagline || 'Mahakarya Rasa Keluarga'}`;
     document.title = seoTitle;
     const metaDescription = document.querySelector('meta[name="description"]');
@@ -334,8 +334,8 @@ function applySettings() {
 function getVendorProfile(vendorId) {
     return vendors.find((vendor) => Number(vendor.id) === Number(vendorId)) || {
         id: vendorId,
-        storeName: vendorId ? 'Toko Pedagang' : 'Annie Official',
-        bio: vendorId ? 'Pedagang marketplace Annie.' : 'Etalase resmi Annie Marketplace.',
+        storeName: vendorId ? 'Toko Pedagang' : 'Rasvara Official',
+        bio: vendorId ? 'Pedagang marketplace Rasvara.' : 'Etalase resmi Rasvara Marketplace.',
         menuCount: products.filter((product) => getVendorId(product) === Number(vendorId)).length,
         averageRating: 0,
         reviewCount: 0,
@@ -586,7 +586,7 @@ function renderShopPage(vendor = {}, reviews = [], isLoading = false) {
                 <div>
                     <span>${vendor.isOfficial ? 'Official Store' : 'Pedagang Terverifikasi'}</span>
                     <h1>${escapeHtml(vendor.storeName || 'Toko')}</h1>
-                    <p>${escapeHtml(vendor.bio || 'Etalase jajanan pilihan dari Annie Marketplace.')}</p>
+                    <p>${escapeHtml(vendor.bio || 'Etalase jajanan pilihan dari Rasvara Marketplace.')}</p>
                 </div>
                 <div class="shop-actions">
                     <button onclick="openSellerChat(${Number(vendor.id)})"><i class="fab fa-whatsapp"></i> Chat Penjual</button>
@@ -798,7 +798,7 @@ function renderDetailSeller(vendor = {}, product = null, reviews = []) {
     if (avatar) avatar.innerHTML = renderAvatar(vendor, vendor.storeName || getVendorName(product || {}));
     if (sellerType) sellerType.textContent = vendor.isOfficial ? 'Official Store' : 'Pedagang Terverifikasi';
     if (sellerName) sellerName.textContent = vendor.storeName || getVendorName(product || {});
-    if (sellerBio) sellerBio.textContent = vendor.bio || 'Etalase jajanan pilihan dari marketplace Annie.';
+    if (sellerBio) sellerBio.textContent = vendor.bio || 'Etalase jajanan pilihan dari marketplace Rasvara.';
     if (sellerRating) sellerRating.textContent = average;
     if (sellerReviews) sellerReviews.textContent = Number(vendor.reviewCount || reviews.length || 0);
     if (sellerMenuCount) sellerMenuCount.textContent = Number(vendor.menuCount || products.filter((item) => getVendorId(item) === Number(vendor.id)).length || 0);
@@ -882,7 +882,7 @@ function toggleCart(open) {
 }
 
 function saveCart() {
-    localStorage.setItem('annie_cart', JSON.stringify(cart));
+    localStorage.setItem('rasvara_cart', JSON.stringify(cart));
     renderCart();
     renderCartCount();
     renderCheckoutSummary();
@@ -1023,7 +1023,7 @@ function getSelectedPaymentMethod() {
 }
 
 function buildWhatsAppMessage(orderDetails) {
-    let message = `Halo Naturale Art Catering,\n\nSaya ingin memesan:\n`;
+    let message = `Halo Rasvara Catering,\n\nSaya ingin memesan:\n`;
     orderDetails.cartItems.forEach((item) => {
         message += `- ${item.name} x ${item.quantity} ${item.unitType || 'porsi'} dari ${getVendorName(item)} (${item.isPackage ? 'Paketan' : 'Satuan'}, ${formatRupiah(item.price)}/${item.unitType || 'porsi'})\n`;
     });

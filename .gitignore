@@ -70,6 +70,8 @@ backend/.env
 # Runtime data
 backend/data/*.tmp
 backend/data/*.json
+backend/data/backups/
+backend/data/migration-reports/
 
 # Generated local service files
 .dataconnect

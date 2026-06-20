@@ -296,9 +296,9 @@ function populateGeneralSettings(settings) {
 
 function populateBusinessSettings(settings) {
     const business = settings.business || {};
-    setFieldValue('biz-brand-name', business.brandName || 'Naturale');
+    setFieldValue('biz-brand-name', business.brandName || 'Rasvara');
     setFieldValue('biz-brand-subtitle', business.brandSubtitle || 'Art Catering');
-    setFieldValue('biz-legal-name', business.legalName || 'Naturale Art Catering');
+    setFieldValue('biz-legal-name', business.legalName || 'Rasvara Catering');
     setFieldValue('biz-tagline', business.tagline || 'Mahakarya Rasa Keluarga');
     setFieldValue('biz-seo-title', business.seoTitle || '');
     setFieldValue('biz-seo-description', business.seoDescription || '');
