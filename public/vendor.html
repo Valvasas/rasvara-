@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Pedagang - Annie Marketplace</title>
+    <link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="admin.css">
+    <link rel="stylesheet" href="vendor.css">
+</head>
+<body>
+    <div id="vendor-auth-section" class="vendor-auth-wrapper">
+        <div class="vendor-auth-box">
+            <div class="vendor-auth-brand">
+                <span class="mini-badge">Marketplace Pedagang</span>
+                <h1>Annie<span>.</span></h1>
+                <p>Buka etalase jajananmu, kelola katalog, pantau pesanan, catat kas, dan baca review pelanggan dari satu tempat.</p>
+                <div class="vendor-auth-points">
+                    <div><i class="fas fa-bowl-food"></i><span>Upload menu & harga</span></div>
+                    <div><i class="fas fa-wallet"></i><span>Pembukuan sederhana</span></div>
+                    <div><i class="fas fa-star"></i><span>Review toko</span></div>
+                </div>
+            </div>
+
+            <div class="vendor-auth-panel">
+                <div class="vendor-auth-head">
+                    <span>Vendor Center</span>
+                    <h2>Kelola toko jajananmu</h2>
+                </div>
+                <div class="vendor-auth-tabs">
+                    <button class="active" onclick="switchVendorAuth('login')" id="vendor-login-tab">Masuk</button>
+                    <button onclick="switchVendorAuth('register')" id="vendor-register-tab">Daftar</button>
+                </div>
+
+                <form id="vendor-login-form" class="vendor-auth-form" onsubmit="handleVendorLogin(event)">
+                    <label for="vendor-login-email">Email Pedagang</label>
+                    <div class="input-shell">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" id="vendor-login-email" placeholder="email@toko.com" autocomplete="email" required>
+                    </div>
+                    <label for="vendor-login-password">Password</label>
+                    <div class="input-shell">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="vendor-login-password" placeholder="Password toko" autocomplete="current-password" required>
+                    </div>
+                    <button type="submit" class="btn-login">Masuk Dashboard <i class="fas fa-arrow-right"></i></button>
+                    <a href="/" class="auth-alt-link"><i class="fas fa-bag-shopping"></i> Lihat marketplace</a>
+                </form>
+
+                <form id="vendor-register-form" class="vendor-auth-form hidden" onsubmit="handleVendorRegister(event)">
+                    <label for="vendor-reg-store">Nama Toko</label>
+                    <div class="input-shell">
+                        <i class="fas fa-store"></i>
+                        <input type="text" id="vendor-reg-store" placeholder="Contoh: Jajanan Bu Rini" autocomplete="organization" required>
+                    </div>
+                    <label for="vendor-reg-owner">Nama Pemilik</label>
+                    <div class="input-shell">
+                        <i class="fas fa-user"></i>
+                        <input type="text" id="vendor-reg-owner" placeholder="Nama pemilik toko" autocomplete="name" required>
+                    </div>
+                    <label for="vendor-reg-email">Email</label>
+                    <div class="input-shell">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" id="vendor-reg-email" placeholder="email@toko.com" autocomplete="email" required>
+                    </div>
+                    <label for="vendor-reg-whatsapp">WhatsApp</label>
+                    <div class="input-shell">
+                        <i class="fab fa-whatsapp"></i>
+                        <input type="text" id="vendor-reg-whatsapp" placeholder="08xxxxxxxxxx" autocomplete="tel" required>
+                    </div>
+                    <label for="vendor-reg-password">Password</label>
+                    <div class="input-shell">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="vendor-reg-password" placeholder="Minimal 8 karakter" autocomplete="new-password" minlength="8" required>
+                    </div>
+                    <label for="vendor-reg-password-confirm">Konfirmasi Password</label>
+                    <div class="input-shell">
+                        <i class="fas fa-shield-halved"></i>
+                        <input type="password" id="vendor-reg-password-confirm" placeholder="Ulangi password" autocomplete="new-password" minlength="8" required>
+                    </div>
+                    <button type="submit" class="btn-login">Buat Akun Pedagang <i class="fas fa-store"></i></button>
+                    <a href="/" class="auth-alt-link"><i class="fas fa-bag-shopping"></i> Lihat marketplace</a>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div id="vendor-dashboard-section" class="dashboard-layout" style="display:none;">
+        <aside class="sidebar">
+            <div class="sidebar-logo">
+                <h2 id="vendor-sidebar-store">Pedagang<span style="color:#E8C547;">.</span></h2>
+                <p>Dashboard Toko</p>
+            </div>
+            <ul class="sidebar-menu">
+                <li class="active" onclick="switchVendorTab(event, 'vendor-tab-dashboard')"><i class="fas fa-chart-line"></i> Ringkasan</li>
+                <li onclick="switchVendorTab(event, 'vendor-tab-profile')"><i class="fas fa-id-card"></i> Profil Toko</li>
+                <li onclick="switchVendorTab(event, 'vendor-tab-menu')"><i class="fas fa-utensils"></i> Menu Saya</li>
+                <li onclick="switchVendorTab(event, 'vendor-tab-orders')"><i class="fas fa-receipt"></i> Pesanan</li>
+                <li onclick="openVendorBookkeeping()"><i class="fas fa-book"></i> Pembukuan</li>
+                <li onclick="switchVendorTab(event, 'vendor-tab-notifications')"><i class="fas fa-bell"></i> Notifikasi <span id="vendor-notification-count" class="nav-count">0</span></li>
+                <li onclick="switchVendorTab(event, 'vendor-tab-reviews')"><i class="fas fa-star"></i> Review</li>
+                <li onclick="vendorLogout()" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Keluar</li>
+            </ul>
+        </aside>
+
+        <main class="main-content">
+            <section id="vendor-tab-dashboard" class="admin-tab active">
+                <div class="header-tab">
+                    <h2><i class="fas fa-chart-line"></i> Ringkasan Toko</h2>
+                    <button class="btn-save" onclick="loadVendorData()"><i class="fas fa-rotate"></i> Refresh</button>
+                </div>
+                <div class="admin-widgets">
+                    <div class="widget-card"><div class="widget-icon"><i class="fas fa-bowl-food"></i></div><div><p id="vendor-stat-menu">0</p><span>Menu Aktif</span></div></div>
+                    <div class="widget-card"><div class="widget-icon"><i class="fas fa-receipt"></i></div><div><p id="vendor-stat-order">0</p><span>Pesanan</span></div></div>
+                    <div class="widget-card"><div class="widget-icon"><i class="fas fa-wallet"></i></div><div><p id="vendor-stat-revenue">Rp 0</p><span>Omzet Item</span></div></div>
+                    <div class="widget-card"><div class="widget-icon"><i class="fas fa-star"></i></div><div><p id="vendor-stat-rating">0.0</p><span>Rating</span></div></div>
+                </div>
+                <div class="dashboard-grid">
+                    <div class="panel-card">
+                        <div class="panel-head"><h3><i class="fas fa-box"></i> Menu Terbaru</h3><span id="vendor-menu-count">0 menu</span></div>
+                        <div id="vendor-recent-menu" class="compact-list"></div>
+                    </div>
+                    <div class="panel-card">
+                        <div class="panel-head"><h3><i class="fas fa-comments"></i> Review Terbaru</h3><span id="vendor-review-count">0 review</span></div>
+                        <div id="vendor-recent-reviews" class="compact-list"></div>
+                    </div>
+                    <div class="panel-card">
+                        <div class="panel-head">
+                            <h3><i class="fas fa-bell"></i> Notifikasi Terbaru</h3>
+                            <button class="btn-mini" onclick="requestVendorNotificationPermission()">Aktifkan HP</button>
+                        </div>
+                        <div id="vendor-recent-notifications" class="compact-list"></div>
+                    </div>
+                    <div class="panel-card">
+                        <div class="panel-head">
+                            <h3><i class="fas fa-book"></i> Pembukuan Detail</h3>
+                            <span>Halaman khusus</span>
+                        </div>
+                        <div class="empty-panel left">
+                            Grafik omzet, laba, produk terlaris, dan catatan kas sekarang dipisah agar dashboard utama tidak penuh.
+                        </div>
+                        <button class="btn-save full-width" onclick="openVendorBookkeeping()"><i class="fas fa-chart-column"></i> Buka Pembukuan</button>
+                    </div>
+                </div>
+            </section>
+
+            <section id="vendor-tab-profile" class="admin-tab">
+                <div class="header-tab">
+                    <h2><i class="fas fa-id-card"></i> Profil Toko</h2>
+                    <button class="btn-save" onclick="saveVendorProfile()">Simpan Profil</button>
+                </div>
+                <div class="form-grid">
+                    <div class="form-card">
+                        <label>Nama Toko</label>
+                        <input type="text" id="vendor-store-name">
+                        <label>Nama Pemilik</label>
+                        <input type="text" id="vendor-owner-name">
+                        <label>WhatsApp Toko</label>
+                        <input type="text" id="vendor-whatsapp">
+                        <label>Alamat</label>
+                        <textarea id="vendor-address" rows="4"></textarea>
+                    </div>
+                    <div class="form-card">
+                        <label>Logo/Foto Toko</label>
+                        <input type="hidden" id="vendor-avatar">
+                        <div class="upload-preview" id="vendor-avatar-preview">
+                            <i class="fas fa-store"></i>
+                            <span>Belum ada logo/foto toko.</span>
+                        </div>
+                        <label>Upload Logo/Foto</label>
+                        <input type="file" accept="image/*" onchange="handleVendorImageUpload(event, 'vendor-avatar')">
+                        <label>Deskripsi Toko</label>
+                        <textarea id="vendor-bio" rows="6" placeholder="Ceritakan spesialisasi jajanan, area layanan, dan keunggulan toko."></textarea>
+                    </div>
+                </div>
+            </section>
+
+            <section id="vendor-tab-menu" class="admin-tab">
+                <div class="header-tab">
+                    <h2><i class="fas fa-utensils"></i> Menu Saya</h2>
+                    <button class="btn-save" onclick="openVendorMenuModal()"><i class="fas fa-plus"></i> Tambah Menu</button>
+                </div>
+                <div class="table-container">
+                    <table class="admin-table">
+                        <thead><tr><th>Gambar</th><th>Menu</th><th>Kategori</th><th>Satuan</th><th>Harga</th><th>HPP</th><th>Aksi</th></tr></thead>
+                        <tbody id="vendor-menu-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="vendor-tab-orders" class="admin-tab">
+                <div class="header-tab"><h2><i class="fas fa-receipt"></i> Pesanan Item Toko</h2></div>
+                <div class="table-container">
+                    <table class="admin-table">
+                        <thead><tr><th>Waktu</th><th>Pembeli</th><th>Kontak</th><th>Item Toko</th><th>Total Item</th><th>Status</th></tr></thead>
+                        <tbody id="vendor-orders-body"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section id="vendor-tab-notifications" class="admin-tab">
+                <div class="header-tab">
+                    <h2><i class="fas fa-bell"></i> Notifikasi Toko</h2>
+                    <button class="btn-save" onclick="requestVendorNotificationPermission()"><i class="fas fa-mobile-screen"></i> Aktifkan Notifikasi HP</button>
+                </div>
+                <div class="panel-card">
+                    <div class="panel-head">
+                        <h3>Order, review, dan update penting</h3>
+                        <span id="vendor-notification-status">Browser notification belum aktif</span>
+                    </div>
+                    <div id="vendor-notification-list" class="notification-list"></div>
+                </div>
+            </section>
+
+            <section id="vendor-tab-reviews" class="admin-tab">
+                <div class="header-tab"><h2><i class="fas fa-star"></i> Review Pelanggan</h2></div>
+                <div id="vendor-review-list" class="review-list"></div>
+            </section>
+        </main>
+    </div>
+
+    <div id="vendor-menu-modal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close" type="button" onclick="closeVendorMenuModal()" aria-label="Tutup modal menu">
+                <i class="fas fa-times"></i>
+            </button>
+            <h3 id="vendor-menu-modal-title">Tambah Menu</h3>
+            <input type="hidden" id="vendor-current-menu-id">
+            <div class="form-group mt-3">
+                <label for="vendor-menu-name">Nama Menu</label>
+                <input type="text" id="vendor-menu-name" placeholder="Contoh: Risol Mayo Premium">
+                <label for="vendor-menu-category">Kategori</label>
+                <select id="vendor-menu-category">
+                    <option value="berat">Nasi / Berat</option>
+                    <option value="catering">Paket / Catering</option>
+                    <option value="kue">Kue</option>
+                    <option value="manis">Jajanan Manis</option>
+                </select>
+                <label for="vendor-menu-availability">Status Menu</label>
+                <select id="vendor-menu-availability">
+                    <option value="active">Aktif - tampil di katalog</option>
+                    <option value="sold_out">Habis - tampil tapi tidak bisa dipesan</option>
+                    <option value="draft">Draft - disembunyikan</option>
+                </select>
+                <label for="vendor-menu-price">Harga Jual</label>
+                <input type="number" id="vendor-menu-price" min="1" placeholder="Contoh: 15000">
+                <label for="vendor-menu-cost">Harga Modal / HPP</label>
+                <input type="number" id="vendor-menu-cost" min="0" placeholder="Contoh: 9000">
+                <label for="vendor-menu-unit">Satuan</label>
+                <input type="text" id="vendor-menu-unit" placeholder="porsi, box, pcs">
+                <label for="vendor-menu-min">Minimal Order</label>
+                <input type="number" id="vendor-menu-min" min="1" value="1">
+                <label class="checkbox-row"><input type="checkbox" id="vendor-menu-package"> Menu paketan/bundling</label>
+                <label for="vendor-menu-desc">Deskripsi</label>
+                <textarea id="vendor-menu-desc" rows="3" placeholder="Isi, rasa, ukuran, dan catatan alergi bila ada."></textarea>
+                <label>Gambar Menu</label>
+                <input type="hidden" id="vendor-menu-image">
+                <div class="upload-preview" id="vendor-menu-image-preview">
+                    <i class="fas fa-image"></i>
+                    <span>Belum ada gambar menu.</span>
+                </div>
+                <small class="field-help">Gambar wajib dan harus diunggah dari perangkat agar tersimpan lokal.</small>
+                <label for="vendor-menu-image-file">Upload Gambar</label>
+                <input type="file" id="vendor-menu-image-file" accept="image/*" onchange="handleVendorImageUpload(event, 'vendor-menu-image')">
+            </div>
+            <div class="modal-actions mt-4">
+                <button class="btn-cancel" onclick="closeVendorMenuModal()">Batal</button>
+                <button class="btn-save" onclick="saveVendorMenu()">Simpan Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="vendor-toast-root" class="toast-root" aria-live="polite" aria-atomic="true"></div>
+    <script src="vendor.js"></script>
+</body>
+</html>

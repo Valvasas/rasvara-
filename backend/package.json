@@ -1,0 +1,21 @@
+{
+  "name": "annie-catering-backend",
+  "version": "1.0.0",
+  "description": "Express backend for Annie Catering",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "start:prod": "node server.js",
+    "check": "node --check server.js",
+    "audit": "npm audit --omit=dev"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "express": "^4.18.2",
+    "multer": "^2.2.0"
+  }
+}

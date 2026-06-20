@@ -68,6 +68,7 @@ backend/.env
 
 # Runtime data
 backend/data/*.tmp
+backend/data/*.json
 
 # dataconnect generated files
 .dataconnect
