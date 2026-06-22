@@ -366,7 +366,7 @@ window.saveBusinessSettings = async function() {
         };
 
         if (!payload.business.brandName || !payload.business.legalName || !payload.business.whatsapp || !payload.business.email) {
-            showToast('Nama brand, nama bisnis lengkap, WhatsApp, dan email wajib diisi.', 'error');
+            showToast('Nama brand, nama bisnis lengkap, nomor kontak, dan email wajib diisi.', 'error');
             return;
         }
 
@@ -1037,18 +1037,26 @@ function renderVendorAdmin() {
 }
 
 function renderVendorStatusSelect(vendor) {
-    const statuses = [
-        { value: 'active', label: 'Aktif' },
-        { value: 'pending', label: 'Pending' },
-        { value: 'suspended', label: 'Ditahan' }
-    ];
-    return `
-        <select class="status-select" onchange="updateVendorStatus(${vendor.id}, this.value)">
-            ${statuses.map((status) => `
-                <option value="${status.value}" ${vendor.status === status.value ? 'selected' : ''}>${status.label}</option>
-            `).join('')}
-        </select>
-    `;
+    const statusBadges = {
+        active: '<span class="status-badge active">Aktif</span>',
+        pending: '<span class="status-badge pending">Pending</span>',
+        suspended: '<span class="status-badge suspended">Ditahan</span>'
+    };
+    
+    let actions = '';
+    if (vendor.status === 'pending') {
+        actions = `<button class="btn-edit" onclick="updateVendorStatus(${vendor.id}, 'active')" style="color:var(--success)" title="Approve"><i class="fas fa-check"></i></button>
+                   <button class="btn-delete" onclick="updateVendorStatus(${vendor.id}, 'suspended')" style="color:var(--danger)" title="Tolak/Suspend"><i class="fas fa-ban"></i></button>`;
+    } else if (vendor.status === 'active') {
+        actions = `<button class="btn-delete" onclick="updateVendorStatus(${vendor.id}, 'suspended')" style="color:var(--danger)" title="Suspend"><i class="fas fa-ban"></i></button>`;
+    } else {
+        actions = `<button class="btn-edit" onclick="updateVendorStatus(${vendor.id}, 'active')" style="color:var(--success)" title="Activate"><i class="fas fa-check"></i></button>`;
+    }
+
+    return `<div style="display:flex; gap:0.5rem; align-items:center;">
+                ${statusBadges[vendor.status] || ''}
+                <div class="action-buttons">${actions}</div>
+            </div>`;
 }
 
 window.showVendorDetail = async function(vendorId) {

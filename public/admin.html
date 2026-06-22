@@ -64,11 +64,11 @@
                 <p>Pusat Kendali</p>
             </div>
             <ul class="sidebar-menu">
-                <li class="active" onclick="switchTab(event, 'tab-dashboard')"><i class="fas fa-chart-line"></i> Dashboard Usaha</li>
-                <li onclick="switchTab(event, 'tab-business')"><i class="fas fa-id-card"></i> Identitas Bisnis</li>
-                <li onclick="switchTab(event, 'tab-general')"><i class="fas fa-cog"></i> Pengaturan Web</li>
-                <li onclick="switchTab(event, 'tab-promo')"><i class="fas fa-bullhorn"></i> Popup & Highlight</li>
-                <li onclick="switchTab(event, 'tab-menu')"><i class="fas fa-utensils"></i> Kelola Menu</li>
+                <li class="active" onclick="switchTab(event, 'tab-dashboard')"><i class="fas fa-chart-line"></i> Dashboard Platform</li>
+                <li onclick="switchTab(event, 'tab-business')"><i class="fas fa-id-card"></i> Identitas Platform</li>
+                <li onclick="switchTab(event, 'tab-general')"><i class="fas fa-cog"></i> Konten Website</li>
+                <li onclick="switchTab(event, 'tab-promo')"><i class="fas fa-bullhorn"></i> Campaign & Highlight</li>
+                <li onclick="switchTab(event, 'tab-menu')"><i class="fas fa-utensils"></i> Menu Official</li>
                 <li onclick="switchTab(event, 'tab-vendors')"><i class="fas fa-store"></i> Pedagang</li>
                 <li onclick="switchTab(event, 'tab-orders')"><i class="fas fa-list"></i> Daftar Pesanan</li>
                 <li onclick="switchTab(event, 'tab-sales-history')"><i class="fas fa-calendar-days"></i> Histori Penjualan</li>
@@ -81,7 +81,7 @@
         <main class="main-content">
             <section id="tab-dashboard" class="admin-tab active">
                 <div class="header-tab">
-                    <h2><i class="fas fa-chart-line"></i> Dashboard Usaha</h2>
+                    <h2><i class="fas fa-chart-line"></i> Dashboard Platform</h2>
                     <button class="btn-save" onclick="loadAdminData()"><i class="fas fa-rotate"></i> Refresh Data</button>
                 </div>
                 <div class="admin-widgets">
@@ -147,19 +147,19 @@
             </section>
             <section id="tab-business" class="admin-tab">
                 <div class="header-tab">
-                    <h2><i class="fas fa-id-card"></i> Identitas Bisnis</h2>
+                    <h2><i class="fas fa-id-card"></i> Identitas Platform</h2>
                     <button class="btn-save" onclick="saveBusinessSettings()">Simpan Identitas</button>
                 </div>
                 <div class="form-grid">
                     <div class="form-card">
-                        <h3><i class="fas fa-store"></i> Brand & SEO</h3>
+                        <h3><i class="fas fa-store"></i> Brand Platform & SEO</h3>
                         <label>Nama Brand Utama</label>
                         <input type="text" id="biz-brand-name" placeholder="Contoh: Rasvara">
 
                         <label>Sub Brand</label>
                         <input type="text" id="biz-brand-subtitle" placeholder="Contoh: Catering">
 
-                        <label>Nama Bisnis Lengkap</label>
+                        <label>Nama Legal / Platform</label>
                         <input type="text" id="biz-legal-name" placeholder="Contoh: Rasvara Catering">
 
                         <label>Tagline</label>
@@ -173,14 +173,14 @@
                     </div>
 
                     <div class="form-card">
-                        <h3><i class="fas fa-phone"></i> Kontak Utama</h3>
-                        <label>Nomor WhatsApp Order</label>
+                        <h3><i class="fas fa-phone"></i> Kontak Platform</h3>
+                        <label>Nomor Kontak Support</label>
                         <input type="text" id="biz-whatsapp" placeholder="Contoh: +62 812-3456-7890">
 
                         <label>Nomor Telepon Alternatif</label>
                         <input type="text" id="biz-phone" placeholder="Opsional">
 
-                        <label>Email Bisnis</label>
+                        <label>Email Platform</label>
                         <input type="email" id="biz-email" placeholder="order@bisnis.com">
 
                         <label>Jam Buka</label>
@@ -198,14 +198,14 @@
                         <label>TikTok URL</label>
                         <input type="url" id="biz-tiktok-url" placeholder="https://www.tiktok.com/@username">
 
-                        <label>WhatsApp Link Publik</label>
-                        <input type="url" id="biz-whatsapp-url" placeholder="https://wa.me/628xxxxxxxxxx">
+                        <label>Link Kontak Publik</label>
+                        <input type="url" id="biz-whatsapp-url" placeholder="https://contoh-domain.com/kontak">
                     </div>
 
                     <div class="form-card">
                         <h3><i class="fas fa-map-location-dot"></i> Lokasi</h3>
-                        <label>Alamat Dapur / Toko</label>
-                        <textarea id="biz-address" rows="4" placeholder="Alamat lengkap bisnis"></textarea>
+                        <label>Alamat Operasional / Kantor</label>
+                        <textarea id="biz-address" rows="4" placeholder="Alamat operasional platform atau kantor"></textarea>
 
                         <label>Google Maps Embed URL</label>
                         <textarea id="biz-maps-embed-url" rows="4" placeholder="Tempel URL dari src iframe Google Maps Embed"></textarea>
@@ -215,7 +215,7 @@
             <!-- TAB 1: PENGATURAN WEB -->
             <section id="tab-general" class="admin-tab">
                 <div class="header-tab">
-                    <h2><i class="fas fa-cog"></i> Pengaturan Website</h2>
+                    <h2><i class="fas fa-cog"></i> Konten Website</h2>
                     <button class="btn-save" onclick="saveGeneralSettings()">Simpan Perubahan</button>
                 </div>
                 <div class="form-grid">
@@ -266,7 +266,7 @@
                         <h3><i class="fas fa-address-book"></i> Info Footer & Kontak</h3>
                         <label>Deskripsi Footer</label>
                         <textarea id="set-footer-desc" rows="2" placeholder="Menghadirkan kehangatan rasa rumah..."></textarea>
-                        <label>Nomor WhatsApp</label>
+                        <label>Nomor Kontak</label>
                         <input type="text" id="set-footer-wa" placeholder="+62 812-3456-7890">
                         <label>Email Utama</label>
                         <input type="email" id="set-footer-email" placeholder="order@rasvaracatering.com">
@@ -277,7 +277,7 @@
             <!-- TAB 2: PROMO POPUP -->
             <section id="tab-promo" class="admin-tab">
                 <div class="header-tab">
-                    <h2><i class="fas fa-bullhorn"></i> Pengaturan Promo Popup</h2>
+                    <h2><i class="fas fa-bullhorn"></i> Campaign & Highlight</h2>
                     <button class="btn-save" onclick="savePromoSettings()">Simpan Promo</button>
                 </div>
                 <div class="form-grid">
@@ -320,8 +320,8 @@
             <!-- TAB 3: KELOLA MENU -->
             <section id="tab-menu" class="admin-tab">
                 <div class="header-tab">
-                    <h2><i class="fas fa-utensils"></i> Kelola Katalog Menu</h2>
-                    <button class="btn-save" onclick="openMenuModal()"><i class="fas fa-plus"></i> Tambah Menu Baru</button>
+                    <h2><i class="fas fa-utensils"></i> Menu Official</h2>
+                    <button class="btn-save" onclick="openMenuModal()"><i class="fas fa-plus"></i> Tambah Menu Official</button>
                 </div>
                 
                 <div class="table-container">

@@ -66,6 +66,37 @@ async function request(baseUrl, pathName, options = {}, cookie = '') {
   return { response, body, cookie: getCookie(response) };
 }
 
+async function vendorFinanceBaseline(prisma, vendorId) {
+  const currency = 'IDR';
+  const [balance, transactionCount, commissionCount, totalsByType] = await Promise.all([
+    prisma.vendorBalance.findUnique({
+      where: { vendorId_currency: { vendorId, currency } }
+    }),
+    prisma.vendorBalanceTransaction.count({ where: { vendorId, currency } }),
+    prisma.vendorBalanceTransaction.count({ where: { vendorId, currency, type: 'COMMISSION_DEBIT' } }),
+    prisma.vendorBalanceTransaction.groupBy({
+      by: ['type'],
+      where: { vendorId, currency },
+      _sum: { amount: true }
+    })
+  ]);
+
+  const totals = Object.fromEntries(
+    totalsByType.map((row) => [row.type, row._sum.amount || 0])
+  );
+
+  return {
+    balance: {
+      pending: balance?.pending || 0,
+      available: balance?.available || 0,
+      held: balance?.held || 0
+    },
+    transactionCount,
+    commissionCount,
+    totals
+  };
+}
+
 async function cleanup(prisma, context) {
   if (context.orderId) {
     const order = await prisma.order.findUnique({ where: { id: context.orderId } }).catch(() => null);
@@ -165,6 +196,7 @@ test('paid payment creates idempotent vendor ledger and vendor can confirm owned
     });
     assert.ok(vendor, 'vendor legacy harus sudah termigrasi ke Prisma');
     context.vendorId = vendor.id;
+    const baseline = await vendorFinanceBaseline(prisma, vendor.id);
 
     const product = await prisma.product.create({
       data: {
@@ -248,7 +280,9 @@ test('paid payment creates idempotent vendor ledger and vendor can confirm owned
     const balance = await prisma.vendorBalance.findUnique({
       where: { vendorId_currency: { vendorId: vendor.id, currency: 'IDR' } }
     });
-    assert.equal(balance.pending, 95000);
+    assert.equal(balance.pending, baseline.balance.pending + 95000);
+    assert.equal(balance.available, baseline.balance.available);
+    assert.equal(balance.held, baseline.balance.held);
 
     const ledger = await prisma.vendorBalanceTransaction.findMany({
       where: { orderId: context.orderId },
@@ -269,11 +303,15 @@ test('paid payment creates idempotent vendor ledger and vendor can confirm owned
       method: 'GET'
     }, vendorSessionCookie);
     assert.equal(financePending.response.status, 200);
-    assert.equal(financePending.body.finance.balance.pending, 95000);
-    assert.equal(financePending.body.finance.balance.available, 0);
-    assert.equal(financePending.body.finance.totals.grossCredits, 100000);
-    assert.equal(financePending.body.finance.totals.platformCommissions, 5000);
-    assert.equal(financePending.body.finance.pagination.total, 2);
+    assert.equal(financePending.body.finance.balance.pending, baseline.balance.pending + 95000);
+    assert.equal(financePending.body.finance.balance.available, baseline.balance.available);
+    assert.equal(financePending.body.finance.balance.held, baseline.balance.held);
+    assert.equal(financePending.body.finance.totals.grossCredits, (baseline.totals.ORDER_CREDIT || 0) + 100000);
+    assert.equal(
+      financePending.body.finance.totals.platformCommissions,
+      (baseline.totals.COMMISSION_DEBIT || 0) + 5000
+    );
+    assert.equal(financePending.body.finance.pagination.total, baseline.transactionCount + 2);
     assert.ok(financePending.body.finance.transactions.some((entry) => entry.type === 'ORDER_CREDIT'));
 
     const financeCommissionOnly = await request(
@@ -285,7 +323,8 @@ test('paid payment creates idempotent vendor ledger and vendor can confirm owned
     assert.equal(financeCommissionOnly.response.status, 200);
     assert.equal(financeCommissionOnly.body.finance.transactions.length, 1);
     assert.equal(financeCommissionOnly.body.finance.transactions[0].type, 'COMMISSION_DEBIT');
-    assert.equal(financeCommissionOnly.body.finance.pagination.total, 1);
+    assert.equal(financeCommissionOnly.body.finance.transactions[0].orderId, context.orderId);
+    assert.equal(financeCommissionOnly.body.finance.pagination.total, baseline.commissionCount + 1);
 
     const confirm = await request(baseUrl, `/api/vendor/marketplace/orders/${context.orderId}/confirm`, {
       method: 'POST',
@@ -340,17 +379,22 @@ test('paid payment creates idempotent vendor ledger and vendor can confirm owned
     const balanceAfterComplete = await prisma.vendorBalance.findUnique({
       where: { vendorId_currency: { vendorId: vendor.id, currency: 'IDR' } }
     });
-    assert.equal(balanceAfterComplete.pending, 0);
-    assert.equal(balanceAfterComplete.available, 95000);
+    assert.equal(balanceAfterComplete.pending, baseline.balance.pending);
+    assert.equal(balanceAfterComplete.available, baseline.balance.available + 95000);
+    assert.equal(balanceAfterComplete.held, baseline.balance.held);
 
     const financeReleased = await request(baseUrl, '/api/vendor/marketplace/finance?limit=5', {
       method: 'GET'
     }, vendorSessionCookie);
     assert.equal(financeReleased.response.status, 200);
-    assert.equal(financeReleased.body.finance.balance.pending, 0);
-    assert.equal(financeReleased.body.finance.balance.available, 95000);
-    assert.equal(financeReleased.body.finance.totals.adjustmentCredits, 95000);
-    assert.equal(financeReleased.body.finance.pagination.total, 3);
+    assert.equal(financeReleased.body.finance.balance.pending, baseline.balance.pending);
+    assert.equal(financeReleased.body.finance.balance.available, baseline.balance.available + 95000);
+    assert.equal(financeReleased.body.finance.balance.held, baseline.balance.held);
+    assert.equal(
+      financeReleased.body.finance.totals.adjustmentCredits,
+      (baseline.totals.ADJUSTMENT_CREDIT || 0) + 95000
+    );
+    assert.equal(financeReleased.body.finance.pagination.total, baseline.transactionCount + 3);
 
     const dispute = await request(baseUrl, `/api/orders/${context.orderId}/disputes`, {
       method: 'POST',
@@ -382,10 +426,14 @@ test('paid payment creates idempotent vendor ledger and vendor can confirm owned
       method: 'GET'
     }, vendorSessionCookie);
     assert.equal(financeHeld.response.status, 200);
-    assert.equal(financeHeld.body.finance.balance.available, 0);
-    assert.equal(financeHeld.body.finance.balance.held, 95000);
-    assert.equal(financeHeld.body.finance.totals.adjustmentDebits, 95000);
-    assert.equal(financeHeld.body.finance.pagination.total, 4);
+    assert.equal(financeHeld.body.finance.balance.pending, baseline.balance.pending);
+    assert.equal(financeHeld.body.finance.balance.available, baseline.balance.available);
+    assert.equal(financeHeld.body.finance.balance.held, baseline.balance.held + 95000);
+    assert.equal(
+      financeHeld.body.finance.totals.adjustmentDebits,
+      (baseline.totals.ADJUSTMENT_DEBIT || 0) + 95000
+    );
+    assert.equal(financeHeld.body.finance.pagination.total, baseline.transactionCount + 4);
 
     const completeAgain = await request(baseUrl, `/api/vendor/marketplace/orders/${context.orderId}/complete`, {
       method: 'POST',

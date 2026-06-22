@@ -1,6 +1,7 @@
 const crypto = require('crypto');
 const { assertOrderTransition } = require('../orders/orderTransitions');
 const { recordVendorPendingSettlement } = require('../finance/vendorLedger.service');
+const { createNotification, notifyVendorMembers } = require('../notifications/notification.service');
 
 const PROVIDER = 'MOCK_SANDBOX';
 const DEFAULT_SECRET = 'dev-only-mock-payment-secret-change-me';
@@ -150,6 +151,23 @@ async function processMockWebhook(prisma, event) {
           }
         });
         await recordVendorPendingSettlement(tx, updatedOrder);
+        if (payment.order.customerId) {
+          await createNotification(tx, {
+            userId: payment.order.customerId,
+            type: 'PAYMENT_PAID',
+            title: 'Pembayaran sandbox berhasil',
+            body: `Pembayaran order ${payment.order.orderNumber} terverifikasi. Menunggu konfirmasi vendor.`,
+            entityType: 'ORDER',
+            entityId: payment.orderId
+          });
+        }
+        await notifyVendorMembers(tx, payment.order.vendorId, {
+          type: 'PAYMENT_PAID',
+          title: 'Order sudah dibayar',
+          body: `Order ${payment.order.orderNumber} sudah dibayar dan menunggu konfirmasi.`,
+          entityType: 'ORDER',
+          entityId: payment.orderId
+        });
       } else if (event.status === 'EXPIRED' || event.status === 'FAILED') {
         updatedPayment = await tx.payment.update({
           where: { id: payment.id },
@@ -159,6 +177,16 @@ async function processMockWebhook(prisma, event) {
           where: { id: payment.orderId },
           data: { paymentStatus: event.status }
         });
+        if (payment.order.customerId) {
+          await createNotification(tx, {
+            userId: payment.order.customerId,
+            type: event.status === 'EXPIRED' ? 'PAYMENT_EXPIRED' : 'ORDER_STATUS_CHANGED',
+            title: event.status === 'EXPIRED' ? 'Pembayaran kedaluwarsa' : 'Pembayaran gagal',
+            body: `Pembayaran order ${payment.order.orderNumber} berstatus ${event.status}.`,
+            entityType: 'ORDER',
+            entityId: payment.orderId
+          });
+        }
       }
     }
 

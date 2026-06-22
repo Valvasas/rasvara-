@@ -273,6 +273,18 @@ router.get('/session', requireCustomer, (req, res) => {
   });
 });
 
+router.get('/me', requireCustomer, (req, res) => {
+  return ok(res, {
+    user: publicUser(req.user),
+    csrfToken: req.customerSession.csrfToken,
+    session: {
+      id: req.customerSession.id,
+      expiresAt: req.customerSession.expiresAt,
+      createdAt: req.customerSession.createdAt
+    }
+  });
+});
+
 router.post('/logout', requireCustomer, async (req, res, next) => {
   try {
     await req.prisma.session.update({
@@ -361,6 +373,33 @@ router.put('/profile', requireCustomer, async (req, res, next) => {
   }
 });
 
+router.patch('/profile', requireCustomer, async (req, res, next) => {
+  try {
+    const parsed = profileSchema.safeParse(req.body || {});
+    if (!parsed.success) {
+      return fail(res, 400, 'VALIDATION_ERROR', 'Data profil belum valid.', fieldErrorsFromZod(parsed.error));
+    }
+    const user = await req.prisma.user.update({
+      where: { id: req.user.id },
+      data: {
+        ...(parsed.data.name ? { name: parsed.data.name } : {}),
+        ...(parsed.data.phone !== undefined ? { phone: parsed.data.phone || null } : {})
+      }
+    });
+    await writeAuditLog(req.prisma, req, {
+      actorId: req.user.id,
+      actorRole: req.user.role,
+      action: 'CUSTOMER_PROFILE_UPDATED',
+      entityType: 'USER',
+      entityId: req.user.id
+    });
+    return ok(res, { user: publicUser(user) });
+  } catch (error) {
+    if (error.code === 'P2002') return fail(res, 409, 'PHONE_EXISTS', 'Nomor telepon sudah digunakan akun lain.');
+    next(error);
+  }
+});
+
 router.get('/addresses', requireCustomer, async (req, res, next) => {
   try {
     const addresses = await req.prisma.address.findMany({
@@ -412,6 +451,48 @@ router.put('/addresses/:id', requireCustomer, async (req, res, next) => {
         where: { id: existing.id },
         data: parsed.data
       });
+    });
+    return ok(res, { address });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch('/addresses/:id', requireCustomer, async (req, res, next) => {
+  try {
+    const parsed = addressSchema.partial().safeParse(req.body || {});
+    if (!parsed.success) {
+      return fail(res, 400, 'VALIDATION_ERROR', 'Alamat belum valid.', fieldErrorsFromZod(parsed.error));
+    }
+    const existing = await req.prisma.address.findFirst({
+      where: { id: req.params.id, userId: req.user.id, deletedAt: null }
+    });
+    if (!existing) return fail(res, 404, 'ADDRESS_NOT_FOUND', 'Alamat tidak ditemukan.');
+
+    const address = await req.prisma.$transaction(async (tx) => {
+      if (parsed.data.isDefault) {
+        await tx.address.updateMany({ where: { userId: req.user.id }, data: { isDefault: false } });
+      }
+      return tx.address.update({
+        where: { id: existing.id },
+        data: parsed.data
+      });
+    });
+    return ok(res, { address });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch('/addresses/:id/default', requireCustomer, async (req, res, next) => {
+  try {
+    const existing = await req.prisma.address.findFirst({
+      where: { id: req.params.id, userId: req.user.id, deletedAt: null }
+    });
+    if (!existing) return fail(res, 404, 'ADDRESS_NOT_FOUND', 'Alamat tidak ditemukan.');
+    const address = await req.prisma.$transaction(async (tx) => {
+      await tx.address.updateMany({ where: { userId: req.user.id }, data: { isDefault: false } });
+      return tx.address.update({ where: { id: existing.id }, data: { isDefault: true } });
     });
     return ok(res, { address });
   } catch (error) {

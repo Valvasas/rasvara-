@@ -410,3 +410,22 @@ body { background-color: var(--admin-bg); color: var(--admin-text); }
     .btn-save, .btn-cancel, .btn-login { width: 100%; margin-right: 0; }
     .dialog-actions { flex-direction: column-reverse; }
 }
+
+/* ADMIN UI OVERRIDES */
+.kpi-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+.kpi-card { background: white; padding: 1.5rem; border-radius: 12px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; gap: 0.5rem; border-top: 4px solid var(--sage-dark); }
+.kpi-card span { font-size: 0.9rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.kpi-card strong { font-size: 2rem; color: var(--charcoal); font-family: var(--font-display); }
+.action-buttons { display: flex; gap: 0.5rem; }
+.action-buttons button { padding: 0.5rem; border-radius: 8px; transition: all 0.2s ease; background: var(--cream); border: 1px solid var(--sand); }
+.action-buttons button:hover { background: var(--white); transform: scale(1.05); box-shadow: var(--shadow-xs); }
+.status-badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; }
+.status-badge.active { background: #e8f5e9; color: #2e7d32; }
+.status-badge.pending { background: #fff3e0; color: #ef6c00; }
+.status-badge.suspended { background: #ffebee; color: #c62828; }
+.sidebar { background: var(--ink); color: var(--cream); }
+.sidebar-menu li.active { background: rgba(255,255,255,0.1); border-left-color: var(--terracotta); }
+.form-group { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.5rem; }
+.form-group label { font-weight: 600; color: var(--charcoal); }
+.form-group input, .form-group select, .form-group textarea { padding: 0.75rem; border: 1px solid var(--sand); border-radius: 8px; font-family: var(--font-body); }
+.form-group input:focus { outline: none; border-color: var(--sage); box-shadow: 0 0 0 3px var(--sage-light); }

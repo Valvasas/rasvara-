@@ -134,6 +134,20 @@ test('checkout creates immutable order snapshot and clears active cart', { skip:
     assert.equal(addItem.response.status, 200);
 
     const eventDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const preview = await request(baseUrl, '/api/checkout/preview', {
+      method: 'POST',
+      headers: { 'x-csrf-token': csrf },
+      body: {
+        addressId,
+        eventDate,
+        fulfillmentType: 'DELIVERY',
+        termsAccepted: true
+      }
+    }, cookie);
+    assert.equal(preview.response.status, 200);
+    assert.equal(preview.body.preview.grandTotal, originalProduct.basePrice * 2);
+    assert.equal(preview.body.preview.items[0].productId, originalProduct.id);
+
     const checkout = await request(baseUrl, '/api/checkout', {
       method: 'POST',
       headers: { 'x-csrf-token': csrf },
@@ -156,6 +170,16 @@ test('checkout creates immutable order snapshot and clears active cart', { skip:
     assert.equal(checkout.body.order.items[0].productSnapshot.productName, originalProduct.name);
     assert.equal(checkout.body.order.items[0].unitPrice, originalProduct.basePrice);
     orderId = checkout.body.order.id;
+
+    const invoice = await request(baseUrl, `/api/orders/${orderId}/invoice`, { method: 'GET' }, cookie);
+    assert.equal(invoice.response.status, 200);
+    assert.equal(invoice.body.invoice.orderNumber, checkout.body.order.orderNumber);
+    assert.equal(invoice.body.invoice.items[0].productSnapshot.productName, originalProduct.name);
+
+    const notifications = await request(baseUrl, '/api/notifications', { method: 'GET' }, cookie);
+    assert.equal(notifications.response.status, 200);
+    assert.ok(notifications.body.unreadCount >= 1);
+    assert.ok(notifications.body.notifications.some((notification) => notification.type === 'ORDER_CREATED'));
 
     const activeCart = await request(baseUrl, '/api/cart', { method: 'GET' }, cookie);
     assert.equal(activeCart.response.status, 200);
@@ -187,6 +211,16 @@ test('checkout creates immutable order snapshot and clears active cart', { skip:
     }, cookie);
     assert.equal(secondCheckout.response.status, 400);
     assert.equal(secondCheckout.body.error.code, 'CART_EMPTY');
+
+    const reorder = await request(baseUrl, `/api/orders/${orderId}/reorder`, {
+      method: 'POST',
+      headers: { 'x-csrf-token': csrf },
+      body: {}
+    }, cookie);
+    assert.equal(reorder.response.status, 201);
+    assert.equal(reorder.body.cart.items.length, 1);
+    assert.equal(reorder.body.cart.items[0].unitPrice, originalProduct.basePrice + 9999);
+    assert.ok(reorder.body.warnings.some((warning) => warning.includes('Harga')));
   } finally {
     server.kill();
     const prisma = getPrisma();

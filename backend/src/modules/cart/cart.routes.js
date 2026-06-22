@@ -33,6 +33,22 @@ function parseAddonIds(addons) {
   return [];
 }
 
+function buildProductLookup(productId) {
+  const normalized = String(productId || '').trim();
+  const aliases = new Set([normalized]);
+  if (/^\d+$/.test(normalized)) aliases.add(`json-menu-${normalized}`);
+
+  return {
+    OR: [
+      { id: normalized },
+      { legacyId: { in: [...aliases] } }
+    ],
+    status: 'ACTIVE',
+    deletedAt: null,
+    vendor: { status: 'ACTIVE', deletedAt: null }
+  };
+}
+
 async function getActiveCart(prisma, userId) {
   return prisma.cart.findFirst({
     where: { userId, status: 'ACTIVE' },
@@ -150,12 +166,7 @@ router.post('/items', requireCustomer, async (req, res, next) => {
     }
 
     const product = await req.prisma.product.findFirst({
-      where: {
-        id: parsed.data.productId,
-        status: 'ACTIVE',
-        deletedAt: null,
-        vendor: { status: 'ACTIVE', deletedAt: null }
-      },
+      where: buildProductLookup(parsed.data.productId),
       include: productInclude()
     });
     if (!product) return fail(res, 404, 'PRODUCT_NOT_FOUND', 'Produk aktif tidak ditemukan.');

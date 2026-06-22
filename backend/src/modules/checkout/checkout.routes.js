@@ -3,6 +3,7 @@ const express = require('express');
 const { z } = require('zod');
 const { requireCustomer } = require('../auth/customerAuth.routes');
 const { writeAuditLog } = require('../audit/audit.service');
+const { createNotification, notifyVendorMembers } = require('../notifications/notification.service');
 const { calculateProductPrice, summarizePricedItems } = require('../pricing/pricing.service');
 const { fail, fieldErrorsFromZod, ok } = require('../../utils/http');
 
@@ -131,6 +132,80 @@ function buildFeeSnapshot(subtotal) {
   };
 }
 
+async function parseAndValidateCheckout(req, res) {
+  const parsed = checkoutSchema.safeParse(req.body || {});
+  if (!parsed.success) {
+    fail(res, 400, 'VALIDATION_ERROR', 'Data checkout belum valid.', fieldErrorsFromZod(parsed.error));
+    return null;
+  }
+
+  const eventDate = parseEventDate(parsed.data.eventDate);
+  const address = parsed.data.addressId
+    ? await req.prisma.address.findFirst({
+        where: { id: parsed.data.addressId, userId: req.user.id, deletedAt: null }
+      })
+    : null;
+  if (parsed.data.fulfillmentType === 'DELIVERY' && !address) {
+    fail(res, 400, 'ADDRESS_REQUIRED', 'Alamat aktif wajib dipilih untuk pengiriman.');
+    return null;
+  }
+  if (parsed.data.addressId && !address) {
+    fail(res, 404, 'ADDRESS_NOT_FOUND', 'Alamat tidak ditemukan atau bukan milik akun ini.');
+    return null;
+  }
+
+  return { parsed, eventDate, address };
+}
+
+async function buildCheckoutPreview(prisma, userId) {
+  const cart = await getCartForCheckout(prisma, userId);
+  if (!cart || !cart.items.length) {
+    const error = new Error('Cart masih kosong.');
+    error.code = 'CART_EMPTY';
+    error.status = 400;
+    throw error;
+  }
+
+  const pricedItems = priceCartItems(cart);
+  const summary = summarizePricedItems(pricedItems.map((item) => ({ pricing: item.pricing })));
+  const feeSnapshot = buildFeeSnapshot(summary.subtotal);
+  const grandTotal = summary.subtotal + feeSnapshot.deliveryFee + feeSnapshot.serviceFee - feeSnapshot.discountAllocation;
+  return {
+    cart,
+    pricedItems,
+    summary,
+    feeSnapshot,
+    grandTotal,
+    vendorId: pricedItems[0].cartItem.product.vendorId
+  };
+}
+
+function serializeCheckoutPreview(preview) {
+  return {
+    vendorId: preview.vendorId,
+    itemCount: preview.pricedItems.length,
+    quantity: preview.summary.quantity,
+    subtotal: preview.summary.subtotal,
+    deliveryFee: preview.feeSnapshot.deliveryFee,
+    serviceFee: preview.feeSnapshot.serviceFee,
+    discountAmount: preview.feeSnapshot.discountAllocation,
+    grandTotal: preview.grandTotal,
+    feeSnapshot: preview.feeSnapshot,
+    items: preview.pricedItems.map(({ cartItem, pricing }) => ({
+      cartItemId: cartItem.id,
+      productId: cartItem.product.id,
+      productName: cartItem.product.name,
+      vendorId: cartItem.product.vendorId,
+      quantity: pricing.quantity,
+      unitPrice: pricing.effectiveUnitPrice,
+      subtotal: pricing.subtotal,
+      variant: pricing.variant,
+      addons: pricing.addons,
+      appliedTier: pricing.appliedTier
+    }))
+  };
+}
+
 function serializeOrder(order) {
   return {
     id: order.id,
@@ -161,46 +236,20 @@ function serializeOrder(order) {
   };
 }
 
-router.post('/', requireCustomer, async (req, res, next) => {
+async function handleCheckoutConfirm(req, res, next) {
   try {
-    const parsed = checkoutSchema.safeParse(req.body || {});
-    if (!parsed.success) {
-      return fail(res, 400, 'VALIDATION_ERROR', 'Data checkout belum valid.', fieldErrorsFromZod(parsed.error));
-    }
-
-    const eventDate = parseEventDate(parsed.data.eventDate);
-    const address = parsed.data.addressId
-      ? await req.prisma.address.findFirst({
-          where: { id: parsed.data.addressId, userId: req.user.id, deletedAt: null }
-        })
-      : null;
-    if (parsed.data.fulfillmentType === 'DELIVERY' && !address) {
-      return fail(res, 400, 'ADDRESS_REQUIRED', 'Alamat aktif wajib dipilih untuk pengiriman.');
-    }
-    if (parsed.data.addressId && !address) {
-      return fail(res, 404, 'ADDRESS_NOT_FOUND', 'Alamat tidak ditemukan atau bukan milik akun ini.');
-    }
+    const checkoutInput = await parseAndValidateCheckout(req, res);
+    if (!checkoutInput || res.headersSent) return;
+    const { parsed, eventDate, address } = checkoutInput;
 
     const createdOrder = await req.prisma.$transaction(async (tx) => {
-      const cart = await getCartForCheckout(tx, req.user.id);
-      if (!cart || !cart.items.length) {
-        const error = new Error('Cart masih kosong.');
-        error.code = 'CART_EMPTY';
-        error.status = 400;
-        throw error;
-      }
-
-      const pricedItems = priceCartItems(cart);
-      const summary = summarizePricedItems(pricedItems.map((item) => ({ pricing: item.pricing })));
-      const feeSnapshot = buildFeeSnapshot(summary.subtotal);
-      const grandTotal = summary.subtotal + feeSnapshot.deliveryFee + feeSnapshot.serviceFee - feeSnapshot.discountAllocation;
-      const vendorId = pricedItems[0].cartItem.product.vendorId;
+      const preview = await buildCheckoutPreview(tx, req.user.id);
 
       const order = await tx.order.create({
         data: {
           orderNumber: generateOrderNumber(),
           customerId: req.user.id,
-          vendorId,
+          vendorId: preview.vendorId,
           addressId: address?.id || null,
           status: 'WAITING_PAYMENT',
           paymentStatus: 'PENDING',
@@ -210,19 +259,19 @@ router.post('/', requireCustomer, async (req, res, next) => {
           recipientName: parsed.data.recipientName || address?.recipientName || req.user.name,
           recipientPhone: parsed.data.recipientPhone || address?.phone || req.user.phone || null,
           notes: parsed.data.notes || null,
-          subtotal: summary.subtotal,
-          deliveryFee: feeSnapshot.deliveryFee,
-          serviceFee: feeSnapshot.serviceFee,
-          discountAmount: feeSnapshot.discountAllocation,
-          grandTotal,
-          feeSnapshot,
+          subtotal: preview.summary.subtotal,
+          deliveryFee: preview.feeSnapshot.deliveryFee,
+          serviceFee: preview.feeSnapshot.serviceFee,
+          discountAmount: preview.feeSnapshot.discountAllocation,
+          grandTotal: preview.grandTotal,
+          feeSnapshot: preview.feeSnapshot,
           policySnapshot: {
             cancellationPolicy: 'MVP: pembatalan/refund mengikuti review admin/vendor sampai policy final aktif.',
             termsAcceptedAt: new Date().toISOString()
           },
           trackingToken: createTrackingToken(),
           items: {
-            create: pricedItems.map(({ cartItem, pricing }) => ({
+            create: preview.pricedItems.map(({ cartItem, pricing }) => ({
               productId: cartItem.product.id,
               productSnapshot: {
                 productId: cartItem.product.id,
@@ -255,8 +304,23 @@ router.post('/', requireCustomer, async (req, res, next) => {
         include: { items: true }
       });
 
-      await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
-      await tx.cart.update({ where: { id: cart.id }, data: { status: 'CHECKED_OUT', vendorId: null } });
+      await tx.cartItem.deleteMany({ where: { cartId: preview.cart.id } });
+      await tx.cart.update({ where: { id: preview.cart.id }, data: { status: 'CHECKED_OUT', vendorId: null } });
+      await createNotification(tx, {
+        userId: req.user.id,
+        type: 'ORDER_CREATED',
+        title: 'Order marketplace dibuat',
+        body: `Order ${order.orderNumber} menunggu pembayaran sandbox.`,
+        entityType: 'ORDER',
+        entityId: order.id
+      });
+      await notifyVendorMembers(tx, order.vendorId, {
+        type: 'ORDER_CREATED',
+        title: 'Order baru masuk',
+        body: `Order ${order.orderNumber} dibuat dan menunggu pembayaran customer.`,
+        entityType: 'ORDER',
+        entityId: order.id
+      });
       await writeAuditLog(tx, req, {
         actorId: req.user.id,
         actorRole: req.user.role,
@@ -266,7 +330,7 @@ router.post('/', requireCustomer, async (req, res, next) => {
         newValue: {
           orderNumber: order.orderNumber,
           grandTotal: order.grandTotal,
-          itemCount: pricedItems.length
+          itemCount: preview.pricedItems.length
         }
       });
 
@@ -278,6 +342,21 @@ router.post('/', requireCustomer, async (req, res, next) => {
     if (error.status) return fail(res, error.status, error.code || 'CHECKOUT_ERROR', error.message);
     next(error);
   }
+}
+
+router.post('/preview', requireCustomer, async (req, res, next) => {
+  try {
+    const checkoutInput = await parseAndValidateCheckout(req, res);
+    if (!checkoutInput || res.headersSent) return;
+    const preview = await buildCheckoutPreview(req.prisma, req.user.id);
+    return ok(res, { preview: serializeCheckoutPreview(preview) });
+  } catch (error) {
+    if (error.status) return fail(res, error.status, error.code || 'CHECKOUT_PREVIEW_ERROR', error.message);
+    next(error);
+  }
 });
+
+router.post('/confirm', requireCustomer, handleCheckoutConfirm);
+router.post('/', requireCustomer, handleCheckoutConfirm);
 
 module.exports = router;

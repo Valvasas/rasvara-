@@ -64,9 +64,9 @@
                         <i class="fas fa-envelope"></i>
                         <input type="email" id="vendor-reg-email" placeholder="email@toko.com" autocomplete="email" required>
                     </div>
-                    <label for="vendor-reg-whatsapp">WhatsApp</label>
+                    <label for="vendor-reg-whatsapp">Nomor Kontak</label>
                     <div class="input-shell">
-                        <i class="fab fa-whatsapp"></i>
+                        <i class="fas fa-phone"></i>
                         <input type="text" id="vendor-reg-whatsapp" placeholder="08xxxxxxxxxx" autocomplete="tel" required>
                     </div>
                     <label for="vendor-reg-password">Password</label>
@@ -83,6 +83,16 @@
                     <a href="/" class="auth-alt-link"><i class="fas fa-bag-shopping"></i> Lihat marketplace</a>
                 </form>
             </div>
+        </div>
+    </div>
+
+    <div id="vendor-pending-section" class="vendor-auth-wrapper" style="display:none;">
+        <div class="vendor-auth-box" style="text-align:center; padding:3rem;">
+            <i class="fas fa-clock" style="font-size:4rem; color:var(--warning); margin-bottom:1rem;"></i>
+            <h2>Akun Sedang Diverifikasi</h2>
+            <p>Terima kasih telah mendaftar di Rasvara Marketplace! Tim admin kami sedang meninjau akun Anda.</p>
+            <p>Anda akan dapat mengakses dashboard dan mengelola menu setelah akun disetujui.</p>
+            <button onclick="vendorLogout()" class="btn-delete" style="margin-top:2rem;">Keluar</button>
         </div>
     </div>
 
@@ -156,7 +166,7 @@
                         <input type="text" id="vendor-store-name">
                         <label>Nama Pemilik</label>
                         <input type="text" id="vendor-owner-name">
-                        <label>WhatsApp Toko</label>
+                        <label>Nomor Kontak Toko</label>
                         <input type="text" id="vendor-whatsapp">
                         <label>Alamat</label>
                         <textarea id="vendor-address" rows="4"></textarea>

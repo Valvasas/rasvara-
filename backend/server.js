@@ -13,6 +13,9 @@ const checkoutRoutes = require('./src/modules/checkout/checkout.routes');
 const customerOrderRoutes = require('./src/modules/orders/customerOrder.routes');
 const paymentRoutes = require('./src/modules/payments/payment.routes');
 const vendorMarketplaceOrderRoutes = require('./src/modules/vendors/vendorMarketplaceOrder.routes');
+const marketplaceRoutes = require('./src/modules/marketplace/marketplace.routes');
+const pricingRoutes = require('./src/modules/pricing/pricing.routes');
+const notificationRoutes = require('./src/modules/notifications/notification.routes');
 const { createStorageAdapter, IMAGE_MIME_EXT } = require('./src/services/storage');
 
 const app = express();
@@ -62,20 +65,52 @@ const PUBLIC_FILES = new Set([
   '/vendor.js',
   '/vendor-bookkeeping.js'
 ]);
-const loginAttempts = new Map();
 const envReport = validateEnv(process.env);
 if (!envReport.ok) {
   console.error(`Konfigurasi environment belum aman:\n- ${envReport.errors.join('\n- ')}`);
   if (isProduction) process.exit(1);
+}
+const rateLimits = new Map();
+
+function getRateLimitState(key, limit, windowMs) {
+  const now = Date.now();
+  const state = rateLimits.get(key) || { count: 0, resetAt: now + windowMs };
+  if (now > state.resetAt) {
+    state.count = 0;
+    state.resetAt = now + windowMs;
+  }
+  rateLimits.set(key, state);
+  return state;
+}
+
+function checkRateLimit(req, action, limit, windowMs) {
+  const key = `${action}:${getClientKey(req)}`;
+  const state = getRateLimitState(key, limit, windowMs);
+  state.count += 1;
+  return state.count > limit;
 }
 const storageAdapter = createStorageAdapter({
   driver: process.env.STORAGE_DRIVER || 'local',
   maxImageSize: MAX_IMAGE_SIZE
 });
 
-if (isProduction && (!ADMIN_PIN || !ADMIN_PASSWORD || !SESSION_SECRET)) {
-  console.error('ADMIN_PIN, ADMIN_PASSWORD, dan ADMIN_SESSION_SECRET wajib diset di production.');
-  process.exit(1);
+if (isProduction) {
+  if (!ADMIN_PIN || ADMIN_PIN.length < 6) {
+    console.error('ADMIN_PIN wajib minimal 6 karakter di production.');
+    process.exit(1);
+  }
+  if (!ADMIN_PASSWORD || ADMIN_PASSWORD.length < 8) {
+    console.error('ADMIN_PASSWORD wajib minimal 8 karakter di production.');
+    process.exit(1);
+  }
+  if (!SESSION_SECRET || SESSION_SECRET.length < 32 || SESSION_SECRET === 'dev-only-change-this-secret') {
+    console.error('ADMIN_SESSION_SECRET wajib minimal 32 karakter dan tidak boleh menggunakan default di production.');
+    process.exit(1);
+  }
+} else {
+  if (ADMIN_PIN === '197355' || ADMIN_PASSWORD === 'kikijen123' || SESSION_SECRET === 'dev-only-change-this-secret') {
+    console.warn('WARNING: Menggunakan kredensial default untuk development. Jangan gunakan di production!');
+  }
 }
 
 if (!fs.existsSync(DATA_DIR)) {
@@ -174,30 +209,17 @@ function getClientKey(req) {
   return req.ip || req.socket?.remoteAddress || 'unknown';
 }
 
-function getLoginAttemptState(req) {
-  const key = getClientKey(req);
-  const now = Date.now();
-  const state = loginAttempts.get(key);
-  if (!state || now > state.resetAt) {
-    const freshState = { count: 0, resetAt: now + LOGIN_WINDOW_MS };
-    loginAttempts.set(key, freshState);
-    return { key, state: freshState };
-  }
-  return { key, state };
-}
-
 function isLoginRateLimited(req) {
-  const { state } = getLoginAttemptState(req);
-  return state.count >= LOGIN_MAX_ATTEMPTS;
+  return checkRateLimit(req, 'admin_login', LOGIN_MAX_ATTEMPTS, LOGIN_WINDOW_MS);
 }
 
 function recordFailedLogin(req) {
-  const { state } = getLoginAttemptState(req);
-  state.count += 1;
+  // handled by checkRateLimit
 }
 
 function clearLoginAttempts(req) {
-  loginAttempts.delete(getClientKey(req));
+  rateLimits.delete(`admin_login:${getClientKey(req)}`);
+  rateLimits.delete(`vendor_login:${getClientKey(req)}`);
 }
 
 function parseCookies(header = '') {
@@ -264,8 +286,8 @@ function requireVendor(req, res, next) {
 
   const data = loadData();
   const vendor = data.vendors.find((item) => item.id === Number(session.vendorId));
-  if (!vendor || vendor.status !== 'active') {
-    return res.status(403).json({ ok: false, message: 'Akun pedagang belum aktif atau sedang dinonaktifkan.' });
+  if (!vendor || vendor.status === 'suspended') {
+    return res.status(403).json({ ok: false, message: 'Akun pedagang sedang dinonaktifkan.' });
   }
 
   if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
@@ -278,6 +300,15 @@ function requireVendor(req, res, next) {
   req.vendorSession = session;
   req.vendor = vendor;
   next();
+}
+
+function requireActiveVendor(req, res, next) {
+  requireVendor(req, res, () => {
+    if (req.vendor.status !== 'active') {
+      return res.status(403).json({ ok: false, message: 'Akun pedagang belum aktif.' });
+    }
+    next();
+  });
 }
 
 function adminCookie(token) {
@@ -399,6 +430,7 @@ function normalizeReview(review = {}, vendors = []) {
     comment: sanitizeText(review.comment || '', '', 600),
     rating,
     status: review.status === 'hidden' ? 'hidden' : 'visible',
+    verified: Boolean(review.verified),
     createdAt: review.createdAt || new Date().toISOString()
   };
 }
@@ -630,6 +662,12 @@ function buildOrderItems(cartItems, menus) {
       throw error;
     }
     const quantity = Math.max(1, Number(item.quantity || 1));
+    const minOrder = Math.max(1, Number(menu.minOrder || 1));
+    if (quantity < minOrder) {
+      const error = new Error(`Pesanan "${menu.name}" minimal ${minOrder} ${menu.unitType || 'porsi'}.`);
+      error.status = 400;
+      throw error;
+    }
     return {
       id: menu.id,
       vendorId: menu.vendorId || 0,
@@ -683,7 +721,12 @@ function buildSalesSummary(orders, startDate, endDate) {
 }
 
 function publicOrder(order, options = {}) {
-  const { totalCost, profit, trackingToken, cartItems = [], ...safeOrder } = order;
+  const { totalCost, profit, trackingToken, cartItems = [], phone, ...safeOrder } = order;
+  if (options.maskPhone && phone) {
+    safeOrder.phone = `${phone.slice(0, 3)}****${phone.slice(-3)}`;
+  } else {
+    safeOrder.phone = phone;
+  }
   return {
     ...safeOrder,
     ...(options.includeTrackingToken && trackingToken ? { trackingToken } : {}),
@@ -703,7 +746,7 @@ function orderMatchesPhone(order, phone = '') {
 }
 
 function buildOrderProgress(order, options = {}) {
-  const safeOrder = publicOrder(order, options);
+  const safeOrder = publicOrder(order, { ...options, maskPhone: true });
   const currentIndex = ORDER_STATUS_STEPS.indexOf(order.status);
   return {
     ...safeOrder,
@@ -778,12 +821,17 @@ app.use(setSecurityHeaders);
 app.use(requestLogger);
 app.use(express.json({ limit: MAX_JSON_SIZE }));
 app.use('/api/auth', customerAuthRoutes);
+app.use('/api/customer', customerAuthRoutes);
 app.use('/api/customers', customerAuthRoutes);
+app.use('/api/marketplace', marketplaceRoutes);
+app.use('/api/products', marketplaceRoutes);
+app.use('/api/pricing', pricingRoutes);
+app.use('/api/notifications', notificationRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/checkout', checkoutRoutes);
 app.use('/api/orders', customerOrderRoutes);
 app.use('/api/payments', paymentRoutes);
-app.use('/api/vendor/marketplace', requireVendor, vendorMarketplaceOrderRoutes);
+app.use('/api/vendor/marketplace', requireActiveVendor, vendorMarketplaceOrderRoutes);
 
 app.use((req, res, next) => {
   const normalizedPath = req.path.replace(/\\/g, '/');
@@ -888,21 +936,29 @@ app.get('/api/vendors/:id/reviews', (req, res) => {
 });
 
 app.post('/api/reviews', (req, res) => {
+  if (checkRateLimit(req, 'review', 5, 15 * 60 * 1000)) {
+    return res.status(429).json({ ok: false, message: 'Terlalu banyak review. Coba lagi nanti.' });
+  }
   const data = loadData();
   const { vendorId, menuId, customerName, rating, comment } = req.body || {};
   const vendor = data.vendors.find((item) => item.id === Number(vendorId) && item.status === 'active');
-  if (!vendor || !customerName || !comment || !Number.isFinite(Number(rating))) {
-    return res.status(400).json({ ok: false, message: 'Lengkapi pedagang, nama, rating, dan ulasan.' });
+  const safeRating = Math.max(1, Math.min(5, Number(rating) || 0));
+  const safeName = sanitizeText(customerName, '', 100);
+  const safeComment = sanitizeText(comment, '', 600);
+
+  if (!vendor || !safeName || safeComment.length < 10 || safeRating < 1 || safeRating > 5) {
+    return res.status(400).json({ ok: false, message: 'Nama maksimal 100 char, rating 1-5, dan komentar 10-600 karakter.' });
   }
 
   const review = normalizeReview({
     id: Date.now(),
     vendorId: vendor.id,
     menuId: Number(menuId || 0),
-    customerName,
-    rating,
-    comment,
+    customerName: safeName,
+    rating: safeRating,
+    comment: safeComment,
     status: 'visible',
+    verified: true,
     createdAt: new Date().toISOString()
   }, data.vendors);
   data.reviews.unshift(review);
@@ -911,7 +967,7 @@ app.post('/api/reviews', (req, res) => {
 });
 
 app.post('/api/orders/recover-link', (req, res) => {
-  if (isLoginRateLimited(req)) {
+  if (checkRateLimit(req, 'order_recover', 5, 15 * 60 * 1000)) {
     return res.status(429).json({ ok: false, message: 'Terlalu banyak percobaan. Coba lagi beberapa menit lagi.' });
   }
 
@@ -919,13 +975,13 @@ app.post('/api/orders/recover-link', (req, res) => {
   const phone = sanitizeText(req.body?.phone || '', '', 40);
   const orderId = Number(req.body?.orderId || 0);
   if (!phone || !orderId) {
-    return res.status(400).json({ ok: false, message: 'Masukkan nomor WhatsApp dan ID pesanan terakhir.' });
+    return res.status(400).json({ ok: false, message: 'Masukkan nomor kontak dan ID pesanan terakhir.' });
   }
 
   const order = data.orders.find((item) => Number(item.id) === orderId);
   if (!order || !orderMatchesPhone(order, phone)) {
     recordFailedLogin(req);
-    return res.status(401).json({ ok: false, message: 'Nomor WhatsApp atau ID pesanan tidak cocok.' });
+    return res.status(401).json({ ok: false, message: 'Nomor kontak atau ID pesanan tidak cocok.' });
   }
 
   clearLoginAttempts(req);
@@ -947,8 +1003,8 @@ app.get('/api/admin/session', (req, res) => {
 });
 
 app.post('/api/admin/login', (req, res) => {
-  if (isLoginRateLimited(req)) {
-    return res.status(429).json({ ok: false, message: 'Terlalu banyak percobaan login. Coba lagi beberapa menit lagi.' });
+  if (checkRateLimit(req, 'admin_login', 5, 15 * 60 * 1000)) {
+    return res.status(429).json({ ok: false, message: 'Terlalu banyak percobaan login admin.' });
   }
 
   const { pin, password } = req.body || {};
@@ -1219,12 +1275,16 @@ app.post('/api/upload-image', requireAdmin, (req, res) => {
 });
 
 app.post('/api/vendor/register', (req, res) => {
+  if (checkRateLimit(req, 'vendor_register', 3, 60 * 60 * 1000)) {
+    return res.status(429).json({ ok: false, message: 'Terlalu banyak percobaan registrasi. Coba lagi nanti.' });
+  }
+
   const data = loadData();
   const { storeName, ownerName, email, whatsapp, password, address, bio } = req.body || {};
   const normalizedEmail = String(email || '').trim().toLowerCase();
 
   if (!storeName || !ownerName || !normalizedEmail || !whatsapp || !password || String(password).length < 8) {
-    return res.status(400).json({ ok: false, message: 'Lengkapi nama toko, pemilik, email, WhatsApp, dan password minimal 8 karakter.' });
+    return res.status(400).json({ ok: false, message: 'Lengkapi nama toko, pemilik, email, nomor kontak, dan password minimal 8 karakter.' });
   }
 
   if (data.vendors.some((vendor) => vendor.email === normalizedEmail)) {
@@ -1240,7 +1300,7 @@ app.post('/api/vendor/register', (req, res) => {
     address: address || '',
     bio: bio || '',
     passwordHash: hashPassword(password),
-    status: 'active',
+    status: 'pending',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
   });
@@ -1253,7 +1313,7 @@ app.post('/api/vendor/register', (req, res) => {
 });
 
 app.post('/api/vendor/login', (req, res) => {
-  if (isLoginRateLimited(req)) {
+  if (checkRateLimit(req, 'vendor_login', 5, 15 * 60 * 1000)) {
     return res.status(429).json({ ok: false, message: 'Terlalu banyak percobaan login. Coba lagi beberapa menit lagi.' });
   }
 
@@ -1310,7 +1370,7 @@ app.put('/api/vendor/profile', requireVendor, (req, res) => {
   res.json({ ok: true, vendor: privateVendor(vendor) });
 });
 
-app.post('/api/vendor/upload-image', requireVendor, (req, res) => {
+app.post('/api/vendor/upload-image', requireActiveVendor, (req, res) => {
   upload.single('image')(req, res, (error) => {
     if (error) {
       return res.status(400).json({ ok: false, message: getUploadErrorMessage(error) });
@@ -1322,12 +1382,12 @@ app.post('/api/vendor/upload-image', requireVendor, (req, res) => {
   });
 });
 
-app.get('/api/vendor/menus', requireVendor, (req, res) => {
+app.get('/api/vendor/menus', requireActiveVendor, (req, res) => {
   const data = loadData();
   res.json(data.menus.filter((menu) => menu.vendorId === req.vendor.id));
 });
 
-app.post('/api/vendor/menus', requireVendor, (req, res) => {
+app.post('/api/vendor/menus', requireActiveVendor, (req, res) => {
   const data = loadData();
   const { name, category, price, sellingPrice, costPrice, desc, image, unitType, minOrder, isPackage, availability } = req.body || {};
   const finalPrice = Number(price ?? sellingPrice);
@@ -1362,7 +1422,7 @@ app.post('/api/vendor/menus', requireVendor, (req, res) => {
   res.json({ ok: true, menu: newMenu });
 });
 
-app.put('/api/vendor/menus/:id', requireVendor, (req, res) => {
+app.put('/api/vendor/menus/:id', requireActiveVendor, (req, res) => {
   const data = loadData();
   const menuId = Number(req.params.id);
   const menuIndex = data.menus.findIndex((item) => item.id === menuId && item.vendorId === req.vendor.id);
@@ -1402,7 +1462,7 @@ app.put('/api/vendor/menus/:id', requireVendor, (req, res) => {
   res.json({ ok: true, menu: updatedMenu });
 });
 
-app.delete('/api/vendor/menus/:id', requireVendor, (req, res) => {
+app.delete('/api/vendor/menus/:id', requireActiveVendor, (req, res) => {
   const data = loadData();
   const menuId = Number(req.params.id);
   const menuIndex = data.menus.findIndex((item) => item.id === menuId && item.vendorId === req.vendor.id);
@@ -1412,7 +1472,7 @@ app.delete('/api/vendor/menus/:id', requireVendor, (req, res) => {
   res.json({ ok: true });
 });
 
-app.get('/api/vendor/orders', requireVendor, (req, res) => {
+app.get('/api/vendor/orders', requireActiveVendor, (req, res) => {
   const data = loadData();
   res.json(data.orders
     .filter((order) => (order.cartItems || []).some((item) => item.vendorId === req.vendor.id))
@@ -1422,7 +1482,7 @@ app.get('/api/vendor/orders', requireVendor, (req, res) => {
     })));
 });
 
-app.put('/api/vendor/orders/:id/status', requireVendor, (req, res) => {
+app.put('/api/vendor/orders/:id/status', requireActiveVendor, (req, res) => {
   const data = loadData();
   const orderId = Number(req.params.id);
   const order = data.orders.find((item) => item.id === orderId);
@@ -1445,7 +1505,7 @@ app.put('/api/vendor/orders/:id/status', requireVendor, (req, res) => {
   });
 });
 
-app.get('/api/vendor/bookkeeping-summary', requireVendor, (req, res) => {
+app.get('/api/vendor/bookkeeping-summary', requireActiveVendor, (req, res) => {
   const data = loadData();
   res.json(buildVendorBookkeeping(req.vendor, data));
 });
@@ -1455,12 +1515,12 @@ app.get('/api/vendor/notifications', requireVendor, (req, res) => {
   res.json(buildVendorNotifications(req.vendor, data));
 });
 
-app.get('/api/vendor/ledger', requireVendor, (req, res) => {
+app.get('/api/vendor/ledger', requireActiveVendor, (req, res) => {
   const data = loadData();
   res.json(data.ledger.filter((entry) => entry.vendorId === req.vendor.id));
 });
 
-app.post('/api/vendor/ledger', requireVendor, (req, res) => {
+app.post('/api/vendor/ledger', requireActiveVendor, (req, res) => {
   const data = loadData();
   const { date, type, category, description, amount, paymentMethod } = req.body || {};
   const finalAmount = Number(amount);
@@ -1485,7 +1545,7 @@ app.post('/api/vendor/ledger', requireVendor, (req, res) => {
   res.json({ ok: true, entry });
 });
 
-app.delete('/api/vendor/ledger/:id', requireVendor, (req, res) => {
+app.delete('/api/vendor/ledger/:id', requireActiveVendor, (req, res) => {
   const data = loadData();
   const entryId = Number(req.params.id);
   const entryIndex = data.ledger.findIndex((entry) => entry.id === entryId && entry.vendorId === req.vendor.id);
@@ -1495,7 +1555,7 @@ app.delete('/api/vendor/ledger/:id', requireVendor, (req, res) => {
   res.json({ ok: true });
 });
 
-app.get('/api/vendor/reviews', requireVendor, (req, res) => {
+app.get('/api/vendor/reviews', requireActiveVendor, (req, res) => {
   const data = loadData();
   res.json(data.reviews.filter((review) => review.vendorId === req.vendor.id));
 });
@@ -1607,6 +1667,17 @@ app.post('/api/orders', (req, res) => {
     return res.status(400).json({ ok: false, message: 'Lengkapi data pemesanan dan pastikan keranjang tidak kosong.' });
   }
 
+  if (checkRateLimit(req, 'checkout', 5, 15 * 60 * 1000)) {
+    return res.status(429).json({ ok: false, message: 'Terlalu banyak percobaan checkout. Coba lagi nanti.' });
+  }
+
+  if (eventDate) {
+    const today = new Date().toISOString().slice(0, 10);
+    if (getDateOnly(eventDate) < today) {
+      return res.status(400).json({ ok: false, message: 'Tanggal acara tidak boleh di masa lalu.' });
+    }
+  }
+
   let serverItems;
   try {
     serverItems = buildOrderItems(cartItems, data.menus || []);
@@ -1656,15 +1727,18 @@ app.get('/api/orders/progress/:token', (req, res) => {
 });
 
 app.get('/api/orders/track', (req, res) => {
+  if (checkRateLimit(req, 'order_track', 10, 15 * 60 * 1000)) {
+    return res.status(429).json({ ok: false, message: 'Terlalu banyak percobaan pencarian pesanan.' });
+  }
   const data = loadData();
   const orderId = Number(req.query.orderId || req.query.id || 0);
   const phone = sanitizeText(req.query.phone || '', '', 40);
   if (!orderId || !phone) {
-    return res.status(400).json({ ok: false, message: 'Masukkan ID pesanan dan nomor WhatsApp.' });
+    return res.status(400).json({ ok: false, message: 'Masukkan ID pesanan dan nomor kontak.' });
   }
   const order = data.orders.find((item) => item.id === orderId);
   if (!order || !orderMatchesPhone(order, phone)) {
-    return res.status(404).json({ ok: false, message: 'Pesanan tidak ditemukan. Cek lagi ID pesanan dan nomor WhatsApp.' });
+    return res.status(404).json({ ok: false, message: 'Pesanan tidak ditemukan. Cek lagi ID pesanan dan nomor kontak.' });
   }
   if (!order.trackingToken) {
     order.trackingToken = createTrackingToken();

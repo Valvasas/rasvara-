@@ -77,6 +77,14 @@ function showVendorAuth() {
 function showVendorDashboard(vendor) {
     currentVendor = vendor;
     getEl('vendor-auth-section').style.display = 'none';
+    
+    if (vendor.status === 'pending') {
+        getEl('vendor-pending-section').style.display = 'flex';
+        getEl('vendor-dashboard-section').style.display = 'none';
+        return;
+    }
+    
+    if (getEl('vendor-pending-section')) getEl('vendor-pending-section').style.display = 'none';
     getEl('vendor-dashboard-section').style.display = 'flex';
     getEl('vendor-sidebar-store').innerHTML = `${escapeHtml(vendor.storeName || 'Pedagang')}<span style="color:#E8C547;">.</span>`;
     populateVendorProfile(vendor);

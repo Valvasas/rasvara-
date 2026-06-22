@@ -4,13 +4,12 @@ const path = require('path');
 const IMAGE_MIME_EXT = new Map([
   ['image/jpeg', '.jpg'],
   ['image/png', '.png'],
-  ['image/webp', '.webp'],
-  ['image/gif', '.gif']
+  ['image/webp', '.webp']
 ]);
 
 function assertAllowedImage(file = {}, maxSize = 1024 * 1024 * 3) {
   if (!IMAGE_MIME_EXT.has(file.mimetype)) {
-    const error = new Error('Format gambar harus JPG, PNG, WEBP, atau GIF.');
+    const error = new Error('Format gambar harus JPG, PNG, atau WEBP.');
     error.code = 'UNSUPPORTED_IMAGE_TYPE';
     throw error;
   }
@@ -22,7 +21,8 @@ function assertAllowedImage(file = {}, maxSize = 1024 * 1024 * 3) {
 }
 
 function buildSafeImageName(file = {}) {
-  const ext = IMAGE_MIME_EXT.get(file.mimetype) || path.extname(file.originalname || '').toLowerCase();
+  const ext = IMAGE_MIME_EXT.get(file.mimetype);
+  if (!ext) throw new Error('Unsupported format');
   return `${Date.now()}-${crypto.randomUUID()}${ext}`;
 }
 

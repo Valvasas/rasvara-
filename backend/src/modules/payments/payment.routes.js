@@ -4,6 +4,7 @@ const { requireCustomer } = require('../auth/customerAuth.routes');
 const { getPrisma } = require('../../services/prisma');
 const { fail, fieldErrorsFromZod, ok } = require('../../utils/http');
 const {
+  PROVIDER,
   createMockPayment,
   processMockWebhook,
   serializePayment,
@@ -73,6 +74,56 @@ router.get('/:id', requireCustomer, async (req, res, next) => {
     if (!payment) return fail(res, 404, 'PAYMENT_NOT_FOUND', 'Payment tidak ditemukan.');
     return ok(res, { payment: serializePayment(payment) });
   } catch (error) {
+    next(error);
+  }
+});
+
+router.post('/:id/mock/mark-paid', requireCustomer, async (req, res, next) => {
+  try {
+    const payment = await req.prisma.payment.findFirst({
+      where: {
+        id: req.params.id,
+        order: { customerId: req.user.id }
+      },
+      include: { order: true }
+    });
+    if (!payment) return fail(res, 404, 'PAYMENT_NOT_FOUND', 'Payment tidak ditemukan.');
+    if (payment.provider !== PROVIDER) {
+      return fail(res, 409, 'PAYMENT_PROVIDER_NOT_MOCK', 'Simulasi bayar hanya tersedia untuk payment sandbox.');
+    }
+    if (payment.status === 'PAID') {
+      return ok(res, {
+        duplicate: true,
+        payment: serializePayment(payment),
+        order: {
+          id: payment.order.id,
+          status: payment.order.status,
+          paymentStatus: payment.order.paymentStatus
+        }
+      });
+    }
+    if (payment.status !== 'PENDING') {
+      return fail(res, 409, 'PAYMENT_NOT_PAYABLE', 'Payment sandbox ini tidak berada pada status pending.');
+    }
+
+    const result = await processMockWebhook(req.prisma, {
+      eventId: `customer-sim-${payment.id}-${Date.now()}`,
+      providerRef: payment.providerRef,
+      status: 'PAID',
+      amount: payment.amount
+    });
+
+    return ok(res, {
+      duplicate: result.duplicate,
+      payment: result.payment ? serializePayment(result.payment) : undefined,
+      order: result.order ? {
+        id: result.order.id,
+        status: result.order.status,
+        paymentStatus: result.order.paymentStatus
+      } : undefined
+    });
+  } catch (error) {
+    if (error.status) return fail(res, error.status, error.code || 'PAYMENT_SIMULATION_ERROR', error.message);
     next(error);
   }
 });

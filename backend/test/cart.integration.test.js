@@ -154,6 +154,23 @@ test('customer auth and cart enforce server pricing, min order, and one vendor',
     assert.equal(addFirst.body.cart.items[0].pricing.unitPrice, firstProduct.basePrice);
     assert.equal(addFirst.body.cart.summary.subtotal, firstProduct.basePrice * 2);
 
+    const clearBeforeAlias = await request(baseUrl, '/api/cart', {
+      method: 'DELETE',
+      headers: { 'x-csrf-token': csrf }
+    }, cookie);
+    assert.equal(clearBeforeAlias.response.status, 200);
+
+    const addByLegacyAlias = await request(baseUrl, '/api/cart/items', {
+      method: 'POST',
+      headers: { 'x-csrf-token': csrf },
+      body: {
+        productId: firstProduct.legacyId,
+        quantity: 1
+      }
+    }, cookie);
+    assert.equal(addByLegacyAlias.response.status, 200);
+    assert.equal(addByLegacyAlias.body.cart.items[0].productId, firstProduct.id);
+
     const vendorConflict = await request(baseUrl, '/api/cart/items', {
       method: 'POST',
       headers: { 'x-csrf-token': csrf },
