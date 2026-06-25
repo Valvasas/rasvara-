@@ -17,10 +17,11 @@ const marketplaceRoutes = require('./src/modules/marketplace/marketplace.routes'
 const pricingRoutes = require('./src/modules/pricing/pricing.routes');
 const notificationRoutes = require('./src/modules/notifications/notification.routes');
 const { createStorageAdapter, IMAGE_MIME_EXT } = require('./src/services/storage');
+const { LEGACY_DATA_DIR, LEGACY_DATA_FILE, readLegacyJson, writeLegacyJson } = require('./src/services/legacyJsonStore');
 
 const app = express();
-const DATA_DIR = path.join(__dirname, 'data');
-const DATA_FILE = path.join(DATA_DIR, 'data.json');
+const DATA_DIR = LEGACY_DATA_DIR;
+const DATA_FILE = LEGACY_DATA_FILE;
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
 const UPLOAD_DIR = path.join(PUBLIC_DIR, 'uploads');
 const isProduction = process.env.NODE_ENV === 'production';
