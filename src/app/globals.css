@@ -1,0 +1,283 @@
+@import "tailwindcss";
+
+/*
+  Palet Citarasa Catering.
+  Diambil dari isi dapurnya sendiri, bukan dari template: kertas nasi (krem),
+  sambal & gerabah (bata), kunyit dan lampu warung malam (kunyit), daun pisang
+  (daun), dan meja kayu (kayu). Tidak ada biru/ungu korporat di sini karena
+  warna dingin menurunkan selera makan dan membuat warung terasa seperti bank.
+*/
+@theme {
+  --color-krem: #fbf6ec;
+  --color-krem-tua: #f3e9d7;
+  --color-kertas: #fffdf9;
+
+  --color-arang: #2b211a;
+  --color-arang-muda: #6f5d50;
+
+  --color-bata: #b54321;
+  --color-bata-tua: #8a2f14;
+  --color-bata-lembut: #fbe6dc;
+
+  --color-kunyit: #c9871a;
+  --color-kunyit-tua: #8a5a08;
+  --color-kunyit-lembut: #fcefd5;
+
+  --color-daun: #4c7a3f;
+  --color-daun-tua: #35592b;
+  --color-daun-lembut: #e6f0df;
+
+  --color-kayu: #7b5b40;
+  --color-kayu-tua: #533a26;
+  --color-kayu-lembut: #f0e6da;
+
+  --color-bahaya: #b3261e;
+  --color-bahaya-lembut: #fbe4e2;
+
+  --font-judul: var(--font-fraunces), Georgia, "Times New Roman", serif;
+  --font-badan: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+
+  /* Bayangan dicampur cokelat, bukan hitam abu. Bayangan abu membuat
+     permukaan hangat terlihat kotor dan "dingin". */
+  --shadow-hangat: 0 1px 2px rgba(83, 58, 38, 0.06), 0 8px 24px -12px rgba(83, 58, 38, 0.25);
+  --shadow-hangat-lg: 0 2px 4px rgba(83, 58, 38, 0.06), 0 18px 40px -20px rgba(83, 58, 38, 0.35);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-krem);
+    color: var(--color-arang);
+    font-family: var(--font-badan);
+    /* 17px, bukan 14px. Pemilik usaha ini berumur 40-an dan sering membuka
+       website ini malam hari sambil berdiri di dapur. */
+    font-size: 1.0625rem;
+    line-height: 1.65;
+  }
+
+  h1, h2, h3 {
+    font-family: var(--font-judul);
+    font-weight: 600;
+    letter-spacing: -0.015em;
+    line-height: 1.15;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Fokus keyboard harus selalu terlihat jelas demi aksesibilitas. */
+  :focus-visible {
+    outline: 3px solid var(--color-kunyit);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background-color: var(--color-kunyit-lembut);
+    color: var(--color-arang);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@layer components {
+  /*
+    Semua tombol minimal 48px tingginya. Ini bukan selera, ini target sentuh
+    minimum supaya jari orang dewasa tidak salah pencet di layar HP.
+  */
+  .tombol {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 48px;
+    padding: 0.75rem 1.35rem;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 1rem;
+    line-height: 1.2;
+    text-align: center;
+    cursor: pointer;
+    transition: background-color 0.18s ease, border-color 0.18s ease,
+      transform 0.12s ease, box-shadow 0.18s ease;
+  }
+
+  .tombol:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+
+  .tombol:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  .tombol-utama {
+    background-color: var(--color-bata);
+    color: #fff;
+    box-shadow: var(--shadow-hangat);
+  }
+
+  .tombol-utama:hover:not(:disabled) {
+    background-color: var(--color-bata-tua);
+  }
+
+  .tombol-kedua {
+    background-color: var(--color-kertas);
+    color: var(--color-arang);
+    border: 1.5px solid var(--color-krem-tua);
+  }
+
+  .tombol-kedua:hover:not(:disabled) {
+    border-color: var(--color-kayu);
+    background-color: var(--color-kayu-lembut);
+  }
+
+  .tombol-hijau {
+    background-color: var(--color-daun);
+    color: #fff;
+    box-shadow: var(--shadow-hangat);
+  }
+
+  .tombol-hijau:hover:not(:disabled) {
+    background-color: var(--color-daun-tua);
+  }
+
+  .tombol-bahaya {
+    background-color: transparent;
+    color: var(--color-bahaya);
+    border: 1.5px solid color-mix(in srgb, var(--color-bahaya) 30%, transparent);
+  }
+
+  .tombol-bahaya:hover:not(:disabled) {
+    background-color: var(--color-bahaya-lembut);
+  }
+
+  .kartu {
+    background-color: var(--color-kertas);
+    border: 1.5px solid var(--color-krem-tua);
+    border-radius: 16px;
+    box-shadow: var(--shadow-hangat);
+  }
+
+  .label-kolom {
+    font-family: var(--font-badan);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-arang-muda);
+  }
+
+  .lencana {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 999px;
+    border-width: 1.5px;
+    border-style: solid;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .kolom-isian {
+    width: 100%;
+    min-height: 48px;
+    padding: 0.7rem 0.9rem;
+    border-radius: 12px;
+    border: 1.5px solid var(--color-krem-tua);
+    background-color: var(--color-kertas);
+    color: var(--color-arang);
+    font-size: 1rem;
+    font-family: inherit;
+  }
+
+  .kolom-isian::placeholder {
+    color: color-mix(in srgb, var(--color-arang-muda) 70%, transparent);
+  }
+
+  .kolom-isian:focus {
+    border-color: var(--color-bata);
+  }
+
+  .kolom-isian[aria-invalid="true"] {
+    border-color: var(--color-bahaya);
+    background-color: var(--color-bahaya-lembut);
+  }
+
+  .label-isian {
+    display: block;
+    margin-bottom: 0.35rem;
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--color-arang);
+  }
+
+  /* Hanya untuk pembaca layar: teks yang perlu dibacakan tapi tidak perlu terlihat. */
+  .khusus-pembaca-layar {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  /* Tautan lompat: tersembunyi sampai pengguna keyboard menekan Tab sekali. */
+  .lewati-tautan {
+    position: absolute;
+    left: -9999px;
+    top: 1rem;
+    z-index: 60;
+  }
+
+  .lewati-tautan:focus {
+    left: 1rem;
+    padding: 0.75rem 1.25rem;
+    border-radius: 12px;
+    background-color: var(--color-kertas);
+    color: var(--color-arang);
+    font-weight: 600;
+    box-shadow: var(--shadow-hangat-lg);
+  }
+}
+
+/*
+  Tekstur kertas tipis. Permukaan warna datar sempurna terasa seperti aplikasi
+  perbankan; sedikit butiran membuatnya terasa seperti kertas bungkus nasi.
+*/
+.tekstur-kertas {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.045'/%3E%3C/svg%3E");
+}
+
+@media print {
+  .tanpa-cetak {
+    display: none !important;
+  }
+
+  body {
+    background: #fff;
+    font-size: 12pt;
+  }
+
+  .kartu {
+    box-shadow: none;
+    border-color: #ccc;
+  }
+}
