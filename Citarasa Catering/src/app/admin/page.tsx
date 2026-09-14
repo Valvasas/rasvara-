@@ -52,6 +52,34 @@ export default async function HalamanPapanDapur({
     // Fallback jika DB belum running saat build/typecheck
   }
 
+  // Rekap kebutuhan bahan: agregasi item dari SEMUA pesanan aktif di papan
+  // (sebelum filter pencarian) supaya daftar belanja tetap utuh walau lagi
+  // mencari pesanan tertentu.
+  const rekapBahan = new Map<
+    string,
+    { namaMenu: string; satuan: string; totalJumlah: number; jumlahPesanan: number }
+  >();
+  for (const p of daftarPesanan) {
+    for (const it of p.item) {
+      const kunci = `${it.namaMenu}::${it.satuan}`;
+      const existing = rekapBahan.get(kunci);
+      if (existing) {
+        existing.totalJumlah += it.jumlah;
+        existing.jumlahPesanan += 1;
+      } else {
+        rekapBahan.set(kunci, {
+          namaMenu: it.namaMenu,
+          satuan: it.satuan,
+          totalJumlah: it.jumlah,
+          jumlahPesanan: 1,
+        });
+      }
+    }
+  }
+  const daftarRekapBahan = Array.from(rekapBahan.values()).sort(
+    (a, b) => b.totalJumlah - a.totalJumlah
+  );
+
   // Filter pencarian
   if (kataKunci) {
     daftarPesanan = daftarPesanan.filter(
@@ -99,6 +127,48 @@ export default async function HalamanPapanDapur({
           )}
         </div>
       </div>
+
+      {/* Rekap Kebutuhan Bahan: bantu belanja pasar dari akumulasi pesanan aktif */}
+      {daftarRekapBahan.length > 0 && (
+        <details
+          className="group bg-white rounded-2xl border border-krem-gelap shadow-sm overflow-hidden"
+          open
+        >
+          <summary className="cursor-pointer list-none px-5 py-4 flex items-center justify-between gap-3 hover:bg-krem-tua/40 transition-colors">
+            <div className="flex items-center gap-2.5">
+              <span className="text-lg">🛒</span>
+              <div>
+                <h2 className="font-bold text-sm text-kayu">
+                  Rekap Kebutuhan Bahan
+                </h2>
+                <p className="text-[11px] text-kayu-sedang">
+                  Total pesanan aktif di papan, untuk belanja ke pasar
+                </p>
+              </div>
+            </div>
+            <span className="text-xs font-semibold text-kayu-sedang shrink-0 transition-transform group-open:rotate-180">
+              &#9660;
+            </span>
+          </summary>
+
+          <div className="px-5 pb-5 pt-1 flex flex-wrap gap-2 border-t border-krem-gelap/60">
+            {daftarRekapBahan.map((r) => (
+              <div
+                key={`${r.namaMenu}::${r.satuan}`}
+                className="px-3.5 py-2 rounded-xl bg-krem/60 border border-krem-gelap flex items-center gap-2 mt-3"
+              >
+                <span className="font-bold text-sm text-kayu">
+                  {r.totalJumlah} {r.satuan}
+                </span>
+                <span className="text-xs text-kayu-sedang">{r.namaMenu}</span>
+                <span className="text-[10px] text-kayu-sedang/70 bg-white px-1.5 py-0.5 rounded border border-krem-gelap/80">
+                  {r.jumlahPesanan} pesanan
+                </span>
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
 
       {/* Baris Pencarian & Filter Pesanan */}
       <form method="get" className="bg-white p-4 rounded-2xl border border-krem-gelap flex flex-wrap items-center justify-between gap-3 shadow-sm">

@@ -8,14 +8,23 @@ import type { Menu, Pengaturan, Pengguna } from "@/generated/prisma/client";
 interface FormPemesananProps {
   daftarMenu: Menu[];
   menuAwalSlug?: string;
+  itemAwal?: { menuId: string; jumlah: number }[];
+  menuTidakTersediaUlang?: string[];
   pengaturan: Pengaturan;
   tanggalLibur: string[];
   pengguna: Pengguna | null;
 }
 
+// Kategori porsi-satuan: 1 unit dianggap setara 1 tamu untuk kalkulator estimasi.
+// Tumpeng & nasi goreng prasmanan porsinya untuk rame-rame, jadi sengaja tidak
+// diotomatiskan supaya tidak memberi angka yang tidak bisa dipertanggungjawabkan.
+const KATEGORI_PER_ORANG = new Set(["NASI_KOTAK", "SNACK"]);
+
 export function FormPemesanan({
   daftarMenu,
   menuAwalSlug,
+  itemAwal,
+  menuTidakTersediaUlang = [],
   pengaturan,
   tanggalLibur,
   pengguna,
@@ -25,6 +34,14 @@ export function FormPemesanan({
   // State kuantiti per menu id
   const [jumlahMenu, setJumlahMenu] = useState<Record<string, number>>(() => {
     const awal: Record<string, number> = {};
+
+    if (itemAwal && itemAwal.length > 0) {
+      for (const it of itemAwal) {
+        awal[it.menuId] = it.jumlah;
+      }
+      return awal;
+    }
+
     if (menuAwalSlug) {
       const match = daftarMenu.find((m) => m.slug === menuAwalSlug);
       if (match) {
@@ -39,6 +56,7 @@ export function FormPemesanan({
   );
   const [caraBayar, setCaraBayar] = useState<"TRANSFER" | "TUNAI">("TRANSFER");
   const [tanggalAcara, setTanggalAcara] = useState<string>("");
+  const [jumlahTamu, setJumlahTamu] = useState<string>("");
   const ringkasanRef = useRef<HTMLElement>(null);
 
   // Update kuantiti
@@ -52,6 +70,16 @@ export function FormPemesanan({
       }
       return copy;
     });
+  };
+
+  // Saran jumlah awal saat "+ Tambah Menu" ditekan: pakai estimasi tamu untuk
+  // menu per-porsi (nasi kotak/snack), selain itu minimal pesan biasa.
+  const jumlahSaranAwal = (m: Menu): number => {
+    const tamu = parseInt(jumlahTamu, 10);
+    if (KATEGORI_PER_ORANG.has(m.kategori) && Number.isFinite(tamu) && tamu > 0) {
+      return Math.max(m.minPesan, tamu);
+    }
+    return m.minPesan;
   };
 
   // Item yang dipilih
@@ -160,6 +188,20 @@ export function FormPemesanan({
         </div>
       )}
 
+      {itemAwal && itemAwal.length > 0 && (
+        <div className="p-4 bg-daun-lembut border border-daun/30 text-daun-tua rounded-2xl text-xs font-medium text-center">
+          🔄 Menu dari pesanan sebelumnya sudah dipilihkan otomatis. Cek lagi
+          jumlahnya, lalu tentukan jadwal acara yang baru di bawah.
+        </div>
+      )}
+
+      {menuTidakTersediaUlang.length > 0 && (
+        <div className="p-4 bg-kunyit-lembut border border-kunyit/30 text-kunyit-tua rounded-2xl text-xs font-medium text-center">
+          ⚠️ {menuTidakTersediaUlang.join(", ")} dari pesanan sebelumnya sudah
+          tidak tersedia, jadi tidak ikut dipilihkan ulang.
+        </div>
+      )}
+
       {/* Bagian 1: Pilih Hidangan */}
       <section className="bg-white rounded-3xl border border-krem-gelap p-6 md:p-8 space-y-6 shadow-sm">
         <div>
@@ -167,6 +209,35 @@ export function FormPemesanan({
           <p className="text-xs text-kayu-sedang mt-1">
             Tentukan menu dan jumlah porsi yang Anda butuhkan.
           </p>
+        </div>
+
+        {/* Kalkulator estimasi porsi: bantu tentukan jumlah nasi kotak/snack sesuai tamu */}
+        <div className="p-4 rounded-2xl bg-krem/50 border border-krem-gelap space-y-2">
+          <label
+            htmlFor="jumlahTamu"
+            className="block text-xs font-bold uppercase tracking-wider text-kayu-sedang"
+          >
+            🧮 Estimasi Jumlah Tamu (Opsional)
+          </label>
+          <div className="flex items-center gap-3">
+            <input
+              type="number"
+              id="jumlahTamu"
+              min={1}
+              inputMode="numeric"
+              value={jumlahTamu}
+              onChange={(e) => setJumlahTamu(e.target.value)}
+              placeholder="Contoh: 50"
+              className="w-28 min-h-[44px] px-3 py-2 rounded-xl border border-krem-gelap bg-white text-kayu text-sm focus:outline-none focus:border-bata focus:ring-1 focus:ring-bata"
+            />
+            <p className="text-[11px] text-kayu-sedang leading-relaxed">
+              Untuk Nasi Kotak &amp; Snack Box, jumlah otomatis disarankan
+              1&nbsp;box per tamu saat Anda menekan &ldquo;+ Tambah
+              Menu&rdquo;. Tumpeng &amp; Nasi Goreng porsi besar untuk
+              rame-rame, sebaiknya konsultasikan jumlahnya langsung via
+              WhatsApp.
+            </p>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -240,7 +311,11 @@ export function FormPemesanan({
                       <button
                         type="button"
                         onClick={() =>
-                          ubahJumlah(m.id, m.minPesan, m.minPesan)
+                          ubahJumlah(
+                            m.id,
+                            jumlahSaranAwal(m),
+                            m.minPesan
+                          )
                         }
                         className="min-h-[40px] px-4 py-2 rounded-xl text-xs font-bold text-bata bg-white border border-bata hover:bg-bata hover:text-white transition-colors cursor-pointer"
                       >

@@ -7,17 +7,20 @@ import { FormPemesanan } from "@/components/toko/FormPemesanan";
 import type { Menu, Pengguna } from "@/generated/prisma/client";
 
 interface HalamanPesanProps {
-  searchParams: Promise<{ menu?: string }>;
+  searchParams: Promise<{ menu?: string; ulang?: string }>;
 }
 
 export default async function HalamanPesan({ searchParams }: HalamanPesanProps) {
   const params = await searchParams;
   const menuAwalSlug = params.menu;
+  const kodeUlang = params.ulang;
 
   const daftarMenu: Menu[] = await ambilMenuAktif();
   const pengaturan = await ambilPengaturan();
   let tanggalLibur: string[] = [];
   let pengguna: Pengguna | null = null;
+  let itemAwalUlang: { menuId: string; jumlah: number }[] | undefined;
+  const menuTidakTersediaUlang: string[] = [];
 
   try {
     const [tutup, sesi] = await Promise.all([
@@ -33,6 +36,35 @@ export default async function HalamanPesan({ searchParams }: HalamanPesanProps) 
       pengguna = await db.pengguna.findUnique({
         where: { id: sesi.id },
       });
+
+      // Pesan ulang: hanya izinkan mengisi ulang item dari pesanan MILIK pengguna
+      // yang sedang login (penggunaId cocok, atau tercocokkan lewat nomor telepon
+      // sama seperti aturan akses di /riwayat) — kode pesanan saja tidak cukup.
+      if (kodeUlang) {
+        const pesananLama = await db.pesanan.findUnique({
+          where: { kode: kodeUlang },
+          include: { item: true },
+        });
+
+        const pemilikSah =
+          pesananLama &&
+          (pesananLama.penggunaId === sesi.id ||
+            pesananLama.teleponPemesan === sesi.telepon);
+
+        if (pemilikSah) {
+          const menuAktifById = new Map(daftarMenu.map((m) => [m.id, m]));
+          itemAwalUlang = [];
+
+          for (const it of pesananLama.item) {
+            const menuMasihAda = it.menuId ? menuAktifById.get(it.menuId) : null;
+            if (menuMasihAda) {
+              itemAwalUlang.push({ menuId: menuMasihAda.id, jumlah: it.jumlah });
+            } else {
+              menuTidakTersediaUlang.push(it.namaMenu);
+            }
+          }
+        }
+      }
     }
   } catch {
     // Fallback jika database belum aktif saat dev
@@ -56,6 +88,8 @@ export default async function HalamanPesan({ searchParams }: HalamanPesanProps) 
       <FormPemesanan
         daftarMenu={daftarMenu}
         menuAwalSlug={menuAwalSlug}
+        itemAwal={itemAwalUlang}
+        menuTidakTersediaUlang={menuTidakTersediaUlang}
         pengaturan={pengaturan}
         tanggalLibur={tanggalLibur}
         pengguna={pengguna}
