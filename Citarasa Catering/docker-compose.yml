@@ -1,0 +1,42 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: citarasa-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: citarasa_user
+      POSTGRES_PASSWORD: citarasa_password_ganti_di_produksi
+      POSTGRES_DB: citarasa
+    volumes:
+      - data-postgres:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U citarasa_user -d citarasa"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: citarasa-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: "postgresql://citarasa_user:citarasa_password_ganti_di_produksi@db:5432/citarasa?schema=public"
+      SESSION_SECRET: "${SESSION_SECRET:-ganti-dengan-kunci-acak-minimal-32-karakter}"
+      NEXT_PUBLIC_BASE_URL: "${NEXT_PUBLIC_BASE_URL:-http://localhost:3000}"
+      NODE_ENV: production
+    ports:
+      - "3000:3000"
+    volumes:
+      - unggahan:/app/public/unggahan
+
+volumes:
+  data-postgres:
+  unggahan:
+

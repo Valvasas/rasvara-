@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pembukuan Pedagang - Rasvara Marketplace</title>
+    <link href="https://fonts.googleapis.com/css2?family=Jost:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="admin.css">
+    <link rel="stylesheet" href="vendor.css">
+</head>
+<body>
+    <div class="bookkeeping-shell">
+        <header class="bookkeeping-topbar">
+            <div>
+                <h1><i class="fas fa-book"></i> Pembukuan Toko</h1>
+                <p id="bookkeeping-store-name">Memuat data toko...</p>
+            </div>
+            <div class="inline-actions">
+                <button class="btn-cancel" onclick="window.location.href='/vendor'"><i class="fas fa-arrow-left"></i> Dashboard</button>
+                <button class="btn-save" onclick="loadBookkeepingData()"><i class="fas fa-rotate"></i> Refresh</button>
+            </div>
+        </header>
+
+        <main class="bookkeeping-content">
+            <div class="admin-widgets compact-widgets">
+                <div class="widget-card"><div class="widget-icon"><i class="fas fa-cash-register"></i></div><div><p id="book-sales-revenue">Rp 0</p><span>Omzet Penjualan</span></div></div>
+                <div class="widget-card"><div class="widget-icon"><i class="fas fa-scale-balanced"></i></div><div><p id="book-gross-profit">Rp 0</p><span>Laba Kotor</span></div></div>
+                <div class="widget-card"><div class="widget-icon"><i class="fas fa-money-bill-transfer"></i></div><div><p id="book-net-cashflow">Rp 0</p><span>Net Cashflow</span></div></div>
+                <div class="widget-card"><div class="widget-icon"><i class="fas fa-receipt"></i></div><div><p id="book-order-count">0</p><span>Order Valid</span></div></div>
+            </div>
+
+            <div class="dashboard-grid">
+                <section class="chart-card">
+                    <div class="panel-head">
+                        <h3><i class="fas fa-chart-column"></i> Grafik Omzet 14 Hari</h3>
+                        <span>Order tidak batal</span>
+                    </div>
+                    <div id="book-sales-chart" class="bar-chart"></div>
+                </section>
+
+                <section class="panel-card">
+                    <div class="panel-head">
+                        <h3><i class="fas fa-ranking-star"></i> Produk Terlaris</h3>
+                        <span>Berdasarkan omzet</span>
+                    </div>
+                    <div id="book-top-products" class="compact-list"></div>
+                </section>
+            </div>
+
+            <div class="form-grid ledger-layout" style="margin-top:1.5rem;">
+                <section class="form-card">
+                    <h3><i class="fas fa-pen-to-square"></i> Catat Kas Manual</h3>
+                    <label for="book-ledger-date">Tanggal</label>
+                    <input type="date" id="book-ledger-date">
+                    <label for="book-ledger-type">Tipe</label>
+                    <select id="book-ledger-type"><option value="expense">Kas Keluar</option><option value="income">Kas Masuk</option></select>
+                    <label for="book-ledger-category">Kategori</label>
+                    <input type="text" id="book-ledger-category" placeholder="Bahan baku, ongkir, sewa booth">
+                    <label for="book-ledger-amount">Nominal</label>
+                    <input type="number" id="book-ledger-amount" placeholder="150000">
+                    <label for="book-ledger-payment">Metode Kas</label>
+                    <input type="text" id="book-ledger-payment" placeholder="Kas, Bank, E-Wallet">
+                    <label for="book-ledger-description">Catatan</label>
+                    <textarea id="book-ledger-description" rows="3"></textarea>
+                    <button class="btn-save full-width" onclick="saveBookLedger()"><i class="fas fa-plus"></i> Simpan Catatan</button>
+                </section>
+
+                <section class="panel-card">
+                    <div class="panel-head">
+                        <h3><i class="fas fa-clock-rotate-left"></i> Order Terbaru</h3>
+                        <span id="book-pending-orders">0 berjalan</span>
+                    </div>
+                    <div id="book-recent-orders" class="compact-list"></div>
+                </section>
+            </div>
+
+            <section class="table-container" style="margin-top:1.5rem;">
+                <div class="panel-head">
+                    <h3><i class="fas fa-list"></i> Riwayat Kas Manual</h3>
+                    <span>Income dan expense tambahan</span>
+                </div>
+                <table class="admin-table">
+                    <thead><tr><th>Tanggal</th><th>Tipe</th><th>Kategori</th><th>Nominal</th><th>Metode</th><th>Aksi</th></tr></thead>
+                    <tbody id="book-ledger-body"></tbody>
+                </table>
+            </section>
+        </main>
+    </div>
+    <div id="book-toast-root" class="toast-root" aria-live="polite" aria-atomic="true"></div>
+    <script src="vendor-bookkeeping.js"></script>
+</body>
+</html>

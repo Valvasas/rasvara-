@@ -1,0 +1,227 @@
+// Citarasa Catering - skema database single-tenant.
+// Satu usaha, satu pemilik, banyak pelanggan.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Peran {
+  PEMILIK
+  PELANGGAN
+}
+
+enum KategoriMenu {
+  SNACK
+  NASI_KOTAK
+  TUMPENG
+  NASI_GORENG
+}
+
+enum StatusPesanan {
+  BARU
+  DIKONFIRMASI
+  DIPROSES
+  SIAP
+  SELESAI
+  DIBATALKAN
+}
+
+enum StatusBayar {
+  BELUM_BAYAR
+  MENUNGGU_VERIFIKASI
+  LUNAS
+}
+
+enum CaraAmbil {
+  AMBIL_SENDIRI
+  DIANTAR
+}
+
+enum CaraBayar {
+  TRANSFER
+  TUNAI
+}
+
+enum JenisKas {
+  MASUK
+  KELUAR
+}
+
+enum SumberKas {
+  PESANAN
+  MANUAL
+}
+
+model Pengguna {
+  id           String   @id @default(cuid())
+  nama         String
+  // Nomor HP dipakai sebagai identitas login: pelanggan UMKM hafal nomornya,
+  // belum tentu punya/ingat email.
+  telepon      String   @unique
+  email        String?
+  sandiHash    String
+  peran        Peran    @default(PELANGGAN)
+  alamat       String?
+  dibuatPada   DateTime @default(now())
+  diubahPada   DateTime @updatedAt
+
+  pesanan      Pesanan[]
+  catatanKas   CatatanKas[]
+  riwayatStatus RiwayatStatus[]
+
+  @@index([peran])
+}
+
+model Menu {
+  id             String       @id @default(cuid())
+  nama           String
+  slug           String       @unique
+  deskripsi      String
+  kategori       KategoriMenu
+  harga          Int
+  satuan         String       @default("porsi")
+  minPesan       Int          @default(1)
+  fotoUrl        String?
+  aktif          Boolean      @default(true)
+  // Tumpeng & pesanan besar butuh waktu siap. 0 = bisa dipesan hari ini juga.
+  preorderHari   Int          @default(0)
+  kapasitasHarian Int?
+  urutan         Int          @default(0)
+  dibuatPada     DateTime     @default(now())
+  diubahPada     DateTime     @updatedAt
+
+  item           ItemPesanan[]
+
+  @@index([kategori, aktif])
+  @@index([aktif, urutan])
+}
+
+model Pesanan {
+  id             String        @id @default(cuid())
+  kode           String        @unique
+
+  // Pesanan boleh dibuat tanpa akun (tamu). Kalau pemesan login, tersambung ke akunnya.
+  penggunaId     String?
+  pengguna       Pengguna?     @relation(fields: [penggunaId], references: [id], onDelete: SetNull)
+
+  namaPemesan    String
+  teleponPemesan String
+  alamatAntar    String?
+
+  caraAmbil      CaraAmbil     @default(AMBIL_SENDIRI)
+  tanggalAcara   DateTime
+  jamAcara       String
+  catatan        String?
+
+  status         StatusPesanan @default(BARU)
+  statusBayar    StatusBayar   @default(BELUM_BAYAR)
+  caraBayar      CaraBayar     @default(TRANSFER)
+
+  subtotal       Int
+  ongkir         Int           @default(0)
+  diskon         Int           @default(0)
+  total          Int
+  dibayar        Int           @default(0)
+  buktiBayarUrl  String?
+
+  dikonfirmasiPada DateTime?
+  selesaiPada    DateTime?
+  alasanBatal    String?
+
+  dibuatPada     DateTime      @default(now())
+  diubahPada     DateTime      @updatedAt
+
+  item           ItemPesanan[]
+  riwayat        RiwayatStatus[]
+  kas            CatatanKas?
+
+  @@index([status, tanggalAcara])
+  @@index([tanggalAcara])
+  @@index([teleponPemesan])
+  @@index([dibuatPada])
+}
+
+model ItemPesanan {
+  id          String   @id @default(cuid())
+  pesananId   String
+  pesanan     Pesanan  @relation(fields: [pesananId], references: [id], onDelete: Cascade)
+
+  menuId      String?
+  menu        Menu?    @relation(fields: [menuId], references: [id], onDelete: SetNull)
+
+  // Snapshot: nama & harga dibekukan saat pesanan dibuat supaya nota lama
+  // tidak ikut berubah kalau harga menu naik atau menunya dihapus.
+  namaMenu    String
+  hargaSatuan Int
+  satuan      String
+  jumlah      Int
+  catatan     String?
+  subtotal    Int
+
+  @@index([pesananId])
+}
+
+model RiwayatStatus {
+  id         String         @id @default(cuid())
+  pesananId  String
+  pesanan    Pesanan        @relation(fields: [pesananId], references: [id], onDelete: Cascade)
+  dari       StatusPesanan?
+  ke         StatusPesanan
+  catatan    String?
+  olehId     String?
+  oleh       Pengguna?      @relation(fields: [olehId], references: [id], onDelete: SetNull)
+  dibuatPada DateTime       @default(now())
+
+  @@index([pesananId, dibuatPada])
+}
+
+model CatatanKas {
+  id          String    @id @default(cuid())
+  jenis       JenisKas
+  sumber      SumberKas @default(MANUAL)
+  kategori    String
+  keterangan  String
+  jumlah      Int
+  tanggal     DateTime
+
+  // Satu pesanan hanya boleh melahirkan satu baris kas masuk.
+  // Unique di sini yang menjaga uang tidak terhitung dobel saat status di-klik ulang.
+  pesananId   String?   @unique
+  pesanan     Pesanan?  @relation(fields: [pesananId], references: [id], onDelete: SetNull)
+
+  dicatatOlehId String?
+  dicatatOleh   Pengguna? @relation(fields: [dicatatOlehId], references: [id], onDelete: SetNull)
+
+  dibuatPada  DateTime  @default(now())
+
+  @@index([tanggal])
+  @@index([jenis, tanggal])
+}
+
+model TanggalTutup {
+  id      String   @id @default(cuid())
+  tanggal DateTime @unique
+  alasan  String?
+}
+
+model Pengaturan {
+  id             String  @id @default("utama")
+  namaUsaha      String  @default("Citarasa Catering")
+  tagline        String  @default("Masakan hangat, siap tepat waktu.")
+  cerita         String  @default("")
+  whatsapp       String  @default("")
+  alamat         String  @default("")
+  jamBuka        String  @default("16:00")
+  jamTutup       String  @default("23:00")
+  namaBank       String  @default("")
+  nomorRekening  String  @default("")
+  namaRekening   String  @default("")
+  ongkirDefault  Int     @default(0)
+  minOrderAntar  Int     @default(0)
+  diubahPada     DateTime @updatedAt
+}

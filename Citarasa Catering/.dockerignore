@@ -1,0 +1,12 @@
+node_modules
+.next
+.git
+.pgdata
+.env
+.env*.local
+legacy
+dist
+build
+npm-debug.log*
+tests
+
