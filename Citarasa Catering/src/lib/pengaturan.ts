@@ -24,6 +24,14 @@ const BAWAAN: Pengaturan = {
  * isi, dan footer hanya menembak database sekali per permintaan.
  */
 export const ambilPengaturan = cache(async (): Promise<Pengaturan> => {
-  const tersimpan = await db.pengaturan.findUnique({ where: { id: "utama" } });
-  return tersimpan ?? BAWAAN;
+  try {
+    const promise = db.pengaturan.findUnique({ where: { id: "utama" } });
+    const timeout = new Promise<null>((resolve) =>
+      setTimeout(() => resolve(null), 500)
+    );
+    const tersimpan = await Promise.race([promise, timeout]);
+    return tersimpan ?? BAWAAN;
+  } catch {
+    return BAWAAN;
+  }
 });

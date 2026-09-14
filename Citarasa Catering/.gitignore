@@ -26,6 +26,9 @@ src/generated/
 public/unggahan/*
 !public/unggahan/.gitkeep
 
+# backups
+backups/
+
 # logs
 *.log
 npm-debug.log*

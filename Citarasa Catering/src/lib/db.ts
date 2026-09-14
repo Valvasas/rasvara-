@@ -1,6 +1,8 @@
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
 
+import { Pool } from "pg";
+
 const connectionString = process.env.DATABASE_URL;
 
 if (!connectionString) {
@@ -10,8 +12,12 @@ if (!connectionString) {
 }
 
 function buatClient() {
+  const pool = new Pool({
+    connectionString,
+    connectionTimeoutMillis: 1000,
+  });
   return new PrismaClient({
-    adapter: new PrismaPg({ connectionString }),
+    adapter: new PrismaPg(pool),
   });
 }
 
