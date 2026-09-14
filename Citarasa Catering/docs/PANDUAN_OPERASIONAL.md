@@ -143,3 +143,4 @@ Saat ini foto bukti transfer disimpan secara lokal di `public/unggahan/`:
    - Kegagalan Server Action dan upaya login yang mencurigakan dicatat dengan format terstruktur via `console.error` dan `console.warn`.
 2. **Health Check:**
    - Endpoint root `/` atau `/api/health` dapat digunakan oleh uptime monitor (misal UptimeRobot, BetterStack) untuk memantau ketersediaan sistem 24/7.
+
