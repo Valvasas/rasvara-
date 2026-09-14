@@ -16,6 +16,7 @@ Cara pakai: sebelum mulai kerja, cek dulu apakah tugas terkait sudah ada di sini
 
 *(daftar tugas yang telah dituntaskan beserta catatan dan tanggal)*
 
+- [x] **Peningkatan UX/UI lanjutan (animasi, loading/error state, nav aktif)** — menambahkan `loading.tsx` (toko & admin) dan `not-found.tsx`/`error.tsx` global bertema hangat agar tidak ada lagi layar kosong/crash default Next.js; animasi masuk halus (`anim-masuk`, `anim-mengambang`) dengan penghormatan `prefers-reduced-motion`; hover-lift pada kartu kategori/menu; highlight tautan navigasi aktif di header toko (`NavToko.tsx`) dan admin (`NavAdmin.tsx`); serta bar total mengambang (sticky) di formulir pemesanan mobile agar pembeli tetap melihat total belanja saat mengisi form panjang (2026-09-14).
 - [x] **Inisialisasi git repository** — git repo aktif di root proyek dengan `.gitignore` rapi dan tracking perubahan (2026-09-14).
 - [x] **Test framework & unit testing lengkap** — menggunakan Node test runner bawaan + `tsx`, mencakup 40 unit test: hashing sandi scrypt, formatting Rupiah/WIB/telepon, alur status pesanan, generator kode pesanan CR-YYMMDD-XXXX, dan validasi berkas upload (2026-09-14).
 - [x] **Setup CI pipeline** — konfigurasi GitHub Actions di `.github/workflows/ci.yml` menjalankan typecheck, linting, unit test, dan build secara otomatis (2026-09-14).

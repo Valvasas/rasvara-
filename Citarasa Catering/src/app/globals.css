@@ -63,3 +63,83 @@ body {
   box-shadow: 0 2px 10px rgba(69, 26, 3, 0.06);
 }
 
+/* Cincin fokus keyboard yang jelas tapi tetap hangat (a11y) */
+:focus-visible {
+  outline: 2px solid var(--color-bata);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Scrollbar tipis untuk area geser (kategori, papan dapur) */
+.gulir-tipis {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-krem-gelap) transparent;
+}
+.gulir-tipis::-webkit-scrollbar {
+  height: 6px;
+}
+.gulir-tipis::-webkit-scrollbar-thumb {
+  background-color: var(--color-krem-gelap);
+  border-radius: 999px;
+}
+
+/* Animasi masuk halus agar tampilan tidak terasa kaku/statis */
+@keyframes masuk-naik {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes masuk-skala {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes goyang-lembut {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.anim-masuk {
+  animation: masuk-naik 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.anim-masuk-skala {
+  animation: masuk-skala 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.anim-mengambang {
+  animation: goyang-lembut 3.5s ease-in-out infinite;
+}
+
+/* Jeda bertahap untuk elemen berurutan (kartu, daftar) */
+.jeda-1 { animation-delay: 0.06s; }
+.jeda-2 { animation-delay: 0.12s; }
+.jeda-3 { animation-delay: 0.18s; }
+.jeda-4 { animation-delay: 0.24s; }
+.jeda-5 { animation-delay: 0.3s; }
+.jeda-6 { animation-delay: 0.36s; }
+
+/* Hormati preferensi pengguna yang sensitif terhadap gerakan */
+@media (prefers-reduced-motion: reduce) {
+  .anim-masuk,
+  .anim-masuk-skala,
+  .anim-mengambang {
+    animation: none !important;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+}
+

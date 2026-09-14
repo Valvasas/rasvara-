@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useMemo, useState } from "react";
+import { useActionState, useMemo, useRef, useState } from "react";
 import { aksiBuatPesanan } from "@/app/aksi/pesanan";
 import { rupiah } from "@/lib/format";
 import type { Menu, Pengaturan, Pengguna } from "@/generated/prisma/client";
@@ -39,6 +39,7 @@ export function FormPemesanan({
   );
   const [caraBayar, setCaraBayar] = useState<"TRANSFER" | "TUNAI">("TRANSFER");
   const [tanggalAcara, setTanggalAcara] = useState<string>("");
+  const ringkasanRef = useRef<HTMLElement>(null);
 
   // Update kuantiti
   const ubahJumlah = (menuId: string, jumlah: number, minPesan: number) => {
@@ -117,8 +118,42 @@ export function FormPemesanan({
   // Pengecekan tanggal libur
   const isTanggalLibur = tanggalLibur.includes(tanggalAcara);
 
+  const lihatRingkasan = () => {
+    ringkasanRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   return (
-    <form action={action} className="space-y-8">
+    <form
+      action={action}
+      className={`space-y-8 ${itemTerpilih.length > 0 ? "pb-24 lg:pb-0" : ""}`}
+    >
+      {/* Bar total mengambang: agar total belanja selalu terlihat saat mengisi form panjang */}
+      {itemTerpilih.length > 0 && (
+        <div
+          className="fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur border-t border-krem-gelap shadow-[0_-6px_24px_rgba(69,26,3,0.1)] lg:hidden anim-masuk-skala"
+          style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+        >
+          <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <span className="text-[11px] text-kayu-sedang block leading-tight">
+                {itemTerpilih.length} menu dipilih
+              </span>
+              <span className="font-extrabold text-bata text-lg leading-tight">
+                {rupiah(total)}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={lihatRingkasan}
+              className="min-h-[48px] shrink-0 px-5 py-2.5 rounded-xl font-bold text-sm text-white bg-bata hover:bg-bata-tua transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>Lihat Ringkasan</span>
+              <span aria-hidden="true">&darr;</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {state?.pesan && (
         <div className="p-4 bg-bahaya-lembut border border-bahaya/30 text-bahaya rounded-2xl text-sm font-semibold text-center">
           {state.pesan}
@@ -493,7 +528,10 @@ export function FormPemesanan({
       </section>
 
       {/* Ringkasan Biaya & Tombol Submit */}
-      <section className="bg-kayu text-krem rounded-3xl p-6 md:p-8 space-y-6 shadow-xl">
+      <section
+        ref={ringkasanRef}
+        className="bg-kayu text-krem rounded-3xl p-6 md:p-8 space-y-6 shadow-xl scroll-mt-24"
+      >
         <h3 className="text-lg font-bold text-white border-b border-krem/20 pb-3">
           Ringkasan Pemesanan
         </h3>

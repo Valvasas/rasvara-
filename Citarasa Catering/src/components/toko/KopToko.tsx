@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { bacaSesi } from "@/lib/auth";
 import { ambilPengaturan } from "@/lib/pengaturan";
 import { jamTampil, sedangBuka } from "@/lib/format";
 import { Wordmark } from "@/components/Wordmark";
+import { NavToko } from "@/components/toko/NavToko";
 
 export async function KopToko() {
   const [sesi, pengaturan] = await Promise.all([
@@ -52,56 +52,7 @@ export async function KopToko() {
         <Wordmark href="/" tagline={false} />
 
         {/* Menu Navigasi Langsung (Mudah disentuh, tanpa tersembunyi) */}
-        <nav
-          aria-label="Navigasi Utama"
-          className="flex items-center gap-1 sm:gap-2 overflow-x-auto py-1"
-        >
-          <Link
-            href="/menu"
-            className="min-h-[48px] px-3.5 sm:px-4 py-2 rounded-xl text-sm font-semibold text-kayu hover:text-bata hover:bg-krem-tua transition-colors inline-flex items-center"
-          >
-            Menu
-          </Link>
-
-          <Link
-            href="/pesan"
-            className="min-h-[48px] px-3.5 sm:px-4 py-2 rounded-xl text-sm font-semibold text-white bg-bata hover:bg-bata-tua transition-colors inline-flex items-center shadow-sm"
-          >
-            Pesan
-          </Link>
-
-          <Link
-            href="/lacak"
-            className="min-h-[48px] px-3.5 sm:px-4 py-2 rounded-xl text-sm font-medium text-kayu hover:text-bata hover:bg-krem-tua transition-colors inline-flex items-center"
-          >
-            Lacak
-          </Link>
-
-          {sesi ? (
-            sesi.peran === "PEMILIK" ? (
-              <Link
-                href="/admin"
-                className="min-h-[48px] px-3.5 sm:px-4 py-2 rounded-xl text-sm font-bold text-kunyit-tua bg-kunyit-lembut border border-kunyit/30 hover:bg-kunyit/20 transition-colors inline-flex items-center"
-              >
-                Dapur Admin
-              </Link>
-            ) : (
-              <Link
-                href="/riwayat"
-                className="min-h-[48px] px-3.5 sm:px-4 py-2 rounded-xl text-sm font-medium text-kayu hover:bg-krem-tua border border-krem-gelap inline-flex items-center"
-              >
-                Pesanan Saya
-              </Link>
-            )
-          ) : (
-            <Link
-              href="/masuk"
-              className="min-h-[48px] px-3.5 sm:px-4 py-2 rounded-xl text-sm font-medium text-kayu-sedang hover:text-kayu hover:bg-krem-tua transition-colors inline-flex items-center"
-            >
-              Masuk
-            </Link>
-          )}
-        </nav>
+        <NavToko peran={sesi?.peran ?? null} />
       </div>
     </header>
   );

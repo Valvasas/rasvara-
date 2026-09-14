@@ -48,24 +48,24 @@ export default async function BerandaToko() {
       {/* 1. Hero Section yang Hangat */}
       <section className="relative overflow-hidden bg-gradient-to-b from-krem-tua via-krem to-krem border-b border-krem-gelap/60 py-16 md:py-24 px-4">
         <div className="container mx-auto max-w-5xl text-center space-y-6">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-bata-lembut border border-bata/30 text-bata-tua text-xs font-bold tracking-wide uppercase">
+          <div className="anim-masuk inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-bata-lembut border border-bata/30 text-bata-tua text-xs font-bold tracking-wide uppercase">
             <span>🌶️ Resep Asli Rumahan</span>
             <span>&bull;</span>
             <span>Tanpa Pengawet</span>
           </div>
 
-          <h1 className="text-3xl md:text-5xl lg:text-6xl font-extrabold text-kayu tracking-tight leading-tight md:leading-tight">
+          <h1 className="anim-masuk jeda-1 text-3xl md:text-5xl lg:text-6xl font-extrabold text-kayu tracking-tight leading-tight md:leading-tight">
             Masakan Hangat,{" "}
             <span className="text-bata block sm:inline">Siap Tepat Waktu.</span>
           </h1>
 
-          <p className="max-w-2xl mx-auto text-base md:text-lg text-kayu-sedang leading-relaxed">
+          <p className="anim-masuk jeda-2 max-w-2xl mx-auto text-base md:text-lg text-kayu-sedang leading-relaxed">
             Spesialis katering nasi kotak, snack box, dan tumpeng untuk acara
             keluarga, syukuran kantor, dan pengajian. Dimasak langsung sebelum diantar
             agar cita rasa tetap prima.
           </p>
 
-          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <div className="anim-masuk jeda-3 pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link
               href="/menu"
               className="min-h-[48px] w-full sm:w-auto px-8 py-3.5 rounded-xl font-bold text-white bg-bata hover:bg-bata-tua transition-all shadow-md hover:shadow-lg inline-flex items-center justify-center gap-2"
@@ -97,14 +97,14 @@ export default async function BerandaToko() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {kategoriUtama.map((kat) => (
+          {kategoriUtama.map((kat, idx) => (
             <Link
               key={kat.kategori}
               href={kat.tautan}
-              className="group p-6 bg-white rounded-2xl border border-krem-gelap/80 hover:border-bata/40 hover:shadow-md transition-all flex flex-col justify-between"
+              className={`anim-masuk jeda-${idx + 1} group p-6 bg-white rounded-2xl border border-krem-gelap/80 hover:border-bata/40 hover:shadow-lg hover:-translate-y-1 transition-all flex flex-col justify-between`}
             >
               <div>
-                <span className="text-4xl block mb-3">{kat.ikon}</span>
+                <span className="text-4xl block mb-3 transition-transform group-hover:scale-110 group-hover:-rotate-3">{kat.ikon}</span>
                 <h3 className="text-lg font-bold text-kayu group-hover:text-bata transition-colors">
                   {kat.judul}
                 </h3>
@@ -143,10 +143,10 @@ export default async function BerandaToko() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {menuUnggulan.map((menu) => (
+            {menuUnggulan.map((menu, idx) => (
               <div
                 key={menu.id}
-                className="bg-white rounded-2xl border border-krem-gelap overflow-hidden flex flex-col justify-between hover:shadow-md transition-shadow"
+                className={`anim-masuk jeda-${Math.min(idx + 1, 6)} bg-white rounded-2xl border border-krem-gelap overflow-hidden flex flex-col justify-between hover:shadow-lg hover:-translate-y-1 hover:border-bata/30 transition-all`}
               >
                 {/* Header kartu menu */}
                 <div className="p-6 flex-1 flex flex-col justify-between">
@@ -215,8 +215,8 @@ export default async function BerandaToko() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white p-6 rounded-2xl border border-krem-gelap text-center space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-daun-lembut text-daun-tua mx-auto flex items-center justify-center text-xl font-bold">
+            <div className="group anim-masuk bg-white p-6 rounded-2xl border border-krem-gelap text-center space-y-3 hover:shadow-md hover:-translate-y-1 transition-all">
+              <div className="w-12 h-12 rounded-2xl bg-daun-lembut text-daun-tua mx-auto flex items-center justify-center text-xl font-bold transition-transform group-hover:scale-110">
                 ⏰
               </div>
               <h3 className="font-bold text-base text-kayu">Tepat Jam Acara</h3>
@@ -226,8 +226,8 @@ export default async function BerandaToko() {
               </p>
             </div>
 
-            <div className="bg-white p-6 rounded-2xl border border-krem-gelap text-center space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-kunyit-lembut text-kunyit-tua mx-auto flex items-center justify-center text-xl font-bold">
+            <div className="group anim-masuk jeda-2 bg-white p-6 rounded-2xl border border-krem-gelap text-center space-y-3 hover:shadow-md hover:-translate-y-1 transition-all">
+              <div className="w-12 h-12 rounded-2xl bg-kunyit-lembut text-kunyit-tua mx-auto flex items-center justify-center text-xl font-bold transition-transform group-hover:scale-110">
                 🍃
               </div>
               <h3 className="font-bold text-base text-kayu">Bumbu Asli & Halal</h3>
@@ -237,8 +237,8 @@ export default async function BerandaToko() {
               </p>
             </div>
 
-            <div className="bg-white p-6 rounded-2xl border border-krem-gelap text-center space-y-3">
-              <div className="w-12 h-12 rounded-2xl bg-bata-lembut text-bata-tua mx-auto flex items-center justify-center text-xl font-bold">
+            <div className="group anim-masuk jeda-3 bg-white p-6 rounded-2xl border border-krem-gelap text-center space-y-3 hover:shadow-md hover:-translate-y-1 transition-all">
+              <div className="w-12 h-12 rounded-2xl bg-bata-lembut text-bata-tua mx-auto flex items-center justify-center text-xl font-bold transition-transform group-hover:scale-110">
                 📱
               </div>
               <h3 className="font-bold text-base text-kayu">Lacak Status Real-time</h3>
