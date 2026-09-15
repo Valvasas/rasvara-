@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { aksiLacakPesanan } from "@/app/aksi/pesanan";
+import { IkonPeringatan } from "@/components/ikon/Ikon";
 
 interface FormLacakProps {
   pesanAwal?: string;
@@ -19,7 +20,7 @@ export function FormLacak({ pesanAwal }: FormLacakProps) {
           role="alert"
           className="p-3.5 bg-bahaya-lembut border border-bahaya/30 text-bahaya rounded-2xl text-xs font-semibold text-center flex items-center justify-center gap-2 anim-masuk"
         >
-          <span aria-hidden="true">⚠️</span>
+          <IkonPeringatan className="w-4 h-4 shrink-0" />
           <span>{pesanKesalahan}</span>
         </div>
       )}

@@ -18,6 +18,7 @@ import { LencanaBayar, LencanaStatus } from "@/components/Lencana";
 import { FormUnggahBukti } from "@/components/toko/FormUnggahBukti";
 import { TombolCetakPesanan } from "@/components/admin/TombolCetakPesanan";
 import { TombolSalin } from "@/components/TombolSalin";
+import { IkonCek } from "@/components/ikon/Ikon";
 
 interface HalamanPesananProps {
   params: Promise<{ kode: string }>;
@@ -119,7 +120,11 @@ export default async function HalamanDetailPesanan({
                           : "bg-krem-gelap text-kayu-sedang"
                       }`}
                     >
-                      {selesai && !sedang ? "✓" : idx + 1}
+                      {selesai && !sedang ? (
+                        <IkonCek className="w-3.5 h-3.5" strokeWidth={3} />
+                      ) : (
+                        idx + 1
+                      )}
                     </div>
                     <span
                       className={`text-[10px] sm:text-xs mt-1.5 font-medium ${

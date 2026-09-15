@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { Wordmark } from "@/components/Wordmark";
+import { IkonPeringatan } from "@/components/ikon/Ikon";
 
 export default function TerjadiKesalahan({
   error,
@@ -22,10 +23,12 @@ export default function TerjadiKesalahan({
           <Wordmark href="/" tagline={false} className="justify-center" />
         </div>
 
-        <div className="text-6xl">😥</div>
+        <div className="w-16 h-16 rounded-2xl bg-bahaya-lembut text-bahaya mx-auto flex items-center justify-center">
+          <IkonPeringatan className="w-8 h-8" />
+        </div>
 
         <div className="space-y-2">
-          <h1 className="text-2xl md:text-3xl font-extrabold text-kayu">
+          <h1 className="font-tampil text-2xl md:text-3xl font-bold text-kayu">
             Ada yang Kurang Sedap
           </h1>
           <p className="text-sm text-kayu-sedang leading-relaxed">

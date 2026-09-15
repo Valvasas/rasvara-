@@ -5,6 +5,7 @@ import { bacaSesi } from "@/lib/auth";
 import { rupiah, tanggalPanjang, teleponTampil } from "@/lib/format";
 import { LencanaBayar, LencanaStatus } from "@/components/Lencana";
 import { TombolKeluar } from "@/components/TombolKeluar";
+import { IkonRiwayat } from "@/components/ikon/Ikon";
 
 export default async function HalamanRiwayat() {
   const sesi = await bacaSesi();
@@ -63,7 +64,9 @@ export default async function HalamanRiwayat() {
 
         {pesananSaya.length === 0 ? (
           <div className="bg-white rounded-2xl border border-krem-gelap p-12 text-center max-w-md mx-auto space-y-4">
-            <div className="text-4xl">📋</div>
+            <div className="w-14 h-14 rounded-2xl bg-krem-tua text-kayu-sedang mx-auto flex items-center justify-center">
+              <IkonRiwayat className="w-7 h-7" />
+            </div>
             <h3 className="text-base font-bold text-kayu">
               Belum Ada Pesanan
             </h3>

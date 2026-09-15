@@ -2,6 +2,7 @@
 
 import { useActionState, useState, useTransition, useRef, type ChangeEvent } from "react";
 import { aksiUnggahBuktiBayar, aksiKonfirmasiBayar, type HasilAksiPesanan } from "@/app/aksi/pesanan";
+import { IkonLampiran } from "@/components/ikon/Ikon";
 
 interface FormUnggahBuktiProps {
   kode: string;
@@ -58,7 +59,7 @@ export function FormUnggahBukti({
         <div className="p-4 bg-white rounded-2xl border border-krem-gelap space-y-2">
           <div className="flex items-center justify-between text-xs">
             <span className="font-bold text-kayu flex items-center gap-1.5">
-              <span>📎</span> Bukti Transfer Terlampir
+              <IkonLampiran className="w-4 h-4" /> Bukti Transfer Terlampir
             </span>
             <a
               href={buktiSaatIni}

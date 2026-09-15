@@ -6,10 +6,15 @@ import {
   URUTAN_KATEGORI,
 } from "@/lib/pesanan";
 import { LencanaKategori } from "@/components/Lencana";
+import { PanelFotoMenu } from "@/components/toko/PanelFotoMenu";
+import { KomponenPaginasi } from "@/components/toko/KomponenPaginasi";
+import { IkonMangkuk } from "@/components/ikon/Ikon";
 import type { KategoriMenu } from "@/generated/prisma/client";
 
+const UKURAN_HALAMAN = 9;
+
 interface HalamanMenuProps {
-  searchParams: Promise<{ kategori?: string }>;
+  searchParams: Promise<{ kategori?: string; halaman?: string }>;
 }
 
 export default async function HalamanMenu({ searchParams }: HalamanMenuProps) {
@@ -18,6 +23,17 @@ export default async function HalamanMenu({ searchParams }: HalamanMenuProps) {
 
   const semuaMenu = await ambilMenuAktif(filterKategori);
 
+  const totalHalaman = Math.max(1, Math.ceil(semuaMenu.length / UKURAN_HALAMAN));
+  const halamanDiminta = Number(params.halaman ?? "1");
+  const halamanAktif =
+    Number.isFinite(halamanDiminta) && halamanDiminta >= 1
+      ? Math.min(halamanDiminta, totalHalaman)
+      : 1;
+  const menuHalamanIni = semuaMenu.slice(
+    (halamanAktif - 1) * UKURAN_HALAMAN,
+    halamanAktif * UKURAN_HALAMAN
+  );
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl space-y-8">
       {/* Header Halaman */}
@@ -25,7 +41,7 @@ export default async function HalamanMenu({ searchParams }: HalamanMenuProps) {
         <span className="text-xs font-bold uppercase tracking-widest text-bata">
           Pilihan Hidangan Terbaik
         </span>
-        <h1 className="text-3xl md:text-4xl font-extrabold text-kayu">
+        <h1 className="font-tampil text-3xl md:text-4xl font-bold text-kayu">
           Daftar Menu Catering
         </h1>
         <p className="text-sm text-kayu-sedang">
@@ -68,7 +84,9 @@ export default async function HalamanMenu({ searchParams }: HalamanMenuProps) {
       {/* Grid Menu */}
       {semuaMenu.length === 0 ? (
         <div className="bg-white rounded-2xl border border-krem-gelap p-12 text-center max-w-md mx-auto space-y-4">
-          <div className="text-4xl">🥘</div>
+          <div className="w-14 h-14 rounded-2xl bg-krem-tua text-kayu-sedang mx-auto flex items-center justify-center">
+            <IkonMangkuk className="w-7 h-7" />
+          </div>
           <h3 className="text-lg font-bold text-kayu">Belum Ada Menu</h3>
           <p className="text-xs text-kayu-sedang leading-relaxed">
             Menu untuk kategori ini belum tersedia atau dapur sedang memperbarui
@@ -83,57 +101,66 @@ export default async function HalamanMenu({ searchParams }: HalamanMenuProps) {
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {semuaMenu.map((item) => (
+          {menuHalamanIni.map((item) => (
             <article
               key={item.id}
               className="bg-white rounded-2xl border border-krem-gelap hover:border-bata/40 hover:shadow-md transition-all flex flex-col justify-between overflow-hidden"
             >
-              <div className="p-6 space-y-4">
-                {/* Lencana status dan kategori */}
-                <div className="flex items-center justify-between gap-2">
-                  <LencanaKategori kategori={item.kategori} />
-                  {item.preorderHari > 0 ? (
-                    <span className="text-[11px] font-semibold text-kunyit-tua bg-kunyit-lembut px-2.5 py-0.5 rounded-md border border-kunyit/30">
-                      Preorder {item.preorderHari} hari
-                    </span>
-                  ) : (
-                    <span className="text-[11px] font-semibold text-daun-tua bg-daun-lembut px-2.5 py-0.5 rounded-md border border-daun/30">
-                      Bisa Hari Ini
-                    </span>
-                  )}
-                </div>
+              <Link href={`/menu/${item.slug}`} className="flex-1 flex flex-col">
+                <PanelFotoMenu
+                  fotoUrl={item.fotoUrl}
+                  kategori={item.kategori}
+                  nama={item.nama}
+                  className="aspect-[4/3]"
+                />
 
-                {/* Judul & Deskripsi */}
-                <div>
-                  <h2 className="text-lg font-bold text-kayu">{item.nama}</h2>
-                  <p className="text-xs text-kayu-sedang mt-2 line-clamp-3 leading-relaxed">
-                    {item.deskripsi}
-                  </p>
-                </div>
-
-                {/* Harga dan ketentuan porsi */}
-                <div className="pt-4 border-t border-krem-gelap/60 flex items-end justify-between">
-                  <div>
-                    <span className="text-xs text-kayu-sedang block">
-                      Harga / {item.satuan}
-                    </span>
-                    <span className="text-xl font-extrabold text-bata">
-                      {rupiah(item.harga)}
-                    </span>
-                  </div>
-
-                  <div className="text-right text-xs text-kayu-sedang">
-                    <span className="block font-medium">
-                      Min. {item.minPesan} {item.satuan}
-                    </span>
-                    {item.kapasitasHarian && (
-                      <span className="text-[11px] text-kayu-sedang/80 block">
-                        Maks {item.kapasitasHarian}/hari
+                <div className="p-6 space-y-4 flex-1">
+                  {/* Lencana status dan kategori */}
+                  <div className="flex items-center justify-between gap-2">
+                    <LencanaKategori kategori={item.kategori} />
+                    {item.preorderHari > 0 ? (
+                      <span className="text-[11px] font-semibold text-kunyit-tua bg-kunyit-lembut px-2.5 py-0.5 rounded-md border border-kunyit/30">
+                        Preorder {item.preorderHari} hari
+                      </span>
+                    ) : (
+                      <span className="text-[11px] font-semibold text-daun-tua bg-daun-lembut px-2.5 py-0.5 rounded-md border border-daun/30">
+                        Bisa Hari Ini
                       </span>
                     )}
                   </div>
+
+                  {/* Judul & Deskripsi */}
+                  <div>
+                    <h2 className="text-lg font-bold text-kayu">{item.nama}</h2>
+                    <p className="text-xs text-kayu-sedang mt-2 line-clamp-3 leading-relaxed">
+                      {item.deskripsi}
+                    </p>
+                  </div>
+
+                  {/* Harga dan ketentuan porsi */}
+                  <div className="pt-4 border-t border-krem-gelap/60 flex items-end justify-between">
+                    <div>
+                      <span className="text-xs text-kayu-sedang block">
+                        Harga / {item.satuan}
+                      </span>
+                      <span className="text-xl font-extrabold text-bata">
+                        {rupiah(item.harga)}
+                      </span>
+                    </div>
+
+                    <div className="text-right text-xs text-kayu-sedang">
+                      <span className="block font-medium">
+                        Min. {item.minPesan} {item.satuan}
+                      </span>
+                      {item.kapasitasHarian && (
+                        <span className="text-[11px] text-kayu-sedang/80 block">
+                          Maks {item.kapasitasHarian}/hari
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              </Link>
 
               {/* Tombol Pesan */}
               <div className="p-6 pt-0">
@@ -149,6 +176,13 @@ export default async function HalamanMenu({ searchParams }: HalamanMenuProps) {
           ))}
         </div>
       )}
+
+      <KomponenPaginasi
+        halamanAktif={halamanAktif}
+        totalHalaman={totalHalaman}
+        basePath="/menu"
+        queryLain={{ kategori: filterKategori }}
+      />
 
       {/* Bantuan Custom Order */}
       <div className="bg-krem-tua rounded-2xl border border-krem-gelap p-6 md:p-8 flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">

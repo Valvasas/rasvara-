@@ -29,3 +29,23 @@ export async function ambilMenuAktif(kategori?: KategoriMenu): Promise<Menu[]> {
   return MENU_BAWAAN;
 }
 
+/** Satu menu aktif berdasarkan slug, untuk halaman detail. Null jika tidak ada/nonaktif. */
+export async function ambilMenuBerdasarkanSlug(slug: string): Promise<Menu | null> {
+  try {
+    const promise = db.menu.findUnique({ where: { slug } });
+
+    // Timeout 1 detik jika database offline
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("DB_TIMEOUT")), 1000)
+    );
+
+    const hasil = (await Promise.race([promise, timeout])) as Menu | null;
+    if (hasil) return hasil.aktif ? hasil : null;
+  } catch {
+    // Database offline atau belum ada data: gunakan menu bawaan
+  }
+
+  const bawaan = MENU_BAWAAN.find((m) => m.slug === slug);
+  return bawaan && bawaan.aktif ? bawaan : null;
+}
+
