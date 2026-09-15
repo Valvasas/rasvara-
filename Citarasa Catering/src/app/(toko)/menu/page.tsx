@@ -38,6 +38,14 @@ export default async function HalamanMenu({ searchParams }: HalamanMenuProps) {
     <div className="container mx-auto px-4 py-8 max-w-6xl space-y-8">
       {/* Header Halaman */}
       <div className="text-center max-w-2xl mx-auto space-y-3">
+        <img
+          src="/ilustrasi/lihat-menu.png"
+          alt=""
+          aria-hidden="true"
+          width={216}
+          height={231}
+          className="h-28 w-auto mx-auto mb-1"
+        />
         <span className="text-xs font-bold uppercase tracking-widest text-bata">
           Pilihan Hidangan Terbaik
         </span>
