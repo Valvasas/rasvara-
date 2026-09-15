@@ -13,6 +13,8 @@ Cara pakai: sebelum mulai kerja, cek dulu apakah tugas terkait sudah ada di sini
 
 ## Selesai
 
+- [x] **Perbaikan migrasi database awal yang hilang (bug kritikal deploy)** — folder migrasi `20260913000000_struktur_awal` yang disebut di ARCHITECTURE.md ternyata tidak pernah ter-commit ke repo; hanya migrasi susulan `tambah_peran_staf_dapur` yang ada, dan itu menjalankan `ALTER TYPE` pada enum `Peran` yang belum pernah dibuat. Akibatnya `npm run db:deploy` selalu gagal total di database baru (clone baru, staging, CI, produksi) — proyek tidak bisa dijalankan dari nol. Migrasi baseline dibuat ulang dari `prisma/schema.prisma` (via `prisma migrate diff --from-empty`) dan ditaruh dengan timestamp sebelum migrasi staf dapur agar urutan riwayat tetap logis. Diverifikasi: `db:deploy` dari database kosong sukses, `db:seed` sukses, `typecheck`/`lint`/`test` (41 test)/`build` semua lolos bersih, dan aplikasi dites langsung di browser pada halaman toko & admin (2026-09-15).
+
 *(daftar tugas yang telah dituntaskan beserta catatan dan tanggal)*
 
 - [x] **Audit menyeluruh, pemeliharaan & refactoring sistem** — optimasi skalabilitas query PostgreSQL di papan pesanan dan kelola menu (penyaringan langsung pada klausul `where` Prisma, bukan array filter di memori); pembatasan limit `take: 50` pada riwayat pelanggan; penutupan celah keamanan dengan rate limiting sliding-window pada mutasi kas dan manajemen staf; perbaikan *silent failure* di halaman `/lacak` menggunakan komponen interaktif `FormLacak.tsx`; pembuatan komponen 1-klik `TombolSalin.tsx` (copy to clipboard) untuk kode pesanan dan rekening; perbaikan tautan `NavToko.tsx` untuk staf dapur (`Papan Dapur`); serta penambahan penanganan error pada tombol aksi status & pelunasan kanban (2026-09-15).
