@@ -284,7 +284,7 @@ export async function aksiBuatPesanan(
   // Tandai cookie pesanan_saya di peramban
   await tandaiPesananMilikSaya(pesananHasil.kode);
 
-  redirect(`/pesanan/${pesananHasil.kode}`);
+  redirect(`/pesanan/${pesananHasil.kode}?baru=1`);
 }
 
 export async function aksiLacakPesanan(

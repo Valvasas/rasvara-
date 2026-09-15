@@ -101,10 +101,18 @@ export default async function BerandaToko() {
           </div>
         </div>
 
-        {fotoSorotan.length > 0 && (
+        {fotoSorotan.length > 0 ? (
           <div className="anim-masuk jeda-4 mt-12 max-w-3xl mx-auto">
             <PanelSorotan foto={fotoSorotan} />
           </div>
+        ) : (
+          <img
+            src="/ilustrasi/sambutan-beranda.png"
+            alt="Ilustrasi juru masak menyambut pelanggan dengan salam hangat"
+            width={206}
+            height={248}
+            className="anim-masuk jeda-4 mt-10 h-40 md:h-48 w-auto mx-auto"
+          />
         )}
       </section>
 

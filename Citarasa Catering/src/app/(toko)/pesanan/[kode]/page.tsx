@@ -22,12 +22,15 @@ import { IkonCek } from "@/components/ikon/Ikon";
 
 interface HalamanPesananProps {
   params: Promise<{ kode: string }>;
+  searchParams: Promise<{ baru?: string }>;
 }
 
 export default async function HalamanDetailPesanan({
   params,
+  searchParams,
 }: HalamanPesananProps) {
   const { kode } = await params;
+  const { baru } = await searchParams;
 
   const [pesanan, sesi, aksesCookie, pengaturan] = await Promise.all([
     db.pesanan.findUnique({
@@ -77,6 +80,26 @@ export default async function HalamanDetailPesanan({
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-3xl space-y-6">
+      {/* Sambutan pesanan baru berhasil dibuat */}
+      {baru === "1" && (
+        <div className="anim-masuk bg-daun-lembut border border-daun/30 rounded-2xl p-4 flex items-center gap-4">
+          <img
+            src="/ilustrasi/pesanan-berhasil.png"
+            alt=""
+            aria-hidden="true"
+            width={126}
+            height={150}
+            className="h-16 w-auto shrink-0"
+          />
+          <div>
+            <p className="font-bold text-sm text-daun-tua">Pesanan berhasil dibuat!</p>
+            <p className="text-xs text-daun-tua/80 mt-0.5">
+              Simpan kode pesanan Anda untuk melacak status masakan di dapur.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Banner Ringkasan Kode */}
       <div className="bg-white rounded-3xl border border-krem-gelap p-6 md:p-8 shadow-sm space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-krem-gelap/60 pb-6">

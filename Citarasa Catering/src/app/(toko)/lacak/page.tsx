@@ -14,6 +14,14 @@ export default async function HalamanLacak({ searchParams }: HalamanLacakProps) 
       <div className="bg-white rounded-3xl border border-krem-gelap p-6 sm:p-10 shadow-sm space-y-6">
         {/* Header Form */}
         <div className="text-center space-y-2">
+          <img
+            src="/ilustrasi/lacak-pesanan.png"
+            alt=""
+            aria-hidden="true"
+            width={274}
+            height={356}
+            className="h-32 w-auto mx-auto mb-1"
+          />
           <div className="w-12 h-12 rounded-2xl bg-kunyit-lembut text-kunyit-tua mx-auto flex items-center justify-center">
             <IkonCari className="w-6 h-6" />
           </div>
