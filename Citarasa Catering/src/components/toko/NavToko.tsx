@@ -52,12 +52,12 @@ export function NavToko({ peran }: NavTokoProps) {
       </Link>
 
       {peran ? (
-        peran === "PEMILIK" ? (
+        peran === "PEMILIK" || peran === "STAF_DAPUR" ? (
           <Link
             href="/admin"
             className="min-h-[48px] px-3.5 sm:px-4 py-2 rounded-xl text-sm font-bold text-kunyit-tua bg-kunyit-lembut border border-kunyit/30 hover:bg-kunyit/20 transition-colors inline-flex items-center"
           >
-            Dapur Admin
+            {peran === "STAF_DAPUR" ? "Papan Dapur" : "Dapur Admin"}
           </Link>
         ) : (
           <Link

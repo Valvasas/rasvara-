@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import { bacaSesi } from "@/lib/auth";
 import { rupiah } from "@/lib/format";
 import { LABEL_KATEGORI, URUTAN_KATEGORI } from "@/lib/pesanan";
 import { TombolToggleMenu } from "@/components/admin/TombolToggleMenu";
-import type { Menu } from "@/generated/prisma/client";
+import type { KategoriMenu, Menu } from "@/generated/prisma/client";
 
 interface HalamanAdminMenuProps {
   searchParams: Promise<{ q?: string; kategori?: string }>;
@@ -12,30 +14,39 @@ interface HalamanAdminMenuProps {
 export default async function HalamanAdminMenu({
   searchParams,
 }: HalamanAdminMenuProps) {
+  const sesi = await bacaSesi();
+  if (sesi?.peran !== "PEMILIK") {
+    redirect("/admin");
+  }
+
   const params = await searchParams;
-  const kataKunci = params.q?.trim().toLowerCase() || "";
+  const kataKunci = params.q?.trim() || "";
   const filterKategori = params.kategori || "";
+
+  const filterKategoriEnum =
+    filterKategori && URUTAN_KATEGORI.includes(filterKategori as KategoriMenu)
+      ? (filterKategori as KategoriMenu)
+      : undefined;
+
+  const kondisiPencarian = kataKunci
+    ? [
+        { nama: { contains: kataKunci, mode: "insensitive" as const } },
+        { deskripsi: { contains: kataKunci, mode: "insensitive" as const } },
+      ]
+    : undefined;
 
   let daftarMenu: Menu[] = [];
 
   try {
     daftarMenu = await db.menu.findMany({
+      where: {
+        ...(filterKategoriEnum ? { kategori: filterKategoriEnum } : {}),
+        ...(kondisiPencarian ? { OR: kondisiPencarian } : {}),
+      },
       orderBy: [{ kategori: "asc" }, { urutan: "asc" }, { nama: "asc" }],
     });
   } catch {
     // Fallback saat DB belum jalan
-  }
-
-  if (kataKunci) {
-    daftarMenu = daftarMenu.filter(
-      (m) =>
-        m.nama.toLowerCase().includes(kataKunci) ||
-        m.deskripsi.toLowerCase().includes(kataKunci)
-    );
-  }
-
-  if (filterKategori) {
-    daftarMenu = daftarMenu.filter((m) => m.kategori === filterKategori);
   }
 
   return (

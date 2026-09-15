@@ -1,0 +1,3 @@
+-- AlterEnum
+ALTER TYPE "Peran" ADD VALUE IF NOT EXISTS 'STAF_DAPUR';
+

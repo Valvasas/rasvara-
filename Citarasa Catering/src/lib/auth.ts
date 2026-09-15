@@ -103,3 +103,16 @@ export async function wajibPemilik(): Promise<DataSesi> {
   }
   return sesi;
 }
+
+/** Dipakai di area operasional dapur: boleh dibuka oleh pemilik atau staf dapur. */
+export async function wajibStafAtauPemilik(): Promise<DataSesi> {
+  const sesi = await bacaSesi();
+  if (!sesi || (sesi.peran !== "PEMILIK" && sesi.peran !== "STAF_DAPUR")) {
+    throw new Error("TIDAK_BERWENANG");
+  }
+  return sesi;
+}
+
+export function apakahBolehAksesDapur(sesi: DataSesi | null): boolean {
+  return Boolean(sesi && (sesi.peran === "PEMILIK" || sesi.peran === "STAF_DAPUR"));
+}

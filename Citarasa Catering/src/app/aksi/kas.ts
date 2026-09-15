@@ -5,6 +5,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { wajibPemilik } from "@/lib/auth";
 import { dariInputTanggal, hariIniWib } from "@/lib/format";
+import { ambilIpKlien, periksaBatasLaju } from "@/lib/pembatas-laju";
 import type { JenisKas } from "@/generated/prisma/client";
 
 const SkemaKas = z.object({
@@ -26,6 +27,20 @@ export async function aksiTambahKas(
   formData: FormData
 ): Promise<HasilAksiKas> {
   const sesi = await wajibPemilik();
+
+  const ip = await ambilIpKlien();
+  const cekLaju = periksaBatasLaju({
+    kunci: `kas:${sesi.id}:${ip}`,
+    maksimal: 10,
+    jendelaDetik: 60,
+  });
+
+  if (!cekLaju.diizinkan) {
+    return {
+      sukses: false,
+      pesan: `Terlalu banyak permintaan pencatatan kas. Harap tunggu ${cekLaju.tungguDetik} detik.`,
+    };
+  }
 
   const raw = {
     jenis: formData.get("jenis"),

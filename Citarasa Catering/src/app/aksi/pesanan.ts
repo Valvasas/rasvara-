@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { bacaSesi, wajibPemilik } from "@/lib/auth";
+import { bacaSesi, wajibPemilik, wajibStafAtauPemilik } from "@/lib/auth";
 import { tandaiPesananMilikSaya } from "@/lib/akses-pesanan";
 import {
   bolehPindahStatus,
@@ -434,12 +434,12 @@ export async function aksiUnggahBuktiBayar(
   }
 }
 
-// Aksi Khusus Pemilik / Admin
+// Aksi Dapur (Pemilik atau Staf Dapur)
 export async function aksiPindahStatus(
   kode: string,
   statusBaru: StatusPesanan
 ): Promise<{ sukses: boolean; pesan?: string }> {
-  const sesi = await wajibPemilik();
+  const sesi = await wajibStafAtauPemilik();
 
   const pesanan = await db.pesanan.findUnique({ where: { kode } });
   if (!pesanan) {

@@ -19,6 +19,8 @@ async function hashSandi(sandi: string): Promise<string> {
 
 const TELEPON_PEMILIK = "6281234567890";
 const SANDI_PEMILIK = process.env.SEED_SANDI_PEMILIK ?? "citarasa123";
+const TELEPON_STAF_DAPUR = "6281234567891";
+const SANDI_STAF_DAPUR = process.env.SEED_SANDI_STAF ?? "dapur123";
 
 type BenihMenu = {
   nama: string;
@@ -226,6 +228,18 @@ async function main() {
     },
   });
   console.log(`  Akun pemilik siap  : ${pemilik.telepon}`);
+
+  const stafDapur = await db.pengguna.upsert({
+    where: { telepon: TELEPON_STAF_DAPUR },
+    update: { peran: "STAF_DAPUR" },
+    create: {
+      nama: "Budi (Staf Dapur)",
+      telepon: TELEPON_STAF_DAPUR,
+      sandiHash: await hashSandi(SANDI_STAF_DAPUR),
+      peran: "STAF_DAPUR",
+    },
+  });
+  console.log(`  Akun staf dapur siap: ${stafDapur.telepon}`);
 
   await db.pengaturan.upsert({
     where: { id: "utama" },

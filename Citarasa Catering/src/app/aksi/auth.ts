@@ -89,7 +89,7 @@ export async function aksiMasuk(
     peran: pengguna.peran,
   });
 
-  if (pengguna.peran === "PEMILIK") {
+  if (pengguna.peran === "PEMILIK" || pengguna.peran === "STAF_DAPUR") {
     redirect("/admin");
   } else {
     redirect("/riwayat");

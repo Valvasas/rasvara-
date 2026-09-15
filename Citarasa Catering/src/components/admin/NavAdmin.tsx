@@ -3,23 +3,26 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-const TAUTAN = [
-  { href: "/admin", label: "Papan Pesanan", ikon: "🍳", persis: true },
-  { href: "/admin/menu", label: "Menu", ikon: "🍱", persis: false },
-  { href: "/admin/keuangan", label: "Buku Kas", ikon: "💰", persis: false },
-  { href: "/admin/laporan", label: "Laporan", ikon: "📊", persis: false },
-  { href: "/admin/pengaturan", label: "Pengaturan", ikon: "⚙️", persis: false },
+import type { Peran } from "@/generated/prisma/client";
+
+const SEMUA_TAUTAN = [
+  { href: "/admin", label: "Papan Pesanan", ikon: "🍳", persis: true, hanyaPemilik: false },
+  { href: "/admin/menu", label: "Menu", ikon: "🍱", persis: false, hanyaPemilik: true },
+  { href: "/admin/keuangan", label: "Buku Kas", ikon: "💰", persis: false, hanyaPemilik: true },
+  { href: "/admin/laporan", label: "Laporan", ikon: "📊", persis: false, hanyaPemilik: true },
+  { href: "/admin/pengaturan", label: "Pengaturan", ikon: "⚙️", persis: false, hanyaPemilik: true },
 ];
 
-export function NavAdmin() {
+export function NavAdmin({ peran }: { peran?: Peran }) {
   const pathname = usePathname();
+  const tautanAktif = SEMUA_TAUTAN.filter((t) => (peran === "STAF_DAPUR" ? !t.hanyaPemilik : true));
 
   return (
     <nav
       aria-label="Navigasi Admin"
       className="flex items-center gap-1 sm:gap-2 overflow-x-auto gulir-tipis py-1 min-w-0"
     >
-      {TAUTAN.map((t) => {
+      {tautanAktif.map((t) => {
         const aktif = t.persis ? pathname === t.href : pathname.startsWith(t.href);
         return (
           <Link

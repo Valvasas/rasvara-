@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { aksiLacakPesanan } from "@/app/aksi/pesanan";
+import { FormLacak } from "@/components/toko/FormLacak";
 
 interface HalamanLacakProps {
   searchParams: Promise<{ pesan?: string }>;
@@ -22,60 +22,8 @@ export default async function HalamanLacak({ searchParams }: HalamanLacakProps) 
           </p>
         </div>
 
-        {params.pesan && (
-          <div className="p-3 bg-bahaya-lembut border border-bahaya/30 text-bahaya rounded-xl text-xs font-medium text-center">
-            {params.pesan}
-          </div>
-        )}
-
-        {/* Formulir Lacak */}
-        <form action={async (formData: FormData) => {
-          "use server";
-          await aksiLacakPesanan(null, formData);
-        }} className="space-y-4">
-          <div>
-            <label
-              htmlFor="kode"
-              className="block text-xs font-bold uppercase tracking-wider text-kayu-sedang mb-1.5"
-            >
-              Kode Pesanan
-            </label>
-            <input
-              type="text"
-              id="kode"
-              name="kode"
-              required
-              placeholder="Contoh: CR-260914-XXXX"
-              className="w-full min-h-[48px] px-4 py-2.5 rounded-xl border border-krem-gelap bg-krem/40 text-kayu font-mono text-sm placeholder:text-kayu-sedang/50 focus:outline-none focus:border-bata focus:ring-1 focus:ring-bata uppercase tracking-wide"
-            />
-          </div>
-
-          <div>
-            <label
-              htmlFor="telepon"
-              className="block text-xs font-bold uppercase tracking-wider text-kayu-sedang mb-1.5"
-            >
-              Nomor Telepon / WhatsApp
-            </label>
-            <input
-              type="tel"
-              id="telepon"
-              name="telepon"
-              inputMode="tel"
-              required
-              placeholder="Contoh: 081234567890"
-              className="w-full min-h-[48px] px-4 py-2.5 rounded-xl border border-krem-gelap bg-krem/40 text-kayu text-sm placeholder:text-kayu-sedang/50 focus:outline-none focus:border-bata focus:ring-1 focus:ring-bata"
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="w-full min-h-[48px] px-6 py-3 rounded-xl font-bold text-white bg-bata hover:bg-bata-tua transition-colors shadow-sm inline-flex items-center justify-center gap-2 cursor-pointer mt-2"
-          >
-            <span>Buka Status Pesanan</span>
-            <span aria-hidden="true">&rarr;</span>
-          </button>
-        </form>
+        {/* Formulir Lacak Interaktif */}
+        <FormLacak pesanAwal={params.pesan} />
 
         {/* Petunjuk Tambahan */}
         <div className="pt-4 border-t border-krem-gelap/60 text-center space-y-3">

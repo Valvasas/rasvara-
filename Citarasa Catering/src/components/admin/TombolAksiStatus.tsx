@@ -21,7 +21,10 @@ export function TombolAksiStatus({
 
   const handleKlik = () => {
     startTransition(async () => {
-      await aksiPindahStatus(kode, statusBaru);
+      const res = await aksiPindahStatus(kode, statusBaru);
+      if (!res.sukses && res.pesan) {
+        alert(res.pesan);
+      }
     });
   };
 

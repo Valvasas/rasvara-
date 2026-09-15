@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
+import { bacaSesi } from "@/lib/auth";
 import {
   jamTampil,
   linkWhatsapp,
@@ -11,11 +12,13 @@ import {
   INFO_STATUS,
   KOLOM_PAPAN,
   LABEL_AMBIL,
+  LABEL_BAYAR,
 } from "@/lib/pesanan";
 import { LencanaBayar } from "@/components/Lencana";
 import { TombolAksiStatus } from "@/components/admin/TombolAksiStatus";
 import { TombolAksiLunas } from "@/components/admin/TombolAksiLunas";
-import type { ItemPesanan, Pesanan, StatusPesanan } from "@/generated/prisma/client";
+import { TombolCetakPesanan } from "@/components/admin/TombolCetakPesanan";
+import type { CaraAmbil, ItemPesanan, Pesanan, StatusPesanan } from "@/generated/prisma/client";
 
 type PesananWithItem = Pesanan & { item: ItemPesanan[] };
 
@@ -26,9 +29,26 @@ interface HalamanPapanDapurProps {
 export default async function HalamanPapanDapur({
   searchParams,
 }: HalamanPapanDapurProps) {
-  const params = await searchParams;
-  const kataKunci = params.q?.trim().toLowerCase() || "";
+  const [params, sesi] = await Promise.all([
+    searchParams,
+    bacaSesi(),
+  ]);
+  const adalahStaf = sesi?.peran === "STAF_DAPUR";
+  const kataKunci = params.q?.trim() || "";
   const filterAmbil = params.caraAmbil || "";
+
+  const filterCaraAmbil =
+    filterAmbil === "AMBIL_SENDIRI" || filterAmbil === "DIANTAR"
+      ? (filterAmbil as CaraAmbil)
+      : undefined;
+
+  const kondisiPencarian = kataKunci
+    ? [
+        { namaPemesan: { contains: kataKunci, mode: "insensitive" as const } },
+        { kode: { contains: kataKunci, mode: "insensitive" as const } },
+        { teleponPemesan: { contains: kataKunci } },
+      ]
+    : undefined;
 
   let daftarPesanan: PesananWithItem[] = [];
   let hitunganSelesai = 0;
@@ -37,7 +57,11 @@ export default async function HalamanPapanDapur({
   try {
     const [pesanan, selesai, batal] = await Promise.all([
       db.pesanan.findMany({
-        where: { status: { in: KOLOM_PAPAN } },
+        where: {
+          status: { in: KOLOM_PAPAN },
+          ...(filterCaraAmbil ? { caraAmbil: filterCaraAmbil } : {}),
+          ...(kondisiPencarian ? { OR: kondisiPencarian } : {}),
+        },
         include: { item: true },
         orderBy: [{ tanggalAcara: "asc" }, { jamAcara: "asc" }],
       }),
@@ -50,20 +74,6 @@ export default async function HalamanPapanDapur({
     hitunganBatal = batal;
   } catch {
     // Fallback jika DB belum running saat build/typecheck
-  }
-
-  // Filter pencarian
-  if (kataKunci) {
-    daftarPesanan = daftarPesanan.filter(
-      (p) =>
-        p.namaPemesan.toLowerCase().includes(kataKunci) ||
-        p.kode.toLowerCase().includes(kataKunci) ||
-        p.teleponPemesan.includes(kataKunci)
-    );
-  }
-
-  if (filterAmbil) {
-    daftarPesanan = daftarPesanan.filter((p) => p.caraAmbil === filterAmbil);
   }
 
   // Kelompokkan per status papan
@@ -264,14 +274,20 @@ export default async function HalamanPapanDapur({
 
                         {/* Status Pembayaran & Nominal */}
                         <div className="flex items-center justify-between pt-1 text-xs">
-                          <span className="font-extrabold text-kayu">
-                            {rupiah(pesanan.total)}
-                          </span>
+                          {!adalahStaf ? (
+                            <span className="font-extrabold text-kayu">
+                              {rupiah(pesanan.total)}
+                            </span>
+                          ) : (
+                            <span className="text-[11px] font-semibold text-kayu-sedang">
+                              {LABEL_BAYAR[pesanan.caraBayar as keyof typeof LABEL_BAYAR]}
+                            </span>
+                          )}
                           <LencanaBayar statusBayar={pesanan.statusBayar} />
                         </div>
 
-                        {/* Tautan Bukti Transfer dari Pembeli */}
-                        {pesanan.buktiBayarUrl && (
+                        {/* Tautan Bukti Transfer dari Pembeli (Khusus Pemilik) */}
+                        {!adalahStaf && pesanan.buktiBayarUrl && (
                           <div className="p-2 bg-krem-tua/60 rounded-xl border border-krem-gelap flex items-center justify-between text-xs">
                             <span className="font-semibold text-kayu flex items-center gap-1.5">
                               <span>📎</span> Bukti Transfer
@@ -287,7 +303,7 @@ export default async function HalamanPapanDapur({
                           </div>
                         )}
 
-                        {/* Tombol Aksi Satu Sentuhan */}
+                        {/* Tombol Aksi Dapur & Cetak */}
                         <div className="space-y-2 pt-2 border-t border-krem-gelap/60">
                           {info.aksiLanjut && info.statusLanjut && (
                             <TombolAksiStatus
@@ -298,7 +314,11 @@ export default async function HalamanPapanDapur({
                             />
                           )}
 
-                          {pesanan.statusBayar !== "LUNAS" && (
+                          {/* Tombol Cetak Lembar Dapur / Nota */}
+                          <TombolCetakPesanan kode={pesanan.kode} />
+
+                          {/* Verifikasi Pelunasan Kas (Eksklusif Pemilik - Invarian #3) */}
+                          {!adalahStaf && pesanan.statusBayar !== "LUNAS" && (
                             <TombolAksiLunas kode={pesanan.kode} />
                           )}
                         </div>

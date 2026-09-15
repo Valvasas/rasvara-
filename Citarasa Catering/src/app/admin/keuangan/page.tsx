@@ -1,4 +1,6 @@
+import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import { bacaSesi } from "@/lib/auth";
 import { hariIniWib, rupiah, tanggalPendek } from "@/lib/format";
 import { FormCatatKas } from "@/components/admin/FormCatatKas";
 import type { CatatanKas, Pesanan } from "@/generated/prisma/client";
@@ -6,6 +8,11 @@ import type { CatatanKas, Pesanan } from "@/generated/prisma/client";
 type KasWithPesanan = CatatanKas & { pesanan: Pesanan | null };
 
 export default async function HalamanBukuKas() {
+  const sesi = await bacaSesi();
+  if (sesi?.peran !== "PEMILIK") {
+    redirect("/admin");
+  }
+
   let daftarKas: KasWithPesanan[] = [];
   let totalMasuk = 0;
   let totalKeluar = 0;

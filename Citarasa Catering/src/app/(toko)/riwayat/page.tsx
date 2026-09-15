@@ -25,6 +25,7 @@ export default async function HalamanRiwayat() {
         item: true,
       },
       orderBy: { dibuatPada: "desc" },
+      take: 50,
     }),
     db.pengguna.findUnique({
       where: { id: sesi.id },

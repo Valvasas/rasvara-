@@ -15,9 +15,11 @@ export default async function LayoutAdmin({
     redirect("/masuk");
   }
 
-  if (sesi.peran !== "PEMILIK") {
+  if (sesi.peran !== "PEMILIK" && sesi.peran !== "STAF_DAPUR") {
     redirect("/riwayat");
   }
+
+  const adalahStaf = sesi.peran === "STAF_DAPUR";
 
   return (
     <div className="min-h-screen bg-krem flex flex-col">
@@ -26,14 +28,20 @@ export default async function LayoutAdmin({
         <div className="container mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3 shrink-0">
             <Wordmark href="/admin" compact={true} className="text-white" />
-            <span className="text-xs font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-kunyit text-kayu">
-              Dapur
+            <span
+              className={`text-xs font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full ${
+                adalahStaf
+                  ? "bg-bata text-white"
+                  : "bg-kunyit text-kayu"
+              }`}
+            >
+              {adalahStaf ? "Staf Dapur" : "Dapur"}
             </span>
           </div>
 
           {/* Navigasi Admin Dapur - Tombol Besar & Jelas */}
           <div className="flex items-center gap-1 sm:gap-2 min-w-0 w-full sm:w-auto">
-            <NavAdmin />
+            <NavAdmin peran={sesi.peran} />
             <div className="ml-2 pl-2 border-l border-kayu-sedang shrink-0">
               <TombolKeluar label="Keluar" className="min-h-[42px] text-xs py-1.5" />
             </div>

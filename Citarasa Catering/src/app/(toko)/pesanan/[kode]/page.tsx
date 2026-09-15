@@ -16,6 +16,8 @@ import {
 } from "@/lib/pesanan";
 import { LencanaBayar, LencanaStatus } from "@/components/Lencana";
 import { FormUnggahBukti } from "@/components/toko/FormUnggahBukti";
+import { TombolCetakPesanan } from "@/components/admin/TombolCetakPesanan";
+import { TombolSalin } from "@/components/TombolSalin";
 
 interface HalamanPesananProps {
   params: Promise<{ kode: string }>;
@@ -45,10 +47,11 @@ export default async function HalamanDetailPesanan({
 
   // Invarian #5: Pengecekan izin akses pesanan
   const adalahPemilik = sesi?.peran === "PEMILIK";
+  const adalahStaf = sesi?.peran === "STAF_DAPUR";
   const adalahPemesanLogin =
-    sesi && pesanan.teleponPemesan === pesanan.teleponPemesan && sesi.telepon === pesanan.teleponPemesan;
+    Boolean(sesi && sesi.telepon === pesanan.teleponPemesan);
 
-  if (!aksesCookie && !adalahPemilik && !adalahPemesanLogin) {
+  if (!aksesCookie && !adalahPemilik && !adalahStaf && !adalahPemesanLogin) {
     redirect(
       `/lacak?pesan=Silakan+masukkan+kode+pesanan+dan+nomor+telepon+untuk+melihat+rinciannya.`
     );
@@ -80,9 +83,12 @@ export default async function HalamanDetailPesanan({
             <span className="text-xs font-bold uppercase tracking-wider text-kayu-sedang block">
               Nota Pesanan Digital
             </span>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-kayu font-mono tracking-tight mt-1">
-              {pesanan.kode}
-            </h1>
+            <div className="flex items-center gap-2 mt-1">
+              <h1 className="text-2xl sm:text-3xl font-extrabold text-kayu font-mono tracking-tight">
+                {pesanan.kode}
+              </h1>
+              <TombolSalin teks={pesanan.kode} label="Salin Kode" ringkas />
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
@@ -210,9 +216,12 @@ export default async function HalamanDetailPesanan({
               {pesanan.caraBayar === "TRANSFER" && pengaturan.nomorRekening ? (
                 <div className="mt-2 text-xs text-kayu-sedang space-y-1">
                   <p>Silakan transfer total pembayaran ke rekening berikut:</p>
-                  <p className="font-bold text-kayu text-sm">
-                    {pengaturan.namaBank} {pengaturan.nomorRekening}
-                  </p>
+                  <div className="flex flex-wrap items-center gap-2 pt-0.5">
+                    <p className="font-bold text-kayu text-sm font-mono">
+                      {pengaturan.namaBank} {pengaturan.nomorRekening}
+                    </p>
+                    <TombolSalin teks={pengaturan.nomorRekening} label="Salin Rekening" ringkas />
+                  </div>
                   <p>a.n. {pengaturan.namaRekening}</p>
                 </div>
               ) : (
@@ -243,16 +252,22 @@ export default async function HalamanDetailPesanan({
 
         {/* Aksi Tambahan: WhatsApp & Cetak */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-krem-gelap/60">
-          {waUrl && (
-            <a
-              href={waUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="min-h-[48px] px-5 py-2.5 rounded-xl font-bold text-xs text-daun bg-daun-lembut hover:bg-daun hover:text-white transition-colors inline-flex items-center justify-center gap-2 w-full sm:w-auto"
-            >
-              <span>Tanya Pesanan via WhatsApp</span>
-            </a>
-          )}
+          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            {waUrl && (
+              <a
+                href={waUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="min-h-[48px] px-5 py-2.5 rounded-xl font-bold text-xs text-daun bg-daun-lembut hover:bg-daun hover:text-white transition-colors inline-flex items-center justify-center gap-2 w-full sm:w-auto"
+              >
+                <span>Tanya Pesanan via WhatsApp</span>
+              </a>
+            )}
+
+            {(adalahPemilik || adalahStaf) && (
+              <TombolCetakPesanan ringkas kode={pesanan.kode} />
+            )}
+          </div>
 
           <Link
             href="/pesan"

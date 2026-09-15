@@ -1,4 +1,6 @@
+import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
+import { bacaSesi } from "@/lib/auth";
 import { hariIniWib, rupiah } from "@/lib/format";
 import { rentangBulan, ringkasanKas } from "@/lib/laporan";
 
@@ -9,6 +11,11 @@ interface HalamanLaporanProps {
 export default async function HalamanLaporan({
   searchParams,
 }: HalamanLaporanProps) {
+  const sesi = await bacaSesi();
+  if (sesi?.peran !== "PEMILIK") {
+    redirect("/admin");
+  }
+
   const params = await searchParams;
   const sekarangWib = hariIniWib(); // "2026-09-14"
   const bulanPilihan = params.bulan || sekarangWib.slice(0, 7); // "2026-09"

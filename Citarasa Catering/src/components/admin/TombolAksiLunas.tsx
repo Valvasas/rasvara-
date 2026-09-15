@@ -11,7 +11,10 @@ export function TombolAksiLunas({ kode }: { kode: string }) {
       return;
     }
     startTransition(async () => {
-      await aksiTandaiLunas(kode);
+      const res = await aksiTandaiLunas(kode);
+      if (!res.sukses && res.pesan) {
+        alert(res.pesan);
+      }
     });
   };
 
