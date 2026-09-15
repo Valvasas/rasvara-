@@ -3,6 +3,7 @@
 import { useActionState, useMemo, useRef, useState } from "react";
 import { aksiBuatPesanan } from "@/app/aksi/pesanan";
 import { rupiah } from "@/lib/format";
+import { IkonPeringatan } from "@/components/ikon/Ikon";
 import type { Menu, Pengaturan, Pengguna } from "@/generated/prisma/client";
 
 interface FormPemesananProps {
@@ -296,8 +297,9 @@ export function FormPemesanan({
               </p>
             )}
             {isTanggalLibur && (
-              <p className="text-xs text-bahaya font-semibold mt-1">
-                ⚠️ Dapur tutup pada tanggal yang Anda pilih. Silakan pilih tanggal lain.
+              <p className="text-xs text-bahaya font-semibold mt-1 flex items-center gap-1.5">
+                <IkonPeringatan className="w-3.5 h-3.5 shrink-0" />
+                <span>Dapur tutup pada tanggal yang Anda pilih. Silakan pilih tanggal lain.</span>
               </p>
             )}
           </div>

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { FormLacak } from "@/components/toko/FormLacak";
+import { IkonCari } from "@/components/ikon/Ikon";
 
 interface HalamanLacakProps {
   searchParams: Promise<{ pesan?: string }>;
@@ -13,10 +14,10 @@ export default async function HalamanLacak({ searchParams }: HalamanLacakProps) 
       <div className="bg-white rounded-3xl border border-krem-gelap p-6 sm:p-10 shadow-sm space-y-6">
         {/* Header Form */}
         <div className="text-center space-y-2">
-          <div className="w-12 h-12 rounded-2xl bg-kunyit-lembut text-kunyit-tua mx-auto flex items-center justify-center text-2xl font-bold">
-            🔍
+          <div className="w-12 h-12 rounded-2xl bg-kunyit-lembut text-kunyit-tua mx-auto flex items-center justify-center">
+            <IkonCari className="w-6 h-6" />
           </div>
-          <h1 className="text-2xl font-extrabold text-kayu">Lacak Pesanan</h1>
+          <h1 className="font-tampil text-2xl font-bold text-kayu">Lacak Pesanan</h1>
           <p className="text-xs text-kayu-sedang">
             Masukkan kode pesanan dan nomor telepon yang Anda pakai saat memesan.
           </p>

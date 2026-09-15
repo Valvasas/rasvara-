@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import Link from "next/link";
 import { aksiMasuk } from "@/app/aksi/auth";
+import { InputSandi } from "@/components/InputSandi";
 
 export function FormMasuk() {
   const [state, action, isPending] = useActionState(aksiMasuk, null);
@@ -38,29 +39,14 @@ export function FormMasuk() {
         )}
       </div>
 
-      <div>
-        <div className="flex items-center justify-between mb-1.5">
-          <label
-            htmlFor="sandi"
-            className="block text-xs font-bold uppercase tracking-wider text-kayu-sedang"
-          >
-            Kata Sandi
-          </label>
-        </div>
-        <input
-          type="password"
-          id="sandi"
-          name="sandi"
-          required
-          placeholder="••••••••"
-          className="w-full min-h-[48px] px-4 py-2.5 rounded-xl border border-krem-gelap bg-krem/40 text-kayu text-sm placeholder:text-kayu-sedang/50 focus:outline-none focus:border-bata focus:ring-1 focus:ring-bata"
-        />
-        {state?.kesalahan?.sandi && (
-          <p className="text-xs text-bahaya mt-1">
-            {state.kesalahan.sandi[0]}
-          </p>
-        )}
-      </div>
+      <InputSandi
+        id="sandi"
+        name="sandi"
+        label="Kata Sandi"
+        placeholder="••••••••"
+        required
+        error={state?.kesalahan?.sandi?.[0]}
+      />
 
       <button
         type="submit"

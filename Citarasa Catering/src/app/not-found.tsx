@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Wordmark } from "@/components/Wordmark";
+import { IkonMangkuk } from "@/components/ikon/Ikon";
 
 export default function TidakDitemukan() {
   return (
@@ -9,10 +10,12 @@ export default function TidakDitemukan() {
           <Wordmark href="/" tagline={false} className="justify-center" />
         </div>
 
-        <div className="text-6xl anim-mengambang">🍲</div>
+        <div className="anim-mengambang w-16 h-16 rounded-2xl bg-bata-lembut text-bata-tua mx-auto flex items-center justify-center">
+          <IkonMangkuk className="w-8 h-8" />
+        </div>
 
         <div className="space-y-2">
-          <h1 className="text-2xl md:text-3xl font-extrabold text-kayu">
+          <h1 className="font-tampil text-2xl md:text-3xl font-bold text-kayu">
             Halaman Tidak Ditemukan
           </h1>
           <p className="text-sm text-kayu-sedang leading-relaxed">

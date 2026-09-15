@@ -24,7 +24,8 @@
   --color-bahaya: #B91C1C;
   --color-bahaya-lembut: #FEE2E2;
 
-  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-sans: var(--font-archivo), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: var(--font-domine), Georgia, "Times New Roman", serif;
 }
 
 /* Ukuran huruf dasar 17px untuk kenyamanan baca di dapur */
@@ -44,6 +45,12 @@ body {
   color: var(--color-kayu);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Judul editorial: dipakai manual di h1/h2 halaman publik saja,
+   bukan di UI chrome/admin (serif untuk headline, sans untuk fungsional) */
+.font-tampil {
+  font-family: var(--font-display);
 }
 
 /* Touch targets ramah sentuhan (min 48px) */
