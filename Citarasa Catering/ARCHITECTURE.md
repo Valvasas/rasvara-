@@ -134,7 +134,7 @@ Saat `statusBayar` diubah menjadi `LUNAS`, sistem otomatis membuat satu baris `C
 6. Tolak jika tanggal acara kurang dari `preorderHari` hari dari sekarang.
 7. Tolak jika total pesanan pada tanggal itu (untuk menu dengan `kapasitasHarian`) sudah melewati kapasitas — dihitung dari pesanan lain yang belum `DIBATALKAN` di tanggal sama.
 8. Hitung ongkir dari `Pengaturan` (mis. gratis di atas `minOrderAntar`).
-9. Generate kode pesanan unik (`buatKodePesanan`, retry jika tabrakan).
+9. Generate kode pesanan unik (`buatKodePesanan` di `src/lib/kode-pesanan.ts`, retry jika tabrakan). Bagian acaknya diambil dari CSPRNG (`randomInt`), bukan `Math.random` — kode ini ikut menentukan hak akses lewat cookie tamu, dan keluaran `Math.random` bisa diramalkan dari beberapa nilai sebelumnya.
 10. Tulis `Pesanan` + `ItemPesanan[]` + entri awal `RiwayatStatus`.
 
 Jika mengubah fungsi ini, pertahankan urutan validasi ini (fail-fast) dan tetap di dalam satu transaction.
@@ -151,7 +151,7 @@ Jika mengubah fungsi ini, pertahankan urutan validasi ini (fail-fast) dan tetap 
 
 Tidak ada satu mekanisme akses tunggal — kode pesanan **bukan** kunci rahasia. Tiga jalur sah untuk melihat detail sebuah `Pesanan`:
 
-1. **Cookie tamu** `pesanan_saya` (`src/lib/akses-pesanan.ts`) — menyimpan hingga 25 kode pesanan terakhir yang dibuat dari browser itu, 180 hari.
+1. **Cookie tamu** `pesanan_saya` (`src/lib/akses-pesanan.ts`) — menyimpan hingga 25 kode pesanan terakhir yang dibuat dari browser itu, 180 hari. Isinya **ditandatangani HMAC** dengan `SESSION_SECRET` (`src/lib/cookie-tertanda.ts`); cookie tanpa tanda tangan yang sah diperlakukan sebagai kosong. `httpOnly` saja tidak cukup di sini — ia menghalangi JavaScript membaca cookie, bukan menghalangi orang menyusun header `Cookie` sendiri, jadi cookie polos sama saja dengan membiarkan kode pesanan menjadi kunci akses.
 2. **Login sebagai pemilik** (`peran: PEMILIK`) — bisa lihat semua pesanan lewat `/admin`.
 3. **Cocokkan nomor telepon** di halaman `/lacak` — pembeli memasukkan kode + nomor telepon yang dipakai saat memesan.
 
