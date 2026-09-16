@@ -37,7 +37,7 @@ export default async function HalamanDetailMenu({ params }: HalamanDetailMenuPro
         <span className="text-kayu font-semibold">{menu.nama}</span>
       </div>
 
-      <div className="bg-white rounded-3xl border border-krem-gelap overflow-hidden shadow-sm">
+      <div className="permukaan-kartu rounded-3xl overflow-hidden">
         {menu.foto.length > 0 ? (
           <GaleriFotoMenu
             foto={menu.foto.map((f) => ({
@@ -115,7 +115,7 @@ export default async function HalamanDetailMenu({ params }: HalamanDetailMenuPro
       </div>
 
       {/* CTA pemesanan */}
-      <div className="bg-white rounded-2xl border border-krem-gelap shadow-sm p-4 flex items-center justify-between gap-4">
+      <div className="permukaan-kartu rounded-2xl p-4 flex items-center justify-between gap-4">
         <div>
           <span className="text-xs text-kayu-sedang block">Harga per {menu.satuan}</span>
           <span className="text-lg font-extrabold text-bata">{rupiah(menu.harga)}</span>

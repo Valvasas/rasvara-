@@ -15,7 +15,7 @@ export function FormCatatKas({ hariIni }: { hariIni: string }) {
     jenis === "MASUK" ? KATEGORI_PEMASUKAN : KATEGORI_PENGELUARAN;
 
   return (
-    <form action={action} className="bg-white p-6 rounded-3xl border border-krem-gelap shadow-sm space-y-4">
+    <form action={action} className="permukaan-kartu p-6 rounded-3xl space-y-4">
       <h2 className="text-base font-extrabold text-kayu">
         Catat Kas Baru
       </h2>

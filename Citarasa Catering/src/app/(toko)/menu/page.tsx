@@ -91,7 +91,7 @@ export default async function HalamanMenu({ searchParams }: HalamanMenuProps) {
 
       {/* Grid Menu */}
       {semuaMenu.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-krem-gelap p-12 text-center max-w-md mx-auto space-y-4">
+        <div className="permukaan-kartu rounded-2xl p-12 text-center max-w-md mx-auto space-y-4">
           <div className="w-14 h-14 rounded-2xl bg-krem-tua text-kayu-sedang mx-auto flex items-center justify-center">
             <IkonMangkuk className="w-7 h-7" />
           </div>
@@ -112,7 +112,7 @@ export default async function HalamanMenu({ searchParams }: HalamanMenuProps) {
           {menuHalamanIni.map((item) => (
             <article
               key={item.id}
-              className="bg-white rounded-2xl border border-krem-gelap hover:border-bata/40 hover:shadow-md transition-all flex flex-col justify-between overflow-hidden"
+              className="permukaan-kartu rounded-2xl hover:border-bata/40 hover:shadow-md transition-all flex flex-col justify-between overflow-hidden"
             >
               <Link href={`/menu/${item.slug}`} className="flex-1 flex flex-col">
                 <PanelFotoMenu

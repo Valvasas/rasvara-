@@ -60,9 +60,9 @@ export default async function HalamanAnalitik({
 
   return (
     <div className="space-y-6">
-      <div className="bg-white p-6 rounded-3xl border border-krem-gelap flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+      <div className="permukaan-kartu p-6 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-kayu">
+          <h1 className="judul-utama text-2xl text-kayu">
             Performa Website
           </h1>
           <p className="text-xs text-kayu-sedang mt-0.5 max-w-xl">
@@ -134,9 +134,9 @@ export default async function HalamanAnalitik({
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Halaman terpopuler */}
-        <div className="bg-white rounded-3xl border border-krem-gelap shadow-sm overflow-hidden">
+        <div className="permukaan-kartu rounded-3xl overflow-hidden">
           <div className="p-4 bg-krem-tua/60 border-b border-krem-gelap">
-            <h2 className="font-extrabold text-sm text-kayu">
+            <h2 className="judul-bagian text-sm text-kayu">
               Halaman Paling Sering Dibuka
             </h2>
           </div>
@@ -175,9 +175,9 @@ export default async function HalamanAnalitik({
         </div>
 
         {/* Corong pemesanan */}
-        <div className="bg-white rounded-3xl border border-krem-gelap shadow-sm overflow-hidden">
+        <div className="permukaan-kartu rounded-3xl overflow-hidden">
           <div className="p-4 bg-krem-tua/60 border-b border-krem-gelap">
-            <h2 className="font-extrabold text-sm text-kayu">
+            <h2 className="judul-bagian text-sm text-kayu">
               Perjalanan Pembeli
             </h2>
           </div>
@@ -239,7 +239,7 @@ function KartuAngka({
   warna: string;
 }) {
   return (
-    <div className="bg-white p-5 rounded-2xl border border-krem-gelap shadow-sm">
+    <div className="permukaan-kartu p-5 rounded-2xl">
       <p className="text-[11px] font-bold uppercase tracking-wide text-kayu-sedang">
         {label}
       </p>

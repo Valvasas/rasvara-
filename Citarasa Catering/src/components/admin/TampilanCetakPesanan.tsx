@@ -30,7 +30,7 @@ export function TampilanCetakPesanan({
   return (
     <div className="min-h-screen bg-krem-tua/40 py-6 px-4 print:bg-white print:p-0 print:m-0">
       {/* Kontrol di Layar (Disembunyikan saat dicetak / print) */}
-      <div className="max-w-2xl mx-auto mb-6 bg-white p-4 rounded-2xl border border-krem-gelap shadow-sm space-y-4 print:hidden">
+      <div className="max-w-2xl mx-auto mb-6 permukaan-kartu p-4 rounded-2xl space-y-4 print:hidden">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <Link
             href="/admin"
@@ -86,7 +86,7 @@ export function TampilanCetakPesanan({
       </div>
 
       {/* DOKUMEN CETAK UTAMA */}
-      <div className="max-w-xl mx-auto bg-white p-6 sm:p-8 rounded-3xl border border-krem-gelap shadow-md print:shadow-none print:border-none print:p-2 print:m-0 print:max-w-none text-black font-sans">
+      <div className="max-w-xl mx-auto permukaan-kartu p-6 sm:p-8 rounded-3xl shadow-md print:shadow-none print:border-none print:p-2 print:m-0 print:max-w-none text-black font-sans">
         {modeCetak === "dapur" ? (
           /* ================= MODE LEMBAR KERJA DAPUR (KOT) ================= */
           <div className="space-y-4 text-xs">

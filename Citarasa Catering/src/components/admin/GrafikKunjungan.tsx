@@ -30,9 +30,9 @@ export function GrafikKunjungan({ data }: GrafikKunjunganProps) {
   const jarakLabel = data.length > 20 ? 5 : data.length > 10 ? 2 : 1;
 
   return (
-    <div className="bg-white rounded-3xl border border-krem-gelap shadow-sm overflow-hidden">
+    <div className="permukaan-kartu rounded-3xl overflow-hidden">
       <div className="p-4 bg-krem-tua/60 border-b border-krem-gelap flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-extrabold text-sm text-kayu">
+        <h2 className="judul-bagian text-sm text-kayu">
           Kunjungan Harian
         </h2>
 

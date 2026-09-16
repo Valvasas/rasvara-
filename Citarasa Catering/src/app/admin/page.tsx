@@ -88,9 +88,9 @@ export default async function HalamanPapanDapur({
   return (
     <div className="space-y-6">
       {/* Header Papan Dapur & Ringkasan */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-krem-gelap shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 permukaan-kartu p-6 rounded-3xl">
         <div>
-          <h1 className="text-2xl font-extrabold text-kayu">
+          <h1 className="judul-utama text-2xl text-kayu">
             Papan Pesanan Dapur
           </h1>
           <p className="text-xs text-kayu-sedang mt-0.5">
@@ -111,7 +111,7 @@ export default async function HalamanPapanDapur({
       </div>
 
       {/* Baris Pencarian & Filter Pesanan */}
-      <form method="get" className="bg-white p-4 rounded-2xl border border-krem-gelap flex flex-wrap items-center justify-between gap-3 shadow-sm">
+      <form method="get" className="permukaan-kartu p-4 rounded-2xl flex flex-wrap items-center justify-between gap-3">
         <div className="flex-1 min-w-[240px] flex items-center gap-2">
           <span className="text-sm">🔍</span>
           <input
@@ -200,7 +200,7 @@ export default async function HalamanPapanDapur({
                     return (
                       <div
                         key={pesanan.id}
-                        className="bg-white rounded-2xl border border-krem-gelap p-4 shadow-sm hover:shadow-md transition-all space-y-3"
+                        className="permukaan-kartu rounded-2xl p-4 hover:shadow-md transition-all space-y-3"
                       >
                         {/* Waktu Jam Acara yang Sangat Jelas */}
                         <div className="flex items-center justify-between border-b border-krem-gelap/60 pb-2.5">
@@ -215,7 +215,7 @@ export default async function HalamanPapanDapur({
                         {/* Nama Pemesan & Kode */}
                         <div>
                           <div className="flex items-center justify-between">
-                            <h3 className="font-extrabold text-sm text-kayu">
+                            <h3 className="judul-bagian text-sm text-kayu">
                               {pesanan.namaPemesan}
                             </h3>
                             <span className="font-mono text-[11px] text-kayu-sedang">

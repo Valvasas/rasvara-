@@ -11,7 +11,7 @@ export default function HalamanDaftar() {
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-md">
-      <div className="bg-white rounded-3xl border border-krem-gelap p-6 sm:p-10 shadow-sm space-y-6">
+      <div className="permukaan-kartu rounded-3xl p-6 sm:p-10 space-y-6">
         <div className="text-center space-y-2">
           <img
             src="/ilustrasi/daftar-akun.png"

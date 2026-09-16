@@ -43,9 +43,9 @@ export default async function HalamanBukuKas() {
   return (
     <div className="space-y-6">
       {/* Header & Ringkasan Keuangan */}
-      <div className="bg-white p-6 rounded-3xl border border-krem-gelap flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+      <div className="permukaan-kartu p-6 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-kayu">
+          <h1 className="judul-utama text-2xl text-kayu">
             Buku Kas Usaha Catering
           </h1>
           <p className="text-xs text-kayu-sedang mt-0.5">
@@ -68,7 +68,7 @@ export default async function HalamanBukuKas() {
 
       {/* 3 Kartu Ringkasan Saldo Kas */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-krem-gelap shadow-sm">
+        <div className="permukaan-kartu p-5 rounded-2xl">
           <span className="text-xs font-bold uppercase tracking-wider text-daun-tua block">
             Total Pemasukan
           </span>
@@ -77,7 +77,7 @@ export default async function HalamanBukuKas() {
           </span>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-krem-gelap shadow-sm">
+        <div className="permukaan-kartu p-5 rounded-2xl">
           <span className="text-xs font-bold uppercase tracking-wider text-bahaya block">
             Total Pengeluaran
           </span>
@@ -86,7 +86,7 @@ export default async function HalamanBukuKas() {
           </span>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-krem-gelap shadow-sm">
+        <div className="permukaan-kartu p-5 rounded-2xl">
           <span className="text-xs font-bold uppercase tracking-wider text-kayu block">
             Saldo Kas Bersih
           </span>
@@ -108,7 +108,7 @@ export default async function HalamanBukuKas() {
         </div>
 
         {/* Kolom 2: Riwayat Transaksi */}
-        <div className="lg:col-span-2 bg-white rounded-3xl border border-krem-gelap p-6 shadow-sm space-y-4">
+        <div className="lg:col-span-2 permukaan-kartu rounded-3xl p-6 space-y-4">
           <h2 className="text-base font-extrabold text-kayu">
             Catatan Kas Terakhir ({daftarKas.length})
           </h2>

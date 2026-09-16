@@ -13,7 +13,7 @@ export default function MemuatToko() {
         {[0, 1, 2, 3, 4, 5].map((i) => (
           <div
             key={i}
-            className="bg-white rounded-2xl border border-krem-gelap p-6 space-y-4 animate-pulse"
+            className="permukaan-kartu rounded-2xl p-6 space-y-4 animate-pulse"
             style={{ animationDelay: `${i * 60}ms` }}
           >
             <div className="flex items-center justify-between">

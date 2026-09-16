@@ -133,7 +133,7 @@ export default async function BerandaToko() {
             <Link
               key={kat.kategori}
               href={kat.tautan}
-              className={`anim-masuk jeda-${idx + 1} group p-6 bg-white rounded-2xl border border-krem-gelap/80 hover:border-bata/40 hover:shadow-lg hover:-translate-y-1 transition-all flex flex-col justify-between`}
+              className={`anim-masuk jeda-${idx + 1} group p-6 permukaan-kartu kartu-interaktif rounded-2xl hover:border-bata/40 flex flex-col justify-between`}
             >
               <div>
                 <span className="w-12 h-12 rounded-xl bg-krem-tua text-bata flex items-center justify-center mb-3 transition-transform group-hover:scale-110 group-hover:-rotate-3">
@@ -180,7 +180,7 @@ export default async function BerandaToko() {
             {menuUnggulan.map((menu, idx) => (
               <div
                 key={menu.id}
-                className={`anim-masuk jeda-${Math.min(idx + 1, 6)} bg-white rounded-2xl border border-krem-gelap overflow-hidden flex flex-col justify-between hover:shadow-lg hover:-translate-y-1 hover:border-bata/30 transition-all`}
+                className={`anim-masuk jeda-${Math.min(idx + 1, 6)} permukaan-kartu rounded-2xl overflow-hidden flex flex-col justify-between hover:shadow-lg hover:-translate-y-1 hover:border-bata/30 transition-all`}
               >
                 <Link href={`/menu/${menu.slug}`} className="flex-1 flex flex-col">
                   <PanelFotoMenu
@@ -258,7 +258,7 @@ export default async function BerandaToko() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="group anim-masuk bg-white p-6 rounded-2xl border border-krem-gelap text-center space-y-3 hover:shadow-md hover:-translate-y-1 transition-all">
+            <div className="group anim-masuk permukaan-kartu p-6 rounded-2xl text-center space-y-3 hover:shadow-md hover:-translate-y-1 transition-all">
               <div className="w-12 h-12 rounded-2xl bg-daun-lembut text-daun-tua mx-auto flex items-center justify-center transition-transform group-hover:scale-110">
                 <IkonJam className="w-6 h-6" />
               </div>
@@ -269,7 +269,7 @@ export default async function BerandaToko() {
               </p>
             </div>
 
-            <div className="group anim-masuk jeda-2 bg-white p-6 rounded-2xl border border-krem-gelap text-center space-y-3 hover:shadow-md hover:-translate-y-1 transition-all">
+            <div className="group anim-masuk jeda-2 permukaan-kartu p-6 rounded-2xl text-center space-y-3 hover:shadow-md hover:-translate-y-1 transition-all">
               <div className="w-12 h-12 rounded-2xl bg-kunyit-lembut text-kunyit-tua mx-auto flex items-center justify-center transition-transform group-hover:scale-110">
                 <IkonDaun className="w-6 h-6" />
               </div>
@@ -280,7 +280,7 @@ export default async function BerandaToko() {
               </p>
             </div>
 
-            <div className="group anim-masuk jeda-3 bg-white p-6 rounded-2xl border border-krem-gelap text-center space-y-3 hover:shadow-md hover:-translate-y-1 transition-all">
+            <div className="group anim-masuk jeda-3 permukaan-kartu p-6 rounded-2xl text-center space-y-3 hover:shadow-md hover:-translate-y-1 transition-all">
               <div className="w-12 h-12 rounded-2xl bg-bata-lembut text-bata-tua mx-auto flex items-center justify-center transition-transform group-hover:scale-110">
                 <IkonHp className="w-6 h-6" />
               </div>

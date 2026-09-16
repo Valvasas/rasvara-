@@ -74,7 +74,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="id" className={`${archivo.variable} ${domine.variable}`}>
-      <body className="bg-krem text-kayu min-h-screen flex flex-col selection:bg-bata selection:text-white">
+      <body className="bg-krem tekstur-kertas text-kayu min-h-screen flex flex-col selection:bg-bata selection:text-white">
         {children}
       </body>
     </html>

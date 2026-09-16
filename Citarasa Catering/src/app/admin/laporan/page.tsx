@@ -54,9 +54,9 @@ export default async function HalamanLaporan({
 
   return (
     <div className="space-y-6">
-      <div className="bg-white p-6 rounded-3xl border border-krem-gelap flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+      <div className="permukaan-kartu p-6 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-kayu">
+          <h1 className="judul-utama text-2xl text-kayu">
             Laporan Keuangan & Performa Dapur
           </h1>
           <p className="text-xs text-kayu-sedang mt-0.5">
@@ -100,7 +100,7 @@ export default async function HalamanLaporan({
 
       {/* 4 Metrik Kunci */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-krem-gelap shadow-sm">
+        <div className="permukaan-kartu p-5 rounded-2xl">
           <span className="text-xs font-bold uppercase tracking-wider text-daun-tua block">
             Omzet Masuk ({bulanPilihan})
           </span>
@@ -109,7 +109,7 @@ export default async function HalamanLaporan({
           </span>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-krem-gelap shadow-sm">
+        <div className="permukaan-kartu p-5 rounded-2xl">
           <span className="text-xs font-bold uppercase tracking-wider text-bahaya block">
             Total Biaya Dapur
           </span>
@@ -118,7 +118,7 @@ export default async function HalamanLaporan({
           </span>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-krem-gelap shadow-sm">
+        <div className="permukaan-kartu p-5 rounded-2xl">
           <span className="text-xs font-bold uppercase tracking-wider text-kayu block">
             Laba Bersih Dapur
           </span>
@@ -131,7 +131,7 @@ export default async function HalamanLaporan({
           </span>
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-krem-gelap shadow-sm">
+        <div className="permukaan-kartu p-5 rounded-2xl">
           <span className="text-xs font-bold uppercase tracking-wider text-bata-tua block">
             Pesanan Selesai
           </span>
@@ -142,7 +142,7 @@ export default async function HalamanLaporan({
       </div>
 
       {/* Rincian Pos Pengeluaran */}
-      <div className="bg-white rounded-3xl border border-krem-gelap p-6 shadow-sm space-y-4">
+      <div className="permukaan-kartu rounded-3xl p-6 space-y-4">
         <h2 className="text-base font-extrabold text-kayu">
           Rincian Biaya Operasional per Kategori
         </h2>

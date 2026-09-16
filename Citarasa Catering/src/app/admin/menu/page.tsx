@@ -55,9 +55,9 @@ export default async function HalamanAdminMenu({
 
   return (
     <div className="space-y-6">
-      <div className="bg-white p-6 rounded-3xl border border-krem-gelap flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+      <div className="permukaan-kartu p-6 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-kayu">
+          <h1 className="judul-utama text-2xl text-kayu">
             Kelola Menu & Kuota Harian
           </h1>
           <p className="text-xs text-kayu-sedang mt-0.5">
@@ -72,7 +72,7 @@ export default async function HalamanAdminMenu({
       </div>
 
       {/* Baris Pencarian & Filter Menu */}
-      <form method="get" className="bg-white p-4 rounded-2xl border border-krem-gelap flex flex-wrap items-center justify-between gap-3 shadow-sm">
+      <form method="get" className="permukaan-kartu p-4 rounded-2xl flex flex-wrap items-center justify-between gap-3">
         <div className="flex-1 min-w-[240px] flex items-center gap-2">
           <span className="text-sm">🔍</span>
           <input
@@ -125,11 +125,11 @@ export default async function HalamanAdminMenu({
           return (
             <div
               key={kat}
-              className="bg-white rounded-3xl border border-krem-gelap overflow-hidden shadow-sm space-y-3"
+              className="permukaan-kartu rounded-3xl overflow-hidden space-y-3"
             >
               <div className="p-4 bg-krem-tua/60 border-b border-krem-gelap flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <h2 className="font-extrabold text-sm text-kayu">
+                  <h2 className="judul-bagian text-sm text-kayu">
                     {LABEL_KATEGORI[kat]}
                   </h2>
                   <span className="text-xs font-semibold text-kayu-sedang">

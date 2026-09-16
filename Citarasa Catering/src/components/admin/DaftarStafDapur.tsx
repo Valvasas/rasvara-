@@ -31,7 +31,7 @@ export function DaftarStafDapur({ daftarAwal }: { daftarAwal: StafItem[] }) {
   };
 
   return (
-    <div className="bg-white p-6 rounded-3xl border border-krem-gelap shadow-sm space-y-6">
+    <div className="permukaan-kartu p-6 rounded-3xl space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-krem-gelap/60 pb-4">
         <div>
           <h2 className="text-xl font-extrabold text-kayu flex items-center gap-2">
@@ -62,7 +62,7 @@ export function DaftarStafDapur({ daftarAwal }: { daftarAwal: StafItem[] }) {
           }}
           className="p-4 bg-krem/40 rounded-2xl border border-krem-gelap space-y-4"
         >
-          <h3 className="font-extrabold text-sm text-kayu">Daftarkan Akun Staf Baru</h3>
+          <h3 className="judul-bagian text-sm text-kayu">Daftarkan Akun Staf Baru</h3>
 
           {state?.pesan && (
             <div

@@ -22,9 +22,9 @@ export default async function HalamanAdminPengaturan() {
 
   return (
     <div className="space-y-8 max-w-4xl mx-auto">
-      <div className="bg-white p-6 rounded-3xl border border-krem-gelap flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+      <div className="permukaan-kartu p-6 rounded-3xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-kayu">
+          <h1 className="judul-utama text-2xl text-kayu">
             Pengaturan Usaha & Rekening
           </h1>
           <p className="text-xs text-kayu-sedang mt-0.5">

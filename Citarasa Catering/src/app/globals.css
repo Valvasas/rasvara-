@@ -45,12 +45,78 @@ body {
   color: var(--color-kayu);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Hampir setiap angka di aplikasi ini adalah data yang dibandingkan
+     berdampingan — harga, jumlah porsi, saldo kas. Angka tabular dipasang di
+     akar supaya seluruh kolom rupiah berbaris lurus tanpa perlu menandai
+     ratusan tempat satu per satu. */
+  font-variant-numeric: tabular-nums;
 }
 
 /* Judul editorial: dipakai manual di h1/h2 halaman publik saja,
    bukan di UI chrome/admin (serif untuk headline, sans untuk fungsional) */
 .font-tampil {
   font-family: var(--font-display);
+}
+
+/* ==========================================================================
+   TIPOGRAFI
+   Huruf besar butuh spasi lebih rapat, huruf kecil butuh lebih longgar —
+   penyetelan optis inilah bedanya teks yang "disusun" dan teks yang sekadar
+   diperbesar. Sebelumnya semua judul memakai sans tebal, sehingga tampilan
+   terasa seperti panel admin mana pun.
+   ========================================================================== */
+
+/* Judul halaman: serif, rapat, dengan turunan baris yang tenang. */
+.judul-utama {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.021em;
+  line-height: 1.12;
+}
+
+/* Judul bagian di dalam kartu. Tetap serif supaya berbeda tegas dari
+   teks fungsional di sekitarnya. */
+.judul-bagian {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.012em;
+  line-height: 1.25;
+}
+
+/* Label kecil huruf besar: butuh spasi longgar agar tidak menggumpal. */
+.label-mikro {
+  font-weight: 700;
+  font-size: 0.68rem;
+  letter-spacing: 0.085em;
+  text-transform: uppercase;
+  line-height: 1.4;
+}
+
+/* ==========================================================================
+   ANGKA
+   Semua uang, kode pesanan, dan jumlah memakai angka tabular: tiap digit
+   selebar digit lain, sehingga Rp300.000 dan Rp255.000 berbaris lurus di
+   kolom yang sama. Tanpa ini, kolom harga terlihat bergoyang.
+   ========================================================================== */
+.angka-tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Nominal uang yang perlu dibaca cepat (total, potongan, saldo). */
+.uang {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  letter-spacing: -0.01em;
+}
+
+/* Kode pesanan & kode voucher: berjarak tegas supaya mudah dibacakan
+   lewat telepon dan sulit tertukar. */
+.kode-cetak {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+  letter-spacing: 0.08em;
+  font-weight: 700;
 }
 
 /* Touch targets ramah sentuhan (min 48px) */
@@ -68,6 +134,147 @@ body {
 
 .bayangan-kartu {
   box-shadow: 0 2px 10px rgba(69, 26, 3, 0.06);
+}
+
+/* ==========================================================================
+   TINGKATAN PERMUKAAN
+   Sebelumnya setiap kotak memakai resep yang sama persis (putih, sudut besar,
+   garis tepi, bayangan tipis), sehingga kartu ringkasan, panel formulir, dan
+   daftar terlihat sederajat — mata tidak tahu mana yang penting. Tiga tingkat
+   di bawah ini memberi urutan itu.
+   ========================================================================== */
+
+/* Tingkat 0 — cekungan. Untuk wadah yang menampung isi lain: daftar item,
+   area rekap. Terasa masuk ke dalam, bukan mengambang. */
+.permukaan-cekung {
+  background-color: color-mix(in srgb, var(--color-krem-tua) 55%, white);
+  border: 1px solid color-mix(in srgb, var(--color-krem-gelap) 70%, transparent);
+  box-shadow: inset 0 1px 2px rgba(69, 26, 3, 0.04);
+}
+
+/* Tingkat 1 — kartu biasa. Permukaan kerja standar. */
+.permukaan-kartu {
+  background-color: #fff;
+  border: 1px solid color-mix(in srgb, var(--color-krem-gelap) 85%, transparent);
+  box-shadow:
+    0 1px 2px rgba(69, 26, 3, 0.04),
+    0 4px 16px -6px rgba(69, 26, 3, 0.08);
+}
+
+/* Tingkat 2 — terangkat. Untuk yang meminta tindakan atau menahan ringkasan
+   keputusan. Garis atas tipis berwarna kunyit memberi "cahaya" dari atas. */
+.permukaan-terangkat {
+  background-color: #fff;
+  border: 1px solid color-mix(in srgb, var(--color-krem-gelap) 70%, transparent);
+  box-shadow:
+    0 1px 2px rgba(69, 26, 3, 0.05),
+    0 10px 30px -10px rgba(69, 26, 3, 0.16),
+    0 2px 8px -4px rgba(69, 26, 3, 0.08);
+}
+
+/* Kartu yang bisa diklik: naik sedikit saat disentuh, bukan sekadar berubah warna. */
+.kartu-interaktif {
+  transition:
+    transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 0.22s ease;
+}
+.kartu-interaktif:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 1px 2px rgba(69, 26, 3, 0.05),
+    0 16px 34px -12px rgba(69, 26, 3, 0.2);
+}
+
+/* Tekstur kertas nasi: serat sangat halus pada latar aplikasi. Kekuatannya
+   sengaja di ambang sadar — terasa hangat, tidak terbaca sebagai pola. */
+.tekstur-kertas {
+  background-image:
+    radial-gradient(circle at 15% 12%, rgba(120, 53, 15, 0.028) 0 1px, transparent 1px),
+    radial-gradient(circle at 62% 38%, rgba(120, 53, 15, 0.022) 0 1px, transparent 1px),
+    radial-gradient(circle at 84% 76%, rgba(120, 53, 15, 0.026) 0 1px, transparent 1px);
+  background-size: 23px 23px, 31px 31px, 17px 17px;
+}
+
+/* ==========================================================================
+   STRUK
+   Tepi bergerigi dibuat dengan mask setengah lingkaran berulang, sehingga
+   kertasnya benar-benar "sobek" — bukan gambar tepi yang ditempel. Dipakai
+   pada nota pembeli supaya terbaca sebagai struk, bukan kartu biasa.
+   ========================================================================== */
+/* Posisi/ukuran/repeat hanya sah di properti ringkas `mask`, bukan di
+   `mask-image`; memakai `mask-image` membuat seluruh deklarasi dibuang
+   browser dan tepinya kembali lurus. */
+.kertas-struk {
+  background-color: #fff;
+  --gerigi: 10px;
+  -webkit-mask:
+    radial-gradient(var(--gerigi) at var(--gerigi) 0, #0000 98%, #000 100%)
+      calc(-1 * var(--gerigi)) 0 / calc(2 * var(--gerigi)) 100% repeat-x,
+    radial-gradient(var(--gerigi) at var(--gerigi) 100%, #0000 98%, #000 100%)
+      calc(-1 * var(--gerigi)) 100% / calc(2 * var(--gerigi)) 100% repeat-x;
+  -webkit-mask-composite: source-in;
+  mask:
+    radial-gradient(var(--gerigi) at var(--gerigi) 0, #0000 98%, #000 100%)
+      calc(-1 * var(--gerigi)) 0 / calc(2 * var(--gerigi)) 100% repeat-x,
+    radial-gradient(var(--gerigi) at var(--gerigi) 100%, #0000 98%, #000 100%)
+      calc(-1 * var(--gerigi)) 100% / calc(2 * var(--gerigi)) 100% repeat-x;
+  mask-composite: intersect;
+}
+
+/* Bayangan dipasang di pembungkus, bukan di kertasnya: elemen ber-mask tidak
+   bisa menampilkan box-shadow karena bayangannya ikut terpotong. */
+.bayangan-struk {
+  filter: drop-shadow(0 8px 20px rgba(69, 26, 3, 0.16));
+}
+
+/* Garis penuntun titik-titik antara nama hidangan dan harganya — perangkat
+   klasik struk yang menuntun mata menyeberang ke kolom angka. */
+.penuntun-titik {
+  flex: 1;
+  margin: 0 0.6rem;
+  border-bottom: 1.5px dotted color-mix(in srgb, var(--color-kayu) 26%, transparent);
+  transform: translateY(-0.28em);
+}
+
+/* Stempel LUNAS: miring, bertepi ganda, seperti cap karet yang ditekan. */
+.stempel-lunas {
+  border: 3px double var(--color-daun);
+  color: var(--color-daun);
+  transform: rotate(-11deg);
+  letter-spacing: 0.16em;
+  opacity: 0.88;
+  border-radius: 8px;
+}
+
+/* ==========================================================================
+   TIKET VOUCHER
+   Takik setengah lingkaran di kiri-kanan pada garis sobek, memakai mask agar
+   lubangnya benar-benar tembus ke latar apa pun di belakangnya.
+   ========================================================================== */
+/* Takik atas-bawah untuk tiket yang dipotong vertikal (bonggol di kiri).
+   `--posisi-takik` wajib memakai satuan piksel yang sama dengan lebar bonggol,
+   bukan persen: dengan persen, takiknya melayang jauh dari garis sobek begitu
+   lebar tiket berubah. */
+.tiket-tegak {
+  --takik: 11px;
+  --posisi-takik: 132px;
+  -webkit-mask:
+    radial-gradient(var(--takik) at var(--posisi-takik) 0, #0000 98%, #000 100%),
+    radial-gradient(var(--takik) at var(--posisi-takik) 100%, #0000 98%, #000 100%);
+  -webkit-mask-composite: source-in;
+  mask:
+    radial-gradient(var(--takik) at var(--posisi-takik) 0, #0000 98%, #000 100%),
+    radial-gradient(var(--takik) at var(--posisi-takik) 100%, #0000 98%, #000 100%);
+  mask-composite: intersect;
+}
+
+/* Garis sobek putus-putus di antara bonggol dan badan tiket. */
+.garis-sobek {
+  border-left: 2px dashed color-mix(in srgb, var(--color-kayu) 22%, transparent);
+}
+.garis-sobek-datar {
+  border-top: 2px dashed color-mix(in srgb, var(--color-kayu) 20%, transparent);
 }
 
 /* Cincin fokus keyboard yang jelas tapi tetap hangat (a11y) */

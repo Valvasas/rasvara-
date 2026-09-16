@@ -36,12 +36,12 @@ export default async function HalamanRiwayat() {
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl space-y-8">
       {/* Header Profil & Tombol Keluar */}
-      <div className="bg-white rounded-3xl border border-krem-gelap p-6 md:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+      <div className="permukaan-kartu rounded-3xl p-6 md:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <span className="text-xs font-bold uppercase tracking-wider text-kayu-sedang">
             Akun Pelanggan
           </span>
-          <h1 className="text-2xl font-extrabold text-kayu">{pengguna?.nama}</h1>
+          <h1 className="judul-utama text-2xl text-kayu">{pengguna?.nama}</h1>
           <p className="text-xs text-kayu-sedang">
             No. Telepon: {teleponTampil(sesi.telepon)}
           </p>
@@ -63,7 +63,7 @@ export default async function HalamanRiwayat() {
         <h2 className="text-lg font-bold text-kayu">Riwayat Pesanan Anda</h2>
 
         {pesananSaya.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-krem-gelap p-12 text-center max-w-md mx-auto space-y-4">
+          <div className="permukaan-kartu rounded-2xl p-12 text-center max-w-md mx-auto space-y-4">
             <div className="w-14 h-14 rounded-2xl bg-krem-tua text-kayu-sedang mx-auto flex items-center justify-center">
               <IkonRiwayat className="w-7 h-7" />
             </div>
@@ -85,7 +85,7 @@ export default async function HalamanRiwayat() {
             {pesananSaya.map((p) => (
               <div
                 key={p.id}
-                className="bg-white rounded-2xl border border-krem-gelap p-6 hover:border-bata/40 hover:shadow-sm transition-all space-y-4"
+                className="permukaan-kartu rounded-2xl p-6 hover:border-bata/40 hover:shadow-sm transition-all space-y-4"
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-krem-gelap/60 pb-3">
                   <div className="flex items-center gap-3">

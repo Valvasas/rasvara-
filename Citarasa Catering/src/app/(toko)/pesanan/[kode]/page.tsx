@@ -7,7 +7,6 @@ import { ambilPengaturan } from "@/lib/pengaturan";
 import {
   jamTampil,
   linkWhatsapp,
-  rupiah,
   tanggalPanjang,
 } from "@/lib/format";
 import {
@@ -16,6 +15,7 @@ import {
 } from "@/lib/pesanan";
 import { LencanaBayar, LencanaStatus } from "@/components/Lencana";
 import { FormUnggahBukti } from "@/components/toko/FormUnggahBukti";
+import { StrukPesanan } from "@/components/toko/StrukPesanan";
 import { TombolCetakPesanan } from "@/components/admin/TombolCetakPesanan";
 import { TombolSalin } from "@/components/TombolSalin";
 import { IkonCek } from "@/components/ikon/Ikon";
@@ -101,7 +101,7 @@ export default async function HalamanDetailPesanan({
       )}
 
       {/* Banner Ringkasan Kode */}
-      <div className="bg-white rounded-3xl border border-krem-gelap p-6 md:p-8 shadow-sm space-y-6">
+      <div className="permukaan-kartu rounded-3xl p-6 md:p-8 space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-krem-gelap/60 pb-6">
           <div>
             <span className="text-xs font-bold uppercase tracking-wider text-kayu-sedang block">
@@ -194,58 +194,28 @@ export default async function HalamanDetailPesanan({
           </div>
         </div>
 
-        {/* Rincian Menu Dipesan */}
-        <div className="space-y-3">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-kayu-sedang">
-            Daftar Hidangan
-          </h2>
-          <div className="border border-krem-gelap rounded-2xl overflow-hidden divide-y divide-krem-gelap/60">
-            {pesanan.item.map((it) => (
-              <div
-                key={it.id}
-                className="p-4 flex items-center justify-between gap-4 text-sm"
-              >
-                <div>
-                  <h3 className="font-bold text-kayu">{it.namaMenu}</h3>
-                  <div className="text-xs text-kayu-sedang mt-0.5">
-                    {it.jumlah} {it.satuan} &times; {rupiah(it.hargaSatuan)}
-                  </div>
-                  {it.catatan && (
-                    <p className="text-xs text-kayu-sedang/80 italic mt-1">
-                      Catatan: {it.catatan}
-                    </p>
-                  )}
-                </div>
-                <span className="font-bold text-kayu">{rupiah(it.subtotal)}</span>
-              </div>
-            ))}
-
-            {/* Total dan Ongkir */}
-            <div className="p-4 bg-krem/30 space-y-1.5 text-xs">
-              <div className="flex justify-between text-kayu-sedang">
-                <span>Subtotal Hidangan</span>
-                <span>{rupiah(pesanan.subtotal)}</span>
-              </div>
-              {pesanan.diskon > 0 && (
-                <div className="flex justify-between text-daun-tua font-semibold">
-                  <span>
-                    Potongan
-                    {pesanan.kodeVoucher ? ` (${pesanan.kodeVoucher})` : ""}
-                  </span>
-                  <span>-{rupiah(pesanan.diskon)}</span>
-                </div>
-              )}
-              <div className="flex justify-between text-kayu-sedang">
-                <span>Ongkir</span>
-                <span>{pesanan.ongkir === 0 ? "Gratis" : rupiah(pesanan.ongkir)}</span>
-              </div>
-              <div className="flex justify-between text-base font-extrabold text-kayu pt-2 border-t border-krem-gelap/60">
-                <span>Total Pembayaran</span>
-                <span className="text-bata">{rupiah(pesanan.total)}</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Nota pesanan */}
+        <StrukPesanan
+          kode={pesanan.kode}
+          namaUsaha={pengaturan.namaUsaha}
+          tanggalAcara={pesanan.tanggalAcara}
+          jamAcara={pesanan.jamAcara}
+          item={pesanan.item.map((it) => ({
+            id: it.id,
+            namaMenu: it.namaMenu,
+            jumlah: it.jumlah,
+            satuan: it.satuan,
+            hargaSatuan: it.hargaSatuan,
+            subtotal: it.subtotal,
+            catatan: it.catatan,
+          }))}
+          subtotal={pesanan.subtotal}
+          diskon={pesanan.diskon}
+          kodeVoucher={pesanan.kodeVoucher}
+          ongkir={pesanan.ongkir}
+          total={pesanan.total}
+          lunas={pesanan.statusBayar === "LUNAS"}
+        />
 
         {/* Informasi Pembayaran & Tombol Konfirmasi */}
         {pesanan.statusBayar !== "LUNAS" && (

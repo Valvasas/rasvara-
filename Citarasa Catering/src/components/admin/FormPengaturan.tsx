@@ -8,7 +8,7 @@ export function FormPengaturan({ awal }: { awal: Pengaturan }) {
   const [state, action, isPending] = useActionState(aksiSimpanPengaturan, null);
 
   return (
-    <form action={action} className="bg-white p-6 sm:p-8 rounded-3xl border border-krem-gelap shadow-sm space-y-6">
+    <form action={action} className="permukaan-kartu p-6 sm:p-8 rounded-3xl space-y-6">
       {state?.pesan && (
         <div
           className={`p-3.5 rounded-xl text-xs font-semibold text-center ${

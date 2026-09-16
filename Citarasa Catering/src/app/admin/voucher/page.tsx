@@ -35,8 +35,8 @@ export default async function HalamanAdminVoucher() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white p-6 rounded-3xl border border-krem-gelap shadow-sm">
-        <h1 className="text-2xl font-extrabold text-kayu">Voucher &amp; Promo</h1>
+      <div className="permukaan-kartu p-6 rounded-3xl">
+        <h1 className="judul-utama text-2xl text-kayu">Voucher &amp; Promo</h1>
         <p className="text-xs text-kayu-sedang mt-0.5 max-w-2xl">
           Potongan dihitung ulang di server saat pesanan dibuat, jadi kode yang
           disebar tidak bisa dipakai menembus aturan minimal belanja maupun kuota.

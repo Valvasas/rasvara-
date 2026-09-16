@@ -11,7 +11,7 @@ export default async function HalamanLacak({ searchParams }: HalamanLacakProps) 
 
   return (
     <div className="container mx-auto px-4 py-12 max-w-lg">
-      <div className="bg-white rounded-3xl border border-krem-gelap p-6 sm:p-10 shadow-sm space-y-6">
+      <div className="permukaan-kartu rounded-3xl p-6 sm:p-10 space-y-6">
         {/* Header Form */}
         <div className="text-center space-y-2">
           <img

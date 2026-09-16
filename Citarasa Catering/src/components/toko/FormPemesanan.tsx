@@ -264,7 +264,7 @@ export function FormPemesanan({
       )}
 
       {/* Bagian 1: Pilih Hidangan */}
-      <section className="bg-white rounded-3xl border border-krem-gelap p-6 md:p-8 space-y-6 shadow-sm">
+      <section className="permukaan-kartu rounded-3xl p-6 md:p-8 space-y-6">
         <div>
           <h2 className="text-xl font-bold text-kayu">1. Pilih Menu Catering</h2>
           <p className="text-xs text-kayu-sedang mt-1">
@@ -367,7 +367,7 @@ export function FormPemesanan({
       </section>
 
       {/* Bagian 2: Waktu & Pengiriman */}
-      <section className="bg-white rounded-3xl border border-krem-gelap p-6 md:p-8 space-y-6 shadow-sm">
+      <section className="permukaan-kartu rounded-3xl p-6 md:p-8 space-y-6">
         <div>
           <h2 className="text-xl font-bold text-kayu">2. Jadwal & Pengiriman</h2>
           <p className="text-xs text-kayu-sedang mt-1">
@@ -542,7 +542,7 @@ export function FormPemesanan({
       </section>
 
       {/* Bagian 3: Data Pemesan & Pembayaran */}
-      <section className="bg-white rounded-3xl border border-krem-gelap p-6 md:p-8 space-y-6 shadow-sm">
+      <section className="permukaan-kartu rounded-3xl p-6 md:p-8 space-y-6">
         <div>
           <h2 className="text-xl font-bold text-kayu">3. Data Pemesan & Pembayaran</h2>
           <p className="text-xs text-kayu-sedang mt-1">
@@ -714,22 +714,36 @@ export function FormPemesanan({
           <input type="hidden" name="kodeVoucher" value={kodeTerpakai ?? ""} />
 
           {kodeTerpakai ? (
-            <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-daun/20 border border-daun-lembut/30">
-              <div className="min-w-0">
-                <p className="text-xs font-bold text-daun-lembut truncate">
-                  Voucher {kodeTerpakai} terpakai
-                </p>
-                <p className="text-[11px] text-krem/70 truncate">
-                  Hemat {rupiah(potongan)}
-                </p>
+            // Voucher yang berhasil dipakai tampil sebagai tiket kecil dengan
+            // takik, supaya terasa seperti kupon yang benar-benar ditempelkan
+            // ke pesanan — bukan sekadar kotak pemberitahuan.
+            <div className="tiket-tegak flex items-stretch overflow-hidden rounded-xl bg-krem anim-masuk-skala">
+              <div className="shrink-0 px-3.5 py-3 bg-kunyit-lembut flex flex-col items-center justify-center">
+                <span className="label-mikro text-kunyit-tua/80 text-[9px]">
+                  Hemat
+                </span>
+                <span className="uang font-extrabold text-kayu text-sm leading-tight">
+                  {rupiah(potongan)}
+                </span>
               </div>
-              <button
-                type="button"
-                onClick={lepasVoucher}
-                className="shrink-0 min-h-[40px] px-3 py-2 rounded-lg text-[11px] font-bold text-krem/90 hover:text-white hover:bg-krem/10 transition-colors cursor-pointer"
-              >
-                Lepas
-              </button>
+
+              <div className="garis-sobek" />
+
+              <div className="flex-1 min-w-0 px-3.5 py-3 flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="kode-cetak text-xs text-kayu truncate">
+                    {kodeTerpakai}
+                  </p>
+                  <p className="text-[10px] text-kayu-sedang">Voucher terpakai</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={lepasVoucher}
+                  className="shrink-0 min-h-[40px] px-3 py-2 rounded-lg text-[11px] font-bold text-kayu-sedang hover:text-bahaya hover:bg-bahaya-lembut transition-colors cursor-pointer"
+                >
+                  Lepas
+                </button>
+              </div>
             </div>
           ) : (
             <>
