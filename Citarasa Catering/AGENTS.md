@@ -43,9 +43,14 @@ src/components/
   toko/          komponen khusus halaman publik
   admin/         komponen khusus dashboard admin
   (root)         komponen bersama: Wordmark, Lencana, FormMasuk, TombolKeluar
+src/proxy.ts         Proxy Next.js 16 (dulu bernama middleware.ts — `middleware` sudah DEPRECATED di v16).
+                     Hanya menyetel header `x-lokasi-halaman`; jangan menyentuh database dari sini.
 src/lib/
   db.ts              Prisma client singleton (adapter pg, di-cache di globalThis saat dev)
   auth.ts            sesi & password (scrypt, jose)
+  analitik.ts        statistik kunjungan (menulis ke DB); analitik-path.ts memuat logika murninya
+  situs.ts           satu-satunya sumber alamat publik situs (metadataBase, sitemap, robots)
+  foto-menu.ts       konstanta & tipe galeri foto (TIDAK boleh ditaruh di berkas "use server")
   akses-pesanan.ts   cookie "pesanan_saya" (guest tracking, maks 25 kode, 180 hari)
   pesanan.ts         alur status pesanan, generator kode, label kategori
   format.ts          helper tanggal/jam WIB, format rupiah, normalisasi telepon, link WhatsApp
@@ -70,6 +75,7 @@ Ini adalah aturan bisnis yang sudah didesain sengaja. Kalau perubahanmu menyentu
 5. **Kode pesanan bukan kunci akses.** Untuk melihat detail pesanan, pengunjung harus: memesan dari device itu (cookie `pesanan_saya`), ATAU login sebagai pemilik, ATAU nomor teleponnya cocok di halaman lacak. Jangan buat route yang expose detail pesanan hanya lewat kode di URL tanpa salah satu dari tiga syarat itu.
 6. **Nomor telepon adalah identitas login**, bukan email (email di `Pengguna` opsional).
 7. **Menu yang pernah dipesan tidak boleh dihapus**, hanya di-nonaktifkan (`Menu.aktif = false`), supaya riwayat pesanan tidak korup (relasi `ItemPesanan.menuId` — `onDelete: SetNull`, jangan diubah jadi cascade delete).
+8. **Statistik tidak boleh bisa dibongkar menjadi identitas.** Alamat IP tidak pernah disimpan; pengunjung unik dihitung dari SHA-256 atas (IP + user agent + garam harian acak yang hanya hidup di memori dan berganti tiap hari). Semua tabel analitik menyimpan angka teragregasi per hari, bukan baris per kunjungan, dan `rapikanPath()` menyamarkan kode pesanan sebelum disimpan. Jangan menambahkan penyimpanan IP mentah, cookie pelacak, atau layanan analitik pihak ketiga — begitu salah satunya masuk, situs ini wajib memasang banner persetujuan cookie dan janji di halaman kebijakan privasi jadi tidak benar.
 
 ## 5. Alur kerja umum
 
@@ -111,8 +117,21 @@ Kode ini sengaja memakai istilah domain berbahasa Indonesia untuk model, variabe
 
 ## 8. Yang TIDAK ada saat ini (jangan berasumsi)
 
-- Tidak ada test framework (Jest/Vitest/Playwright) — lihat TASKS.md untuk rencana.
-- Tidak ada CI (`.github/workflows` tidak ada).
 - Tidak ada `tailwind.config.*` (memang sengaja, Tailwind v4 CSS-first).
-- Tidak ada file ESLint config eksplisit di root meski ada script `lint` (`next lint`) — verifikasi konfigurasi sebelum mengandalkannya.
+- Belum ada voucher, peta lokasi, maupun payment gateway — lihat TASKS.md.
+- Tidak ada dark mode.
 - `legacy/` bukan bagian dari aplikasi aktif — jangan impor apa pun dari sana ke `src/`.
+
+Yang **sudah** ada (jangan dibangun ulang): test runner bawaan Node + `tsx` (`npm test`),
+CI di `.github/workflows/ci.yml`, `eslint.config.mjs` (flat config), Dockerfile,
+rate limiting, validasi unggahan berbasis magic bytes, dan pemesanan berbasis
+tanggal + jam lengkap dengan lead time preorder, tanggal libur, serta kuota harian per menu.
+
+## 9. Jebakan khusus Next.js 16 yang sudah pernah menggigit
+
+- **Berkas `"use server"` hanya boleh mengekspor fungsi async.** Mengekspor konstanta
+  atau tipe dari sana membuat seluruh modul kehilangan ekspornya saat dibundel, dan
+  `tsc --noEmit` **tidak** menangkapnya — hanya `npm run build` yang gagal. Taruh
+  konstanta/tipe di `src/lib/` (contoh: `foto-menu.ts`).
+- **`middleware.ts` sudah deprecated, gantinya `proxy.ts`** dengan fungsi bernama `proxy`.
+- Selalu jalankan `npm run build`, bukan sekadar `typecheck`, sebelum menganggap selesai.

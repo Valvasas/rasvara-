@@ -87,7 +87,6 @@ model Menu {
   harga          Int
   satuan         String       @default("porsi")
   minPesan       Int          @default(1)
-  fotoUrl        String?
   aktif          Boolean      @default(true)
   // Tumpeng & pesanan besar butuh waktu siap. 0 = bisa dipesan hari ini juga.
   preorderHari   Int          @default(0)
@@ -97,9 +96,25 @@ model Menu {
   diubahPada     DateTime     @updatedAt
 
   item           ItemPesanan[]
+  foto           FotoMenu[]
 
   @@index([kategori, aktif])
   @@index([aktif, urutan])
+}
+
+/// Galeri foto per menu. Pembeli katering memutuskan lewat mata: satu foto
+/// tidak cukup untuk menunjukkan isi box, porsi, dan penyajiannya sekaligus.
+/// Foto dengan `urutan` terkecil dipakai sebagai sampul di kartu menu.
+model FotoMenu {
+  id         String   @id @default(cuid())
+  menuId     String
+  menu       Menu     @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  url        String
+  keterangan String?
+  urutan     Int      @default(0)
+  dibuatPada DateTime @default(now())
+
+  @@index([menuId, urutan])
 }
 
 model Pesanan {
@@ -208,6 +223,53 @@ model TanggalTutup {
   id      String   @id @default(cuid())
   tanggal DateTime @unique
   alasan  String?
+}
+
+/// Jenis peristiwa yang dilacak untuk mengukur corong (funnel) pemesanan.
+/// Sengaja dibatasi pada langkah yang punya arti bisnis, bukan tiap klik.
+enum JenisPeristiwa {
+  MENU_DILIHAT
+  FORM_PESAN_DIBUKA
+  PESANAN_DIBUAT
+  LACAK_DIPAKAI
+}
+
+/// Jumlah tampilan halaman per hari, sudah teragregasi sejak ditulis.
+/// Tidak ada baris per-kunjungan, jadi tidak ada jejak individual yang bisa
+/// dibongkar belakangan.
+model KunjunganHarian {
+  id       String   @id @default(cuid())
+  tanggal  DateTime
+  path     String
+  tampilan Int      @default(0)
+
+  @@unique([tanggal, path])
+  @@index([tanggal])
+}
+
+/// Penghitung pengunjung unik per hari tanpa menyimpan identitas.
+/// `sidik` adalah hash SHA-256 dari (IP + user agent + garam harian acak) yang
+/// tidak disimpan di mana pun. Karena garamnya berganti tiap hari, sidik yang
+/// sama tidak bisa dihubungkan antar hari, dan tidak bisa dibalik jadi IP.
+/// Inilah alasan situs ini tidak memerlukan banner persetujuan cookie.
+model JejakPengunjung {
+  id      String   @id @default(cuid())
+  tanggal DateTime
+  sidik   String
+
+  @@unique([tanggal, sidik])
+  @@index([tanggal])
+}
+
+/// Peristiwa corong pemesanan, juga teragregasi per hari.
+model PeristiwaAnalitik {
+  id      String         @id @default(cuid())
+  tanggal DateTime
+  jenis   JenisPeristiwa
+  jumlah  Int            @default(0)
+
+  @@unique([tanggal, jenis])
+  @@index([tanggal])
 }
 
 model Pengaturan {

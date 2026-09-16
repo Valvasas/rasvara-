@@ -5,7 +5,10 @@ import { bacaSesi } from "@/lib/auth";
 import { rupiah } from "@/lib/format";
 import { LABEL_KATEGORI, URUTAN_KATEGORI } from "@/lib/pesanan";
 import { TombolToggleMenu } from "@/components/admin/TombolToggleMenu";
-import type { KategoriMenu, Menu } from "@/generated/prisma/client";
+import { KelolaFotoMenu } from "@/components/admin/KelolaFotoMenu";
+import type { FotoMenu, KategoriMenu, Menu } from "@/generated/prisma/client";
+
+type MenuDenganFoto = Menu & { foto: FotoMenu[] };
 
 interface HalamanAdminMenuProps {
   searchParams: Promise<{ q?: string; kategori?: string }>;
@@ -35,7 +38,7 @@ export default async function HalamanAdminMenu({
       ]
     : undefined;
 
-  let daftarMenu: Menu[] = [];
+  let daftarMenu: MenuDenganFoto[] = [];
 
   try {
     daftarMenu = await db.menu.findMany({
@@ -44,6 +47,7 @@ export default async function HalamanAdminMenu({
         ...(kondisiPencarian ? { OR: kondisiPencarian } : {}),
       },
       orderBy: [{ kategori: "asc" }, { urutan: "asc" }, { nama: "asc" }],
+      include: { foto: { orderBy: { urutan: "asc" } } },
     });
   } catch {
     // Fallback saat DB belum jalan
@@ -136,15 +140,18 @@ export default async function HalamanAdminMenu({
 
               <div className="divide-y divide-krem-gelap/60">
                 {menuKategori.map((item) => (
-                  <div
-                    key={item.id}
-                    className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-                  >
+                  <div key={item.id} className="p-4 space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div className="space-y-1">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <h3 className="font-bold text-sm text-kayu">
                           {item.nama}
                         </h3>
+                        {item.foto.length === 0 && (
+                          <span className="text-[10px] font-semibold text-kunyit-tua bg-kunyit-lembut px-2 py-0.5 rounded">
+                            Belum ada foto
+                          </span>
+                        )}
                         {item.preorderHari > 0 ? (
                           <span className="text-[10px] font-semibold text-kunyit-tua bg-kunyit-lembut px-2 py-0.5 rounded">
                             Preorder {item.preorderHari} hari
@@ -178,6 +185,17 @@ export default async function HalamanAdminMenu({
                     <div className="flex items-center gap-3 self-end sm:self-center">
                       <TombolToggleMenu id={item.id} aktif={item.aktif} />
                     </div>
+                    </div>
+
+                    <KelolaFotoMenu
+                      menuId={item.id}
+                      namaMenu={item.nama}
+                      foto={item.foto.map((f) => ({
+                        id: f.id,
+                        url: f.url,
+                        urutan: f.urutan,
+                      }))}
+                    />
                   </div>
                 ))}
               </div>

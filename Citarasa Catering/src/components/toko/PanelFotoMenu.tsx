@@ -18,7 +18,8 @@ const GAYA_KATEGORI: Record<
 };
 
 interface PanelFotoMenuProps {
-  fotoUrl: string | null;
+  /** Galeri menu, sudah urut. Foto pertama dipakai sebagai sampul. */
+  foto: { url: string }[];
   kategori: KategoriMenu;
   nama: string;
   className?: string;
@@ -28,13 +29,12 @@ interface PanelFotoMenuProps {
 }
 
 /**
- * Panel foto menu dengan fallback ikon-per-kategori saat `fotoUrl` kosong
- * (kondisi bawaan saat ini karena admin belum bisa unggah foto menu).
+ * Sampul menu dengan fallback ikon-per-kategori saat galerinya masih kosong.
  * Satu sumber kebenaran dipakai di kartu Beranda, kartu /menu, dan halaman
- * detail supaya begitu foto asli tersedia, semua tempat otomatis terupdate.
+ * detail supaya begitu foto asli diunggah, semua tempat otomatis ikut berubah.
  */
 export function PanelFotoMenu({
-  fotoUrl,
+  foto,
   kategori,
   nama,
   className = "",
@@ -43,18 +43,26 @@ export function PanelFotoMenu({
   priority = false,
 }: PanelFotoMenuProps) {
   const gaya = GAYA_KATEGORI[kategori];
+  const sampul = foto[0];
 
   return (
     <div className={`relative overflow-hidden ${className}`}>
-      {fotoUrl ? (
-        <Image
-          src={fotoUrl}
-          alt={nama}
-          fill
-          sizes={sizes}
-          priority={priority}
-          className="object-cover"
-        />
+      {sampul ? (
+        <>
+          <Image
+            src={sampul.url}
+            alt={nama}
+            fill
+            sizes={sizes}
+            priority={priority}
+            className="object-cover"
+          />
+          {foto.length > 1 && (
+            <span className="absolute bottom-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-kayu/80 text-krem">
+              {foto.length} foto
+            </span>
+          )}
+        </>
       ) : (
         <div className={`absolute inset-0 flex items-center justify-center ${gaya.latar}`}>
           <gaya.Ikon className={`${ukuranIkon} ${gaya.ikonWarna}`} strokeWidth={1.25} />

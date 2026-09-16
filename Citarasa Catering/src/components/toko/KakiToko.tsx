@@ -119,8 +119,16 @@ export async function KakiToko() {
           </div>
         </div>
 
-        <div className="border-t border-krem-gelap/60 pt-6 text-center text-xs text-kayu-sedang">
+        <div className="border-t border-krem-gelap/60 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-kayu-sedang">
           <p>&copy; {new Date().getFullYear()} Citarasa Catering. Cita rasa hangat resep keluarga.</p>
+          <div className="flex flex-wrap items-center justify-center gap-4 font-medium">
+            <Link href="/kebijakan-privasi" className="hover:text-bata">
+              Kebijakan Privasi
+            </Link>
+            <Link href="/syarat-ketentuan" className="hover:text-bata">
+              Syarat &amp; Ketentuan
+            </Link>
+          </div>
         </div>
       </div>
     </footer>
