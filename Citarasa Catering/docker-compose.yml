@@ -9,8 +9,10 @@ services:
       POSTGRES_DB: citarasa
     volumes:
       - data-postgres:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    # Port 5432 sengaja TIDAK dipublikasikan ke internet publik demi keamanan VPS.
+    # Jika perlu akses lokal dari GUI (mis. DBeaver), uncomment baris di bawah:
+    # ports:
+    #   - "127.0.0.1:5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U citarasa_user -d citarasa"]
       interval: 5s
@@ -27,8 +29,8 @@ services:
       db:
         condition: service_healthy
     environment:
-      DATABASE_URL: "postgresql://citarasa_user:citarasa_password_ganti_di_produksi@db:5432/citarasa?schema=public"
-      SESSION_SECRET: "${SESSION_SECRET:-ganti-dengan-kunci-acak-minimal-32-karakter}"
+      DATABASE_URL: "postgresql://citarasa_user:${POSTGRES_PASSWORD:-citarasa_password_ganti_di_produksi}@db:5432/citarasa?schema=public"
+      SESSION_SECRET: "${SESSION_SECRET:?Variabel SESSION_SECRET wajib diatur di berkas .env sebelum menjalankan container}"
       NEXT_PUBLIC_BASE_URL: "${NEXT_PUBLIC_BASE_URL:-http://localhost:3000}"
       NODE_ENV: production
     ports:

@@ -6,13 +6,20 @@ import { rupiah } from "@/lib/format";
 import { LABEL_KATEGORI, URUTAN_KATEGORI } from "@/lib/pesanan";
 import { TombolToggleMenu } from "@/components/admin/TombolToggleMenu";
 import { KelolaFotoMenu } from "@/components/admin/KelolaFotoMenu";
+import { KomponenPaginasi } from "@/components/toko/KomponenPaginasi";
 import type { FotoMenu, KategoriMenu, Menu } from "@/generated/prisma/client";
 
 type MenuDenganFoto = Menu & { foto: FotoMenu[] };
 
 interface HalamanAdminMenuProps {
-  searchParams: Promise<{ q?: string; kategori?: string }>;
+  searchParams: Promise<{ q?: string; kategori?: string; halaman?: string }>;
 }
+
+/**
+ * Tiap baris menu di sini membawa pengelola galeri fotonya sendiri, jadi satu
+ * halaman berisi seratus menu berarti seratus komponen berat sekaligus.
+ */
+const UKURAN_HALAMAN = 20;
 
 export default async function HalamanAdminMenu({
   searchParams,
@@ -38,20 +45,38 @@ export default async function HalamanAdminMenu({
       ]
     : undefined;
 
+  const where = {
+    ...(filterKategoriEnum ? { kategori: filterKategoriEnum } : {}),
+    ...(kondisiPencarian ? { OR: kondisiPencarian } : {}),
+  };
+
   let daftarMenu: MenuDenganFoto[] = [];
+  let totalMenu = 0;
+  const halamanDiminta = Number(params.halaman ?? "1");
+  let halamanAktif =
+    Number.isFinite(halamanDiminta) && halamanDiminta >= 1
+      ? Math.floor(halamanDiminta)
+      : 1;
 
   try {
+    totalMenu = await db.menu.count({ where });
+    halamanAktif = Math.min(
+      halamanAktif,
+      Math.max(1, Math.ceil(totalMenu / UKURAN_HALAMAN))
+    );
+
     daftarMenu = await db.menu.findMany({
-      where: {
-        ...(filterKategoriEnum ? { kategori: filterKategoriEnum } : {}),
-        ...(kondisiPencarian ? { OR: kondisiPencarian } : {}),
-      },
+      where,
       orderBy: [{ kategori: "asc" }, { urutan: "asc" }, { nama: "asc" }],
       include: { foto: { orderBy: { urutan: "asc" } } },
+      skip: (halamanAktif - 1) * UKURAN_HALAMAN,
+      take: UKURAN_HALAMAN,
     });
   } catch {
     // Fallback saat DB belum jalan
   }
+
+  const totalHalaman = Math.max(1, Math.ceil(totalMenu / UKURAN_HALAMAN));
 
   return (
     <div className="space-y-6">
@@ -67,7 +92,7 @@ export default async function HalamanAdminMenu({
         </div>
 
         <span className="text-xs font-bold px-3 py-1.5 rounded-xl bg-krem-tua text-kayu border border-krem-gelap">
-          Total {daftarMenu.length} Menu Terdaftar
+          Total {totalMenu} Menu Terdaftar
         </span>
       </div>
 
@@ -203,6 +228,13 @@ export default async function HalamanAdminMenu({
           );
         })}
       </div>
+
+      <KomponenPaginasi
+        halamanAktif={halamanAktif}
+        totalHalaman={totalHalaman}
+        basePath="/admin/menu"
+        queryLain={{ q: kataKunci || undefined, kategori: filterKategoriEnum }}
+      />
     </div>
   );
 }

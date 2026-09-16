@@ -13,6 +13,17 @@ Dokumen ini memuat panduan konkret untuk mendeploy, mengamankan, dan memelihara 
   - `SESSION_SECRET`: String acak kriptografis minimal 32 karakter
   - `NEXT_PUBLIC_BASE_URL`: URL domain publik (contoh: `https://citarasa-catering.com`)
   - `NODE_ENV`: `production`
+  - `PROXY_TEPERCAYA`: jumlah reverse-proxy tepercaya di depan aplikasi. **Wajib disesuaikan** — lihat catatan di bawah.
+  - `DB_POOL_MAX` (opsional, bawaan `20`): batas koneksi database yang dibuka aplikasi.
+
+> **`PROXY_TEPERCAYA` menentukan apakah pembatas laju benar-benar bekerja.**
+> Header `x-forwarded-for` dan `x-real-ip` bisa ditulis siapa saja yang mengirim
+> permintaan; yang membuatnya dapat dipercaya hanyalah proxy di depan yang
+> menimpanya. Isi `1` untuk susunan "nginx → aplikasi" seperti Opsi A/B di bawah.
+> Isi `0` bila aplikasi diakses langsung tanpa proxy — dengan begitu header
+> diabaikan sepenuhnya dan penyerang tidak bisa mengarang alamat baru tiap
+> permintaan untuk memperoleh jatah percobaan login yang baru. Kalau ada lebih
+> dari satu proxy (misalnya Cloudflare → nginx → aplikasi), isi sesuai jumlahnya.
 
 ---
 
@@ -133,7 +144,7 @@ docker compose start app
 ## 4. Manajemen & Rotasi `SESSION_SECRET`
 
 - **Penyimpanan**: Di server produksi berbayar, simpan rahasia di Secret Manager (misalnya AWS Secrets Manager, Doppler, Vault, atau Environment Secret di PaaS), bukan di file teks biasa tanpa enkripsi.
-- **Konsekuensi Perubahan**: Mengganti `SESSION_SECRET` akan otomatis membatalkan seluruh cookie sesi login aktif (`sesi_citarasa`). Pengguna dan pemilik usaha harus memasukkan nomor HP & sandi kembali untuk login.
+- **Konsekuensi Perubahan**: Mengganti `SESSION_SECRET` akan otomatis membatalkan seluruh cookie sesi login aktif (`sesi_citarasa`) **dan** cookie akses pesanan tamu (`pesanan_saya`, yang ditandatangani dengan kunci yang sama). Pengguna dan pemilik usaha harus login ulang; pembeli tamu perlu memasukkan kode pesanan & nomor HP lagi di halaman `/lacak`.
 - **Waktu Rotasi**: Dianjurkan rotasi setiap 6–12 bulan, atau segera jika dicurigai terjadi kebocoran kredensial server.
 
 ---

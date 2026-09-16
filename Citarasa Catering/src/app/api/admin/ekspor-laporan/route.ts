@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { wajibPemilik } from "@/lib/auth";
 import { rentangBulan } from "@/lib/laporan";
-import { hariIniWib, kunciHari } from "@/lib/format";
+import { amankanCsv, hariIniWib, kunciHari } from "@/lib/format";
 
 export async function GET(request: Request) {
   try {
@@ -15,7 +15,15 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const sekarangWib = hariIniWib();
-  const bulan = searchParams.get("bulan") || sekarangWib.slice(0, 7);
+  const diminta = searchParams.get("bulan");
+
+  // Nilainya ikut masuk ke kueri tanggal dan ke nama berkas di header balasan.
+  // "2026-13" menghasilkan Date tidak sah yang membuat Prisma melempar, dan
+  // tanda kutip di dalamnya merusak header Content-Disposition.
+  const bulan =
+    diminta && /^\d{4}-(0[1-9]|1[0-2])$/.test(diminta)
+      ? diminta
+      : sekarangWib.slice(0, 7);
 
   const rentang = rentangBulan(bulan);
 
@@ -38,11 +46,11 @@ export async function GET(request: Request) {
   for (const row of dataKas) {
     const tanggalTeks = kunciHari(row.tanggal);
     const jenis = row.jenis;
-    const kategori = `"${row.kategori.replace(/"/g, '""')}"`;
-    const keterangan = `"${row.keterangan.replace(/"/g, '""')}"`;
+    const kategori = amankanCsv(row.kategori);
+    const keterangan = amankanCsv(row.keterangan);
     const jumlah = row.jumlah;
-    const kodePesanan = row.pesanan?.kode || "-";
-    const namaPemesan = row.pesanan ? `"${row.pesanan.namaPemesan.replace(/"/g, '""')}"` : "-";
+    const kodePesanan = amankanCsv(row.pesanan?.kode);
+    const namaPemesan = amankanCsv(row.pesanan?.namaPemesan);
 
     barisCsv.push(
       `${tanggalTeks},${jenis},${kategori},${keterangan},${jumlah},${kodePesanan},${namaPemesan}`

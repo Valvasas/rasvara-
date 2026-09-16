@@ -246,3 +246,18 @@ export function namaPanggilan(namaLengkap: string): string {
 export function linkWhatsapp(nomor: string, pesan: string): string {
   return `https://wa.me/${normalkanTelepon(nomor)}?text=${encodeURIComponent(pesan)}`;
 }
+
+/**
+ * Membersihkan nilai sel CSV dari potensi Formula Injection
+ * pada aplikasi spreadsheet seperti Microsoft Excel atau LibreOffice.
+ */
+export function amankanCsv(nilai: string | null | undefined): string {
+  if (!nilai) return "-";
+  let teks = nilai;
+  // Jika nilai diawali dengan karakter operator formula (=, +, -, @, \t, \r),
+  // sisipkan petik tunggal di depannya agar dievaluasi murni sebagai teks literal.
+  if (/^[=+\-@\t\r]/.test(teks)) {
+    teks = `'${teks}`;
+  }
+  return `"${teks.replace(/"/g, '""')}"`;
+}

@@ -5,6 +5,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { wajibPemilik } from "@/lib/auth";
 import { normalkanTelepon } from "@/lib/format";
+import { lupakanSinggahanPengaturan } from "@/lib/pengaturan";
 
 const SkemaPengaturan = z.object({
   namaUsaha: z.string().min(2, "Nama usaha minimal 2 karakter"),
@@ -91,6 +92,8 @@ export async function aksiSimpanPengaturan(
       minOrderAntar: d.minOrderAntar,
     },
   });
+
+  lupakanSinggahanPengaturan();
 
   revalidatePath("/");
   revalidatePath("/menu");
