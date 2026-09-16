@@ -1,10 +1,11 @@
 import { db } from "@/lib/db";
 import { bacaSesi } from "@/lib/auth";
 import { ambilPengaturan } from "@/lib/pengaturan";
-import { ambilMenuAktif } from "@/lib/menu";
+import { ambilMenuAktif, type MenuDenganFoto } from "@/lib/menu";
 import { kunciHari } from "@/lib/format";
+import { catatPeristiwa } from "@/lib/analitik";
 import { FormPemesanan } from "@/components/toko/FormPemesanan";
-import type { Menu, Pengguna } from "@/generated/prisma/client";
+import type { Pengguna } from "@/generated/prisma/client";
 
 interface HalamanPesanProps {
   searchParams: Promise<{ menu?: string }>;
@@ -14,8 +15,10 @@ export default async function HalamanPesan({ searchParams }: HalamanPesanProps) 
   const params = await searchParams;
   const menuAwalSlug = params.menu;
 
-  const daftarMenu: Menu[] = await ambilMenuAktif();
+  const daftarMenu: MenuDenganFoto[] = await ambilMenuAktif();
   const pengaturan = await ambilPengaturan();
+
+  await catatPeristiwa("FORM_PESAN_DIBUKA");
   let tanggalLibur: string[] = [];
   let pengguna: Pengguna | null = null;
 

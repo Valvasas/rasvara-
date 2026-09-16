@@ -5,6 +5,8 @@ import { rupiah } from "@/lib/format";
 import { LABEL_KATEGORI } from "@/lib/pesanan";
 import { LencanaKategori } from "@/components/Lencana";
 import { PanelFotoMenu } from "@/components/toko/PanelFotoMenu";
+import { GaleriFotoMenu } from "@/components/toko/GaleriFotoMenu";
+import { catatPeristiwa } from "@/lib/analitik";
 
 interface HalamanDetailMenuProps {
   params: Promise<{ slug: string }>;
@@ -17,6 +19,8 @@ export default async function HalamanDetailMenu({ params }: HalamanDetailMenuPro
   if (!menu) {
     notFound();
   }
+
+  await catatPeristiwa("MENU_DILIHAT");
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-3xl space-y-6">
@@ -34,14 +38,26 @@ export default async function HalamanDetailMenu({ params }: HalamanDetailMenuPro
       </div>
 
       <div className="bg-white rounded-3xl border border-krem-gelap overflow-hidden shadow-sm">
-        <PanelFotoMenu
-          fotoUrl={menu.fotoUrl}
-          kategori={menu.kategori}
-          nama={menu.nama}
-          className="aspect-[16/9]"
-          ukuranIkon="w-16 h-16"
-          priority
-        />
+        {menu.foto.length > 0 ? (
+          <GaleriFotoMenu
+            foto={menu.foto.map((f) => ({
+              id: f.id,
+              url: f.url,
+              keterangan: f.keterangan,
+            }))}
+            nama={menu.nama}
+            kategori={menu.kategori}
+          />
+        ) : (
+          <PanelFotoMenu
+            foto={[]}
+            kategori={menu.kategori}
+            nama={menu.nama}
+            className="aspect-[16/9]"
+            ukuranIkon="w-16 h-16"
+            priority
+          />
+        )}
 
         <div className="p-6 sm:p-8 space-y-6">
           <div className="flex items-center justify-between gap-2">

@@ -15,14 +15,14 @@ import {
   IkonSnack,
   IkonTumpeng,
 } from "@/components/ikon/Ikon";
-import type { Menu } from "@/generated/prisma/client";
+import type { MenuDenganFoto } from "@/lib/menu";
 
 export default async function BerandaToko() {
   const [menus] = await Promise.all([
     ambilMenuAktif(),
     ambilPengaturan(),
   ]);
-  const menuUnggulan: Menu[] = menus.slice(0, 6);
+  const menuUnggulan: MenuDenganFoto[] = menus.slice(0, 6);
 
   const kategoriUtama = [
     {
@@ -56,9 +56,9 @@ export default async function BerandaToko() {
   ];
 
   const fotoSorotan = menus
-    .filter((m): m is Menu & { fotoUrl: string } => Boolean(m.fotoUrl))
+    .filter((m) => m.foto.length > 0)
     .slice(0, 3)
-    .map((m) => ({ id: m.id, fotoUrl: m.fotoUrl, nama: m.nama }));
+    .map((m) => ({ id: m.id, fotoUrl: m.foto[0].url, nama: m.nama }));
 
   return (
     <div className="space-y-16">
@@ -184,7 +184,7 @@ export default async function BerandaToko() {
               >
                 <Link href={`/menu/${menu.slug}`} className="flex-1 flex flex-col">
                   <PanelFotoMenu
-                    fotoUrl={menu.fotoUrl}
+                    foto={menu.foto}
                     kategori={menu.kategori}
                     nama={menu.nama}
                     className="aspect-[4/3]"

@@ -12,10 +12,13 @@ import {
 } from "@/lib/pesanan";
 import {
   dariInputTanggal,
+  menitDariJam,
+  menitSekarangWib,
   normalkanTelepon,
   selisihHari,
 } from "@/lib/format";
 import { ambilPengaturan } from "@/lib/pengaturan";
+import { catatPeristiwa } from "@/lib/analitik";
 import { ambilIpKlien, periksaBatasLaju } from "@/lib/pembatas-laju";
 import {
   buatNamaFileAman,
@@ -116,6 +119,19 @@ export async function aksiBuatPesanan(
     return {
       sukses: false,
       pesan: "Tanggal acara tidak boleh di masa lalu.",
+    };
+  }
+
+  // Tanggal hari ini saja tidak cukup: tanpa cek jam, pesanan untuk pukul 08.00
+  // masih bisa masuk pada pukul 20.00 dan dapur menerima pesanan yang waktunya
+  // sudah lewat. Batas jam operasional sengaja TIDAK dipakai di sini karena
+  // jamBuka/jamTutup adalah jam layanan, bukan jam antar — pesanan pagi memang
+  // lazim dimasak dini hari.
+  if (selisihHariAcara === 0 && menitDariJam(data.jamAcara) <= menitSekarangWib()) {
+    return {
+      sukses: false,
+      pesan:
+        "Jam acara untuk hari ini sudah lewat. Pilih jam yang lebih malam, atau ganti ke tanggal berikutnya.",
     };
   }
 
@@ -283,6 +299,7 @@ export async function aksiBuatPesanan(
 
   // Tandai cookie pesanan_saya di peramban
   await tandaiPesananMilikSaya(pesananHasil.kode);
+  await catatPeristiwa("PESANAN_DIBUAT");
 
   redirect(`/pesanan/${pesananHasil.kode}?baru=1`);
 }
@@ -336,6 +353,7 @@ export async function aksiLacakPesanan(
 
   // Berikan akses cookie
   await tandaiPesananMilikSaya(kode);
+  await catatPeristiwa("LACAK_DIPAKAI");
   redirect(`/pesanan/${kode}`);
 }
 

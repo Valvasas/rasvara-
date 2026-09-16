@@ -68,12 +68,17 @@ export function verifikasiHeaderGambar(
 
 /**
  * Menghasilkan nama file acak yang tidak bisa ditebak untuk menghindari path traversal & kolisi.
+ * `awalan` hanya menandai asal berkas (bukti transfer vs foto menu); nama tetap
+ * ditentukan server, tidak pernah memakai nama asli kiriman pengguna.
  */
-export function buatNamaFileAman(tipeMime: TipeMimeGambar): string {
+export function buatNamaFileAman(
+  tipeMime: TipeMimeGambar,
+  awalan: "bukti" | "menu" = "bukti"
+): string {
   const ekstensi = EKSTENSI_DARI_MIME[tipeMime] || "jpg";
   const acak = crypto.randomBytes(12).toString("hex");
   const timestamp = Date.now();
-  return `bukti-${timestamp}-${acak}.${ekstensi}`;
+  return `${awalan}-${timestamp}-${acak}.${ekstensi}`;
 }
 
 export interface HasilValidasiUnggah {

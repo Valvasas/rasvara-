@@ -116,7 +116,7 @@ export default async function HalamanMenu({ searchParams }: HalamanMenuProps) {
             >
               <Link href={`/menu/${item.slug}`} className="flex-1 flex flex-col">
                 <PanelFotoMenu
-                  fotoUrl={item.fotoUrl}
+                  foto={item.foto}
                   kategori={item.kategori}
                   nama={item.nama}
                   className="aspect-[4/3]"

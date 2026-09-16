@@ -2,7 +2,14 @@
 
 import { useActionState, useMemo, useRef, useState } from "react";
 import { aksiBuatPesanan } from "@/app/aksi/pesanan";
-import { rupiah } from "@/lib/format";
+import {
+  dariInputTanggal,
+  hariIniWib,
+  kunciHari,
+  menitDariJam,
+  menitSekarangWib,
+  rupiah,
+} from "@/lib/format";
 import { IkonPeringatan } from "@/components/ikon/Ikon";
 import type { Menu, Pengaturan, Pengguna } from "@/generated/prisma/client";
 
@@ -40,6 +47,7 @@ export function FormPemesanan({
   );
   const [caraBayar, setCaraBayar] = useState<"TRANSFER" | "TUNAI">("TRANSFER");
   const [tanggalAcara, setTanggalAcara] = useState<string>("");
+  const [jamAcara, setJamAcara] = useState<string>("11:30");
   const ringkasanRef = useRef<HTMLElement>(null);
 
   // Update kuantiti
@@ -81,12 +89,21 @@ export function FormPemesanan({
     return Math.max(...itemTerpilih.map((i) => i!.preorderHari));
   }, [itemTerpilih]);
 
-  // Minimum tanggal pemesanan (hari ini + maxPreorder)
+  // Minimum tanggal pemesanan (hari ini + maxPreorder), dihitung dalam WIB.
+  // `toISOString()` memakai UTC, sehingga antara pukul 00.00-07.00 WIB tanggal
+  // minimumnya mundur sehari dan pembeli dini hari melihat tanggal kemarin.
   const minTanggal = useMemo(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + maxPreorder);
-    return d.toISOString().split("T")[0];
+    const d = dariInputTanggal(hariIniWib());
+    d.setUTCDate(d.getUTCDate() + maxPreorder);
+    return kunciHari(d);
   }, [maxPreorder]);
+
+  // Jam acara hari ini yang sudah terlewat harus tertahan di sini, bukan baru
+  // ditolak server setelah pembeli mengisi seluruh formulir.
+  const jamSudahLewat = useMemo(() => {
+    if (!tanggalAcara || tanggalAcara !== hariIniWib()) return false;
+    return menitDariJam(jamAcara) <= menitSekarangWib();
+  }, [tanggalAcara, jamAcara]);
 
   // Perhitungan Subtotal dan Ongkir
   const subtotal = useMemo(() => {
@@ -316,11 +333,28 @@ export function FormPemesanan({
               id="jamAcara"
               name="jamAcara"
               required
-              defaultValue="11:30"
-              className="w-full min-h-[48px] px-4 py-2.5 rounded-xl border border-krem-gelap bg-krem/40 text-kayu text-sm focus:outline-none focus:border-bata focus:ring-1 focus:ring-bata"
+              value={jamAcara}
+              onChange={(e) => setJamAcara(e.target.value)}
+              aria-invalid={jamSudahLewat}
+              aria-describedby="petunjuk-jam"
+              className={`w-full min-h-[48px] px-4 py-2.5 rounded-xl border bg-krem/40 text-kayu text-sm focus:outline-none focus:ring-1 ${
+                jamSudahLewat
+                  ? "border-bahaya focus:border-bahaya focus:ring-bahaya"
+                  : "border-krem-gelap focus:border-bata focus:ring-bata"
+              }`}
             />
-            <p className="text-[11px] text-kayu-sedang mt-1">
-              Disarankan 30-45 menit sebelum acara dimulai.
+            <p id="petunjuk-jam" className="text-[11px] text-kayu-sedang mt-1">
+              {jamSudahLewat ? (
+                <span className="text-bahaya font-semibold inline-flex items-center gap-1.5">
+                  <IkonPeringatan className="w-3.5 h-3.5 shrink-0" />
+                  <span>
+                    Jam ini sudah lewat hari ini. Pilih jam yang lebih malam
+                    atau ganti tanggalnya.
+                  </span>
+                </span>
+              ) : (
+                "Disarankan 30-45 menit sebelum acara dimulai."
+              )}
             </p>
           </div>
         </div>
@@ -569,7 +603,9 @@ export function FormPemesanan({
 
         <button
           type="submit"
-          disabled={isPending || itemTerpilih.length === 0 || isTanggalLibur}
+          disabled={
+            isPending || itemTerpilih.length === 0 || isTanggalLibur || jamSudahLewat
+          }
           className="w-full min-h-[52px] px-8 py-3.5 rounded-2xl font-bold text-base text-kayu bg-kunyit hover:bg-kunyit-lembut disabled:opacity-50 transition-all shadow-md inline-flex items-center justify-center gap-2 cursor-pointer"
         >
           <span>{isPending ? "Memproses Pesanan..." : "Kirim & Buat Pesanan"}</span>

@@ -1,6 +1,6 @@
-import type { Menu } from "@/generated/prisma/client";
+import type { MenuDenganFoto } from "@/lib/menu";
 
-export const MENU_BAWAAN: Menu[] = [
+export const MENU_BAWAAN: MenuDenganFoto[] = [
   {
     id: "menu-1",
     nama: "Nasi Kotak Ayam Bakar",
@@ -11,7 +11,7 @@ export const MENU_BAWAAN: Menu[] = [
     harga: 28000,
     satuan: "kotak",
     minPesan: 10,
-    fotoUrl: null,
+    foto: [],
     aktif: true,
     preorderHari: 0,
     kapasitasHarian: 150,
@@ -29,7 +29,7 @@ export const MENU_BAWAAN: Menu[] = [
     harga: 37000,
     satuan: "kotak",
     minPesan: 10,
-    fotoUrl: null,
+    foto: [],
     aktif: true,
     preorderHari: 1,
     kapasitasHarian: 80,
@@ -47,7 +47,7 @@ export const MENU_BAWAAN: Menu[] = [
     harga: 25000,
     satuan: "kotak",
     minPesan: 10,
-    fotoUrl: null,
+    foto: [],
     aktif: true,
     preorderHari: 0,
     kapasitasHarian: 150,
@@ -65,7 +65,7 @@ export const MENU_BAWAAN: Menu[] = [
     harga: 18000,
     satuan: "box",
     minPesan: 15,
-    fotoUrl: null,
+    foto: [],
     aktif: true,
     preorderHari: 0,
     kapasitasHarian: 300,
@@ -83,7 +83,7 @@ export const MENU_BAWAAN: Menu[] = [
     harga: 38000,
     satuan: "paket",
     minPesan: 2,
-    fotoUrl: null,
+    foto: [],
     aktif: true,
     preorderHari: 0,
     kapasitasHarian: 60,
@@ -101,7 +101,7 @@ export const MENU_BAWAAN: Menu[] = [
     harga: 575000,
     satuan: "paket",
     minPesan: 1,
-    fotoUrl: null,
+    foto: [],
     aktif: true,
     preorderHari: 1,
     kapasitasHarian: 5,
@@ -119,7 +119,7 @@ export const MENU_BAWAAN: Menu[] = [
     harga: 25000,
     satuan: "porsi",
     minPesan: 5,
-    fotoUrl: null,
+    foto: [],
     aktif: true,
     preorderHari: 0,
     kapasitasHarian: 100,
