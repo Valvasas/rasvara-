@@ -248,6 +248,20 @@ export default async function HalamanPapanDapur({
                               {pesanan.alamatAntar}
                             </p>
                           )}
+                          {pesanan.latitude != null && pesanan.longitude != null && (
+                            // Tautan koordinat: pengantar membukanya dengan
+                            // aplikasi peta di ponselnya sendiri, jadi navigasi
+                            // penuh tetap didapat tanpa biaya API peta.
+                            <a
+                              href={`https://www.google.com/maps/search/?api=1&query=${pesanan.latitude},${pesanan.longitude}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="mt-1 inline-flex items-center gap-1 font-bold text-bata hover:underline"
+                            >
+                              <span aria-hidden="true">📍</span>
+                              <span>Buka titik antar di peta</span>
+                            </a>
+                          )}
                         </div>
 
                         {/* Daftar Masakan */}

@@ -1,7 +1,30 @@
 "use client";
 
-import { useActionState, useMemo, useRef, useState } from "react";
+import {
+  useActionState,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { aksiBuatPesanan } from "@/app/aksi/pesanan";
+import { aksiCekVoucher } from "@/app/aksi/voucher";
+import dynamic from "next/dynamic";
+
+// Berkas peta (Leaflet + CSS-nya) baru diunduh saat pembeli memilih diantar,
+// sehingga pembeli yang ambil sendiri tidak ikut menanggung ongkos unduhnya.
+const PetaLokasiAntar = dynamic(
+  () => import("@/components/toko/PetaLokasiAntar").then((m) => m.PetaLokasiAntar),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-64 rounded-2xl border border-krem-gelap bg-krem-tua/60 flex items-center justify-center text-xs text-kayu-sedang">
+        Menyiapkan peta...
+      </div>
+    ),
+  }
+);
 import {
   dariInputTanggal,
   hariIniWib,
@@ -48,6 +71,9 @@ export function FormPemesanan({
   const [caraBayar, setCaraBayar] = useState<"TRANSFER" | "TUNAI">("TRANSFER");
   const [tanggalAcara, setTanggalAcara] = useState<string>("");
   const [jamAcara, setJamAcara] = useState<string>("11:30");
+  const [koordinat, setKoordinat] = useState<{ lat: number; lng: number } | null>(
+    null
+  );
   const ringkasanRef = useRef<HTMLElement>(null);
 
   // Update kuantiti
@@ -121,7 +147,66 @@ export function FormPemesanan({
     return pengaturan.ongkirDefault;
   }, [caraAmbil, subtotal, pengaturan]);
 
-  const total = subtotal + ongkir;
+  // --- Voucher ---
+  const [kodeInput, setKodeInput] = useState("");
+  const [kodeTerpakai, setKodeTerpakai] = useState<string | null>(null);
+  const [potongan, setPotongan] = useState(0);
+  const [pesanVoucher, setPesanVoucher] = useState<string | null>(null);
+  const [sedangCek, mulaiCekVoucher] = useTransition();
+
+  // Potongan dihitung ulang setiap subtotal berubah. Tanpa ini, pembeli yang
+  // menambah atau mengurangi porsi setelah memakai voucher akan melihat angka
+  // potongan lama yang sudah tidak sesuai — dan tampilan jadi berbeda dari
+  // hitungan server saat pesanan benar-benar dibuat.
+  useEffect(() => {
+    if (!kodeTerpakai) return;
+
+    let dibatalkan = false;
+    aksiCekVoucher(kodeTerpakai, subtotal).then((hasil) => {
+      if (dibatalkan) return;
+      if (hasil.berlaku) {
+        setPotongan(hasil.potongan);
+        setPesanVoucher(null);
+      } else {
+        setKodeTerpakai(null);
+        setPotongan(0);
+        setPesanVoucher(hasil.pesan);
+      }
+    });
+
+    return () => {
+      dibatalkan = true;
+    };
+  }, [kodeTerpakai, subtotal]);
+
+  function cekVoucher() {
+    const kode = kodeInput.trim();
+    if (!kode) {
+      setPesanVoucher("Masukkan kode voucher terlebih dahulu.");
+      return;
+    }
+    mulaiCekVoucher(async () => {
+      const hasil = await aksiCekVoucher(kode, subtotal);
+      if (hasil.berlaku) {
+        setKodeTerpakai(hasil.kode);
+        setPotongan(hasil.potongan);
+        setPesanVoucher(hasil.deskripsi ?? hasil.pesan);
+      } else {
+        setKodeTerpakai(null);
+        setPotongan(0);
+        setPesanVoucher(hasil.pesan);
+      }
+    });
+  }
+
+  function lepasVoucher() {
+    setKodeTerpakai(null);
+    setKodeInput("");
+    setPotongan(0);
+    setPesanVoucher(null);
+  }
+
+  const total = Math.max(0, subtotal - potongan) + ongkir;
 
   // Items JSON string untuk input tersembunyi
   const itemsJson = useMemo(() => {
@@ -438,6 +523,22 @@ export function FormPemesanan({
             />
           </div>
         )}
+
+        {/* Peta hanya dimuat saat benar-benar diantar: membuka peta berarti
+            menghubungi server ubin pihak ketiga, dan itu tidak perlu terjadi
+            pada pembeli yang ambil sendiri. */}
+        {caraAmbil === "DIANTAR" && (
+          <>
+            <input type="hidden" name="latitude" value={koordinat?.lat ?? ""} />
+            <input type="hidden" name="longitude" value={koordinat?.lng ?? ""} />
+            <PetaLokasiAntar
+              latitude={koordinat?.lat ?? null}
+              longitude={koordinat?.lng ?? null}
+              onPindah={(lat, lng) => setKoordinat({ lat, lng })}
+              onHapus={() => setKoordinat(null)}
+            />
+          </>
+        )}
       </section>
 
       {/* Bagian 3: Data Pemesan & Pembayaran */}
@@ -590,6 +691,13 @@ export function FormPemesanan({
             <span className="font-bold">{rupiah(subtotal)}</span>
           </div>
 
+          {potongan > 0 && kodeTerpakai && (
+            <div className="flex items-center justify-between text-xs text-daun-lembut">
+              <span>Potongan voucher {kodeTerpakai}</span>
+              <span className="font-semibold">-{rupiah(potongan)}</span>
+            </div>
+          )}
+
           <div className="flex items-center justify-between text-xs text-krem/80">
             <span>Ongkos Pengantaran</span>
             <span>{ongkir === 0 ? "Gratis" : rupiah(ongkir)}</span>
@@ -599,6 +707,79 @@ export function FormPemesanan({
             <span>Total Bayar</span>
             <span className="text-kunyit">{rupiah(total)}</span>
           </div>
+        </div>
+
+        {/* Kode voucher */}
+        <div className="pt-1 space-y-2">
+          <input type="hidden" name="kodeVoucher" value={kodeTerpakai ?? ""} />
+
+          {kodeTerpakai ? (
+            <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-daun/20 border border-daun-lembut/30">
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-daun-lembut truncate">
+                  Voucher {kodeTerpakai} terpakai
+                </p>
+                <p className="text-[11px] text-krem/70 truncate">
+                  Hemat {rupiah(potongan)}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={lepasVoucher}
+                className="shrink-0 min-h-[40px] px-3 py-2 rounded-lg text-[11px] font-bold text-krem/90 hover:text-white hover:bg-krem/10 transition-colors cursor-pointer"
+              >
+                Lepas
+              </button>
+            </div>
+          ) : (
+            <>
+              <label
+                htmlFor="input-voucher"
+                className="block text-[11px] font-bold uppercase tracking-wider text-krem/70"
+              >
+                Punya kode voucher?
+              </label>
+              <div className="flex gap-2">
+                <input
+                  id="input-voucher"
+                  type="text"
+                  value={kodeInput}
+                  onChange={(e) => setKodeInput(e.target.value.toUpperCase())}
+                  onKeyDown={(e) => {
+                    // Enter di kolom ini memeriksa voucher, bukan mengirim
+                    // seluruh pesanan — kesalahan klasik yang bikin pesanan
+                    // terkirim setengah jadi.
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      cekVoucher();
+                    }
+                  }}
+                  placeholder="Contoh: HEMAT10"
+                  autoComplete="off"
+                  className="flex-1 min-w-0 min-h-[48px] px-4 py-2.5 rounded-xl bg-krem/10 border border-krem/25 text-white text-sm placeholder:text-krem/40 focus:outline-none focus:border-kunyit"
+                />
+                <button
+                  type="button"
+                  onClick={cekVoucher}
+                  disabled={sedangCek}
+                  className="shrink-0 min-h-[48px] px-5 py-2.5 rounded-xl font-bold text-xs text-kayu bg-krem hover:bg-white disabled:opacity-50 transition-colors cursor-pointer"
+                >
+                  {sedangCek ? "Cek..." : "Pakai"}
+                </button>
+              </div>
+            </>
+          )}
+
+          {pesanVoucher && (
+            <p
+              role="status"
+              className={`text-[11px] font-semibold ${
+                kodeTerpakai ? "text-daun-lembut" : "text-kunyit"
+              }`}
+            >
+              {pesanVoucher}
+            </p>
+          )}
         </div>
 
         <button

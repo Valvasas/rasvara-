@@ -19,6 +19,7 @@ import {
 } from "@/lib/format";
 import { ambilPengaturan } from "@/lib/pengaturan";
 import { catatPeristiwa } from "@/lib/analitik";
+import { hitungPotongan, normalkanKodeVoucher, pesanTolak } from "@/lib/voucher";
 import { ambilIpKlien, periksaBatasLaju } from "@/lib/pembatas-laju";
 import {
   buatNamaFileAman,
@@ -47,8 +48,20 @@ const SkemaBuatPesanan = z.object({
   alamatAntar: z.string().optional(),
   caraBayar: z.enum(["TRANSFER", "TUNAI"]),
   catatanPesanan: z.string().optional(),
+  kodeVoucher: z.string().optional(),
+  // Koordinat titik antar dari peta. Rentangnya dibatasi supaya nilai ngawur
+  // tidak pernah tersimpan dan membuat peta di dashboard melompat.
+  latitude: z.number().min(-90).max(90).optional(),
+  longitude: z.number().min(-180).max(180).optional(),
   items: z.array(SkemaItem).min(1, "Pilih minimal satu menu"),
 });
+
+/** Field peta dikirim sebagai teks dari formulir; kosong berarti tidak diisi. */
+function angkaAtauUndefined(nilai: FormDataEntryValue | null): number | undefined {
+  if (typeof nilai !== "string" || nilai.trim() === "") return undefined;
+  const angka = Number(nilai);
+  return Number.isFinite(angka) ? angka : undefined;
+}
 
 export type HasilAksiPesanan = {
   sukses: boolean;
@@ -98,6 +111,9 @@ export async function aksiBuatPesanan(
     alamatAntar: formData.get("alamatAntar") || undefined,
     caraBayar: formData.get("caraBayar"),
     catatanPesanan: formData.get("catatanPesanan") || undefined,
+    kodeVoucher: formData.get("kodeVoucher") || undefined,
+    latitude: angkaAtauUndefined(formData.get("latitude")),
+    longitude: angkaAtauUndefined(formData.get("longitude")),
     items: itemsParsed,
   };
 
@@ -200,7 +216,9 @@ export async function aksiBuatPesanan(
     ongkir = 0;
   }
 
-  const total = subtotal + ongkir;
+  const kodeVoucherDiminta = data.kodeVoucher?.trim()
+    ? normalkanKodeVoucher(data.kodeVoucher)
+    : null;
 
   // Cek sesi pembeli jika sedang login
   const sesi = await bacaSesi();
@@ -234,6 +252,47 @@ export async function aksiBuatPesanan(
         }
       }
 
+      // Voucher: dibaca ulang dan dihitung di sini, di dalam transaksi yang
+      // sama dengan pembuatan pesanan. Browser hanya mengirim kodenya.
+      let diskon = 0;
+      let voucherId: string | null = null;
+      let kodeVoucherTersimpan: string | null = null;
+
+      if (kodeVoucherDiminta) {
+        const voucher = await tx.voucher.findUnique({
+          where: { kode: kodeVoucherDiminta },
+        });
+        if (!voucher) {
+          throw new Error(pesanTolak("TIDAK_DITEMUKAN"));
+        }
+
+        const hasilVoucher = hitungPotongan(voucher, subtotal);
+        if (!hasilVoucher.berlaku) {
+          throw new Error(hasilVoucher.pesan);
+        }
+
+        // Kunci optimistis: pemakaian hanya bertambah bila `terpakai` masih sama
+        // dengan yang barusan dibaca. Tanpa ini, dua pemesan yang menekan kirim
+        // bersamaan bisa sama-sama memakai kuota terakhir.
+        const terkunci = await tx.voucher.updateMany({
+          where: { id: voucher.id, terpakai: voucher.terpakai },
+          data: { terpakai: { increment: 1 } },
+        });
+        if (terkunci.count === 0) {
+          throw new Error(
+            "Voucher sedang dipakai pemesan lain. Silakan kirim ulang pesanan Anda."
+          );
+        }
+
+        diskon = hasilVoucher.potongan;
+        voucherId = voucher.id;
+        kodeVoucherTersimpan = voucher.kode;
+      }
+
+      // Potongan hanya memakan harga barang, tidak pernah ongkos kirim —
+      // ongkir tetap harus dibayarkan ke pengantar.
+      const total = subtotal - diskon + ongkir;
+
       // Generate kode unik dengan retry jika tabrakan
       let kode = "";
       for (let percobaan = 0; percobaan < 5; percobaan++) {
@@ -260,11 +319,17 @@ export async function aksiBuatPesanan(
           caraAmbil: data.caraAmbil as CaraAmbil,
           alamatAntar:
             data.caraAmbil === "DIANTAR" ? data.alamatAntar?.trim() || "" : null,
+          // Koordinat hanya berarti untuk pesanan yang diantar.
+          latitude: data.caraAmbil === "DIANTAR" ? data.latitude ?? null : null,
+          longitude: data.caraAmbil === "DIANTAR" ? data.longitude ?? null : null,
           caraBayar: data.caraBayar as CaraBayar,
           catatan: data.catatanPesanan?.trim() || null,
           subtotal,
           ongkir,
+          diskon,
           total,
+          voucherId,
+          kodeVoucher: kodeVoucherTersimpan,
           status: "BARU",
           statusBayar: "BELUM_BAYAR",
           item: {

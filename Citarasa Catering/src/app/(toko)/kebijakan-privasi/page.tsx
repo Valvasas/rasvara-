@@ -15,8 +15,8 @@ export default async function HalamanKebijakanPrivasi() {
   return (
     <KerangkaLegal
       judul="Kebijakan Privasi"
-      diperbaruiPada="15 September 2026"
-      ringkasan="Kami hanya menyimpan data yang benar-benar dibutuhkan untuk memasak dan mengantar pesanan Anda. Tidak ada iklan, tidak ada pelacak pihak ketiga, dan data Anda tidak dijual atau dibagikan ke siapa pun."
+      diperbaruiPada="16 September 2026"
+      ringkasan="Kami hanya menyimpan data yang benar-benar dibutuhkan untuk memasak dan mengantar pesanan Anda. Tidak ada iklan dan tidak ada pelacak pihak ketiga, dan data Anda tidak pernah dijual. Satu-satunya pihak luar yang terhubung adalah penyedia peta OpenStreetMap, itu pun hanya bila Anda memilih diantar — rinciannya di bagian 2b."
     >
       <SeksiLegal judul="1. Siapa yang mengelola data ini">
         <p>
@@ -58,6 +58,32 @@ export default async function HalamanKebijakanPrivasi() {
           Kami <strong>tidak</strong> meminta email, tanggal lahir, NIK, atau
           data kartu pembayaran. Pembayaran dilakukan lewat transfer bank
           langsung, jadi tidak ada nomor kartu yang melewati situs ini.
+        </p>
+      </SeksiLegal>
+
+      <SeksiLegal judul="2b. Titik lokasi pengantaran dan peta">
+        <p>
+          Bila Anda memilih diantar, Anda boleh — <em>tidak wajib</em> —
+          menandai titik pengantaran di peta. Bila Anda menandainya, kami
+          menyimpan koordinatnya bersama pesanan Anda, dan pengantar memakainya
+          untuk menemukan lokasi. Alamat tertulis tetap cukup untuk memesan;
+          melewati peta tidak menghalangi pesanan Anda.
+        </p>
+        <p>
+          Peta disediakan oleh <strong>OpenStreetMap</strong>. Saat peta terbuka,
+          peramban Anda mengambil gambar peta langsung dari server mereka,
+          sehingga alamat IP Anda terlihat oleh OpenStreetMap sebagaimana halnya
+          ketika Anda membuka situs mana pun. Kami tidak mengirimkan nama, nomor
+          HP, maupun isi pesanan Anda ke sana.
+        </p>
+        <p>
+          Peta hanya dimuat ketika Anda memilih pengantaran. Bila Anda mengambil
+          sendiri, tidak ada hubungan apa pun ke server peta.
+        </p>
+        <p>
+          Bila Anda menekan &quot;Pakai lokasi saya&quot;, peramban akan meminta
+          izin Anda lebih dulu, dan lokasi itu hanya dipakai untuk menaruh
+          penanda di peta. Anda bebas menolaknya.
         </p>
       </SeksiLegal>
 

@@ -53,6 +53,11 @@ enum JenisKas {
   KELUAR
 }
 
+enum JenisPotongan {
+  NOMINAL
+  PERSEN
+}
+
 enum SumberKas {
   PESANAN
   MANUAL
@@ -129,6 +134,11 @@ model Pesanan {
   teleponPemesan String
   alamatAntar    String?
 
+  // Titik antar dari peta. Alamat tertulis tetap sumber utama; koordinat hanya
+  // pelengkap supaya pengantar tidak tersesat di gang yang tidak punya nama.
+  latitude       Float?
+  longitude      Float?
+
   caraAmbil      CaraAmbil     @default(AMBIL_SENDIRI)
   tanggalAcara   DateTime
   jamAcara       String
@@ -142,6 +152,12 @@ model Pesanan {
   ongkir         Int           @default(0)
   diskon         Int           @default(0)
   total          Int
+
+  voucherId      String?
+  voucher        Voucher?      @relation(fields: [voucherId], references: [id], onDelete: SetNull)
+  /// Snapshot kode voucher: nota lama tetap terbaca benar walau vouchernya
+  /// kemudian diganti atau dihapus (invarian #2).
+  kodeVoucher    String?
   dibayar        Int           @default(0)
   buktiBayarUrl  String?
 
@@ -217,6 +233,34 @@ model CatatanKas {
 
   @@index([tanggal])
   @@index([jenis, tanggal])
+}
+
+/// Kode promo. Nilai potongan SELALU dihitung ulang di server saat pesanan
+/// dibuat — kode yang dikirim browser hanya dipakai untuk mencari barisnya,
+/// tidak pernah untuk menentukan besar potongan (lihat invarian #1).
+model Voucher {
+  id           String        @id @default(cuid())
+  /// Selalu disimpan huruf besar supaya pencocokan tidak bergantung cara ketik pembeli.
+  kode         String        @unique
+  deskripsi    String?
+  jenis        JenisPotongan @default(NOMINAL)
+  /// Rupiah bila NOMINAL, angka persen (1-100) bila PERSEN.
+  nilai        Int
+  /// Batas atas potongan untuk voucher persen. Null = tanpa batas.
+  maksPotongan Int?
+  minBelanja   Int           @default(0)
+  /// Null = tanpa batas pemakaian.
+  kuota        Int?
+  terpakai     Int           @default(0)
+  mulaiPada    DateTime?
+  berakhirPada DateTime?
+  aktif        Boolean       @default(true)
+  dibuatPada   DateTime      @default(now())
+  diubahPada   DateTime      @updatedAt
+
+  pesanan      Pesanan[]
+
+  @@index([aktif, berakhirPada])
 }
 
 model TanggalTutup {
