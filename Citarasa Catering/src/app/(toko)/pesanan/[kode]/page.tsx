@@ -223,6 +223,19 @@ export default async function HalamanDetailPesanan({
             {/* Total dan Ongkir */}
             <div className="p-4 bg-krem/30 space-y-1.5 text-xs">
               <div className="flex justify-between text-kayu-sedang">
+                <span>Subtotal Hidangan</span>
+                <span>{rupiah(pesanan.subtotal)}</span>
+              </div>
+              {pesanan.diskon > 0 && (
+                <div className="flex justify-between text-daun-tua font-semibold">
+                  <span>
+                    Potongan
+                    {pesanan.kodeVoucher ? ` (${pesanan.kodeVoucher})` : ""}
+                  </span>
+                  <span>-{rupiah(pesanan.diskon)}</span>
+                </div>
+              )}
+              <div className="flex justify-between text-kayu-sedang">
                 <span>Ongkir</span>
                 <span>{pesanan.ongkir === 0 ? "Gratis" : rupiah(pesanan.ongkir)}</span>
               </div>

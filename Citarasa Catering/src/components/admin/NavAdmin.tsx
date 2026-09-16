@@ -9,6 +9,7 @@ const SEMUA_TAUTAN = [
   { href: "/admin", label: "Papan Pesanan", ikon: "🍳", persis: true, hanyaPemilik: false },
   { href: "/admin/menu", label: "Menu", ikon: "🍱", persis: false, hanyaPemilik: true },
   { href: "/admin/keuangan", label: "Buku Kas", ikon: "💰", persis: false, hanyaPemilik: true },
+  { href: "/admin/voucher", label: "Voucher", ikon: "🎟️", persis: false, hanyaPemilik: true },
   { href: "/admin/laporan", label: "Laporan", ikon: "📊", persis: false, hanyaPemilik: true },
   { href: "/admin/analitik", label: "Performa", ikon: "📈", persis: false, hanyaPemilik: true },
   { href: "/admin/pengaturan", label: "Pengaturan", ikon: "⚙️", persis: false, hanyaPemilik: true },

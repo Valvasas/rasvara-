@@ -16,7 +16,7 @@ export default async function HalamanSyaratKetentuan() {
   return (
     <KerangkaLegal
       judul="Syarat & Ketentuan"
-      diperbaruiPada="15 September 2026"
+      diperbaruiPada="16 September 2026"
       ringkasan="Pesanan dianggap pasti setelah kami konfirmasi. Beberapa menu perlu dipesan beberapa hari sebelumnya karena dimasak dadakan. Pembatalan masih mungkin selama dapur belum mulai memasak."
     >
       <SeksiLegal judul="1. Tentang layanan ini">
@@ -76,6 +76,29 @@ export default async function HalamanSyaratKetentuan() {
           <li>
             Situs ini tidak memproses kartu kredit/debit dan tidak menyimpan data
             pembayaran apa pun.
+          </li>
+        </ul>
+      </SeksiLegal>
+
+      <SeksiLegal judul="3b. Voucher dan potongan harga">
+        <ul className="list-disc pl-5 space-y-1.5">
+          <li>
+            Satu pesanan hanya dapat memakai satu kode voucher, dan potongan
+            hanya berlaku untuk harga hidangan — ongkos antar tetap dibayarkan
+            penuh.
+          </li>
+          <li>
+            Voucher dapat memiliki syarat minimal belanja, kuota pemakaian, dan
+            masa berlaku. Syarat yang berlaku ditampilkan saat kode dimasukkan.
+          </li>
+          <li>
+            Besaran potongan dihitung ulang oleh sistem kami saat pesanan dibuat.
+            Bila Anda mengubah jumlah pesanan setelah memasukkan kode, potongan
+            ikut menyesuaikan dan bisa menjadi tidak berlaku.
+          </li>
+          <li>
+            Voucher tidak dapat ditukar dengan uang tunai dan tidak berlaku surut
+            untuk pesanan yang sudah dibuat.
           </li>
         </ul>
       </SeksiLegal>
