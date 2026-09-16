@@ -10,7 +10,11 @@ import {
   hashSandi,
 } from "@/lib/auth";
 import { normalkanTelepon } from "@/lib/format";
-import { ambilIpKlien, periksaBatasLaju } from "@/lib/pembatas-laju";
+import {
+  ambilIpKlien,
+  periksaBatasLaju,
+  resetBatasLaju,
+} from "@/lib/pembatas-laju";
 
 const SkemaMasuk = z.object({
   telepon: z.string().min(8, "Nomor telepon minimal 8 digit"),
@@ -63,6 +67,26 @@ export async function aksiMasuk(
   }
 
   const nomorNorm = normalkanTelepon(parsed.data.telepon);
+
+  // Batas per-IP saja tidak melindungi satu akun tertentu: penyerang dengan
+  // beberapa alamat IP tetap bisa menggilir tebakan ke nomor yang sama. Batas
+  // kedua ini mengikat ke akunnya, dan dilepas begitu login berhasil.
+  const kunciAkun = `masuk-akun:${nomorNorm}`;
+  const cekAkun = periksaBatasLaju({
+    kunci: kunciAkun,
+    maksimal: 10,
+    jendelaDetik: 15 * 60,
+  });
+
+  if (!cekAkun.diizinkan) {
+    return {
+      sukses: false,
+      pesan: `Terlalu banyak percobaan masuk untuk nomor ini. Coba lagi dalam ${Math.ceil(
+        cekAkun.tungguDetik / 60
+      )} menit.`,
+    };
+  }
+
   const pengguna = await db.pengguna.findUnique({
     where: { telepon: nomorNorm },
   });
@@ -81,6 +105,8 @@ export async function aksiMasuk(
       pesan: "Nomor telepon atau kata sandi tidak cocok.",
     };
   }
+
+  resetBatasLaju(kunciAkun);
 
   await buatSesi({
     id: pengguna.id,
@@ -143,15 +169,27 @@ export async function aksiDaftar(
   }
 
   const sandiHash = await hashSandi(parsed.data.sandi);
-  const penggunaBaru = await db.pengguna.create({
-    data: {
-      nama: parsed.data.nama.trim(),
-      telepon: nomorNorm,
-      sandiHash,
-      alamat: parsed.data.alamat?.trim() || null,
-      peran: "PELANGGAN",
-    },
-  });
+
+  // Pemeriksaan di atas bisa dilewati dua pendaftaran yang tiba bersamaan;
+  // yang kalah ditolak oleh batasan unik di database, dan itu harus tampil
+  // sebagai pesan biasa, bukan halaman galat.
+  let penggunaBaru;
+  try {
+    penggunaBaru = await db.pengguna.create({
+      data: {
+        nama: parsed.data.nama.trim(),
+        telepon: nomorNorm,
+        sandiHash,
+        alamat: parsed.data.alamat?.trim() || null,
+        peran: "PELANGGAN",
+      },
+    });
+  } catch {
+    return {
+      sukses: false,
+      pesan: "Nomor telepon ini sudah terdaftar. Silakan langsung masuk.",
+    };
+  }
 
   await buatSesi({
     id: penggunaBaru.id,

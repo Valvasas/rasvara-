@@ -3,12 +3,12 @@ import assert from "node:assert/strict";
 import {
   ALUR_STATUS,
   bolehPindahStatus,
-  buatKodePesanan,
   INFO_STATUS,
   INFO_BAYAR,
   KOLOM_PAPAN,
   URUTAN_KATEGORI,
 } from "../src/lib/pesanan";
+import { buatKodePesanan } from "../src/lib/kode-pesanan";
 
 describe("Alur Status Pesanan", () => {
   it("mengizinkan transisi BARU -> DIKONFIRMASI atau DIBATALKAN", () => {
@@ -68,11 +68,17 @@ describe("Alur Status Pesanan", () => {
 });
 
 describe("Generator Kode Pesanan", () => {
-  it("menghasilkan format CR-YYMMDD-XXXX", () => {
+  it("menghasilkan format CR-YYMMDD-XXXXXX", () => {
     const tanggal = new Date("2026-09-13T12:00:00Z");
     const kode = buatKodePesanan(tanggal);
-    const regex = /^CR-260913-[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{4}$/;
+    const regex = /^CR-260913-[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{6}$/;
     assert.match(kode, regex);
+  });
+
+  it("memakai tanggal WIB, bukan tanggal UTC", () => {
+    // 13 September 2026 pukul 22.00 UTC sudah tanggal 14 di Jakarta.
+    const kode = buatKodePesanan(new Date("2026-09-13T22:00:00Z"));
+    assert.match(kode, /^CR-260914-/);
   });
 
   it("tidak mengandung huruf yang mudah tertukar (I, O, 0, 1)", () => {
@@ -81,6 +87,14 @@ describe("Generator Kode Pesanan", () => {
       const acak = kode.split("-")[2];
       assert.doesNotMatch(acak, /[IO01]/);
     }
+  });
+
+  it("tidak mengulang kode dalam ribuan pembuatan berturut-turut", () => {
+    const terlihat = new Set<string>();
+    for (let i = 0; i < 5000; i++) {
+      terlihat.add(buatKodePesanan());
+    }
+    assert.equal(terlihat.size, 5000);
   });
 });
 

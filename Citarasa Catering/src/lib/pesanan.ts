@@ -134,21 +134,6 @@ export const LABEL_BAYAR: Record<CaraBayar, string> = {
   TUNAI: "Bayar tunai saat terima",
 };
 
-const HURUF_KODE = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // tanpa I/O/0/1 supaya tidak salah baca saat disebut lewat telepon
-
-/** Kode pesanan yang enak dibaca & disebutkan: CR-260912-K7QP */
-export function buatKodePesanan(tanggal = new Date()): string {
-  const tahun = String(tanggal.getFullYear()).slice(2);
-  const bulan = String(tanggal.getMonth() + 1).padStart(2, "0");
-  const hari = String(tanggal.getDate()).padStart(2, "0");
-
-  let acak = "";
-  for (let i = 0; i < 4; i++) {
-    acak += HURUF_KODE[Math.floor(Math.random() * HURUF_KODE.length)];
-  }
-  return `CR-${tahun}${bulan}${hari}-${acak}`;
-}
-
 /** Kategori pengeluaran yang lazim di dapur catering, dipakai sebagai pilihan cepat. */
 export const KATEGORI_PENGELUARAN = [
   "Belanja bahan",

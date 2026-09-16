@@ -5,11 +5,9 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { bacaSesi, wajibPemilik, wajibStafAtauPemilik } from "@/lib/auth";
-import { tandaiPesananMilikSaya } from "@/lib/akses-pesanan";
-import {
-  bolehPindahStatus,
-  buatKodePesanan,
-} from "@/lib/pesanan";
+import { punyaAksesPesanan, tandaiPesananMilikSaya } from "@/lib/akses-pesanan";
+import { bolehPindahStatus } from "@/lib/pesanan";
+import { buatKodePesanan } from "@/lib/kode-pesanan";
 import {
   dariInputTanggal,
   menitDariJam,
@@ -228,23 +226,37 @@ export async function aksiBuatPesanan(
   let pesananHasil;
   try {
     pesananHasil = await db.$transaction(async (tx) => {
-      // Cek kapasitas harian untuk menu tertentu
-      for (const item of data.items) {
+      // Cek kapasitas harian untuk menu tertentu. Dikumpulkan dalam satu kueri
+      // agregat: pesanan berisi sepuluh menu sebelumnya berarti sepuluh kueri
+      // berurutan, dan semuanya terjadi sementara transaksi ini menahan kunci
+      // barisnya.
+      const berkuota = data.items.filter((item) => {
         const menu = petaMenu.get(item.menuId)!;
-        if (menu.kapasitasHarian && menu.kapasitasHarian > 0) {
-          const agregat = await tx.itemPesanan.aggregate({
-            _sum: { jumlah: true },
-            where: {
-              menuId: menu.id,
-              pesanan: {
-                tanggalAcara: tanggalAcaraWib,
-                status: { not: "DIBATALKAN" },
-              },
+        return menu.kapasitasHarian !== null && menu.kapasitasHarian > 0;
+      });
+
+      if (berkuota.length > 0) {
+        const terpakaiPerMenu = await tx.itemPesanan.groupBy({
+          by: ["menuId"],
+          _sum: { jumlah: true },
+          where: {
+            menuId: { in: berkuota.map((i) => i.menuId) },
+            pesanan: {
+              tanggalAcara: tanggalAcaraWib,
+              status: { not: "DIBATALKAN" },
             },
-          });
-          const sudahDipesan = agregat._sum.jumlah || 0;
-          if (sudahDipesan + item.jumlah > menu.kapasitasHarian) {
-            const sisa = Math.max(0, menu.kapasitasHarian - sudahDipesan);
+          },
+        });
+
+        const petaTerpakai = new Map(
+          terpakaiPerMenu.map((b) => [b.menuId, b._sum.jumlah ?? 0])
+        );
+
+        for (const item of berkuota) {
+          const menu = petaMenu.get(item.menuId)!;
+          const sudahDipesan = petaTerpakai.get(item.menuId) ?? 0;
+          if (sudahDipesan + item.jumlah > menu.kapasitasHarian!) {
+            const sisa = Math.max(0, menu.kapasitasHarian! - sudahDipesan);
             throw new Error(
               `Kapasitas harian untuk "${menu.nama}" pada tanggal tersebut tersisa ${sisa} ${menu.satuan}.`
             );
@@ -428,6 +440,24 @@ export async function aksiKonfirmasiBayar(kode: string): Promise<HasilAksiPesana
     return { sukses: false, pesan: "Pesanan tidak ditemukan." };
   }
 
+  // Otorisasi: pemanggil harus memiliki cookie akses pesanan atau nomor telepon cocok / staf / pemilik
+  const sesi = await bacaSesi();
+  const punyaAkses =
+    (await punyaAksesPesanan(kode)) ||
+    Boolean(
+      sesi &&
+        (sesi.peran === "PEMILIK" ||
+          sesi.peran === "STAF_DAPUR" ||
+          sesi.telepon === pesanan.teleponPemesan)
+    );
+
+  if (!punyaAkses) {
+    return {
+      sukses: false,
+      pesan: "Anda tidak memiliki wewenang untuk mengakses pesanan ini.",
+    };
+  }
+
   if (pesanan.statusBayar === "LUNAS") {
     return { sukses: true, pesan: "Pesanan ini sudah lunas." };
   }
@@ -475,6 +505,24 @@ export async function aksiUnggahBuktiBayar(
   const pesanan = await db.pesanan.findUnique({ where: { kode } });
   if (!pesanan) {
     return { sukses: false, pesan: "Pesanan tidak ditemukan." };
+  }
+
+  // Otorisasi: hanya pemegang akses pesanan sah yang dapat mengunggah bukti bayar
+  const sesi = await bacaSesi();
+  const punyaAkses =
+    (await punyaAksesPesanan(kode)) ||
+    Boolean(
+      sesi &&
+        (sesi.peran === "PEMILIK" ||
+          sesi.peran === "STAF_DAPUR" ||
+          sesi.telepon === pesanan.teleponPemesan)
+    );
+
+  if (!punyaAkses) {
+    return {
+      sukses: false,
+      pesan: "Anda tidak memiliki wewenang untuk mengunggah bukti pada pesanan ini.",
+    };
   }
 
   if (pesanan.statusBayar === "LUNAS") {

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ambilMenuAktif } from "@/lib/menu";
+import { ambilHalamanMenu } from "@/lib/menu";
 import { rupiah } from "@/lib/format";
 import {
   LABEL_KATEGORI,
@@ -19,20 +19,28 @@ interface HalamanMenuProps {
 
 export default async function HalamanMenu({ searchParams }: HalamanMenuProps) {
   const params = await searchParams;
-  const filterKategori = params.kategori as KategoriMenu | undefined;
+  // Nilai dari URL tidak pernah langsung dianggap kategori yang sah: Prisma
+  // melempar kalau enumnya asing, dan halaman ini jadi galat 500 hanya karena
+  // ada yang mengetik ?kategori=apa-saja.
+  const filterKategori = URUTAN_KATEGORI.includes(params.kategori as KategoriMenu)
+    ? (params.kategori as KategoriMenu)
+    : undefined;
 
-  const semuaMenu = await ambilMenuAktif(filterKategori);
-
-  const totalHalaman = Math.max(1, Math.ceil(semuaMenu.length / UKURAN_HALAMAN));
   const halamanDiminta = Number(params.halaman ?? "1");
+  const { daftar: menuHalamanIni, total } = await ambilHalamanMenu({
+    kategori: filterKategori,
+    halaman:
+      Number.isFinite(halamanDiminta) && halamanDiminta >= 1
+        ? Math.floor(halamanDiminta)
+        : 1,
+    ukuran: UKURAN_HALAMAN,
+  });
+
+  const totalHalaman = Math.max(1, Math.ceil(total / UKURAN_HALAMAN));
   const halamanAktif =
     Number.isFinite(halamanDiminta) && halamanDiminta >= 1
-      ? Math.min(halamanDiminta, totalHalaman)
+      ? Math.min(Math.floor(halamanDiminta), totalHalaman)
       : 1;
-  const menuHalamanIni = semuaMenu.slice(
-    (halamanAktif - 1) * UKURAN_HALAMAN,
-    halamanAktif * UKURAN_HALAMAN
-  );
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-6xl space-y-8">
@@ -90,7 +98,7 @@ export default async function HalamanMenu({ searchParams }: HalamanMenuProps) {
       </div>
 
       {/* Grid Menu */}
-      {semuaMenu.length === 0 ? (
+      {menuHalamanIni.length === 0 ? (
         <div className="bg-white rounded-2xl border border-krem-gelap p-12 text-center max-w-md mx-auto space-y-4">
           <div className="w-14 h-14 rounded-2xl bg-krem-tua text-kayu-sedang mx-auto flex items-center justify-center">
             <IkonMangkuk className="w-7 h-7" />

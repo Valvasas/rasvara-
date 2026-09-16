@@ -64,6 +64,10 @@ export default async function HalamanPapanDapur({
         },
         include: { item: true },
         orderBy: [{ tanggalAcara: "asc" }, { jamAcara: "asc" }],
+        // Papan dapur hanya berguna untuk pesanan yang sedang dikerjakan. Tanpa
+        // batas, pesanan lama yang tidak pernah ditutup menumpuk terus dan satu
+        // pembukaan halaman menarik semuanya sekaligus.
+        take: 300,
       }),
       db.pesanan.count({ where: { status: "SELESAI" } }),
       db.pesanan.count({ where: { status: "DIBATALKAN" } }),

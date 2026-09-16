@@ -24,6 +24,117 @@ function garamHarian(): string {
   return garamCache.nilai;
 }
 
+/*
+  Pencatatan ditampung di memori dulu, lalu disetor berkala.
+
+  Sebelumnya tiap tampilan halaman menulis langsung ke database sambil ditunggu
+  oleh layout, sehingga pembeli baru melihat halaman setelah dua perjalanan ke
+  database selesai. Lebih buruk lagi, semua pengunjung halaman yang sama menimpa
+  SATU baris `kunjunganHarian` yang sama — Postgres mengunci baris itu per
+  penulisan, jadi seratus pengunjung serentak berbaris menunggu giliran dan
+  halaman ikut melambat bersama antreannya.
+
+  Dengan penampung ini, seratus tampilan halaman yang sama menjadi satu
+  penambahan angka di memori dan satu penulisan saat disetor.
+*/
+
+const JEDA_SETOR_MS = 10_000;
+
+/** Penjaga memori kalau database sedang tidak bisa dihubungi berkepanjangan. */
+const MAKS_PENAMPUNG = 10_000;
+
+const penampungTampilan = new Map<string, number>();
+const penampungPengunjung = new Set<string>();
+const penampungPeristiwa = new Map<string, number>();
+
+let pengaturSetor: ReturnType<typeof setTimeout> | null = null;
+
+function jadwalkanSetor(): void {
+  if (pengaturSetor) return;
+  pengaturSetor = setTimeout(() => {
+    pengaturSetor = null;
+    void setorAnalitik();
+  }, JEDA_SETOR_MS);
+  pengaturSetor.unref?.();
+}
+
+/**
+ * Menyetor seluruh penampung ke database. Penampung dikosongkan lebih dulu
+ * supaya kunjungan yang datang saat penyetoran berlangsung tidak ikut terhapus
+ * bila penyetorannya gagal.
+ */
+async function setorAnalitik(): Promise<void> {
+  if (
+    penampungTampilan.size === 0 &&
+    penampungPengunjung.size === 0 &&
+    penampungPeristiwa.size === 0
+  ) {
+    return;
+  }
+
+  const tampilan = [...penampungTampilan.entries()];
+  const pengunjung = [...penampungPengunjung];
+  const peristiwa = [...penampungPeristiwa.entries()];
+  penampungTampilan.clear();
+  penampungPengunjung.clear();
+  penampungPeristiwa.clear();
+
+  try {
+    await Promise.all([
+      ...tampilan.map(([kunci, jumlah]) => {
+        const [hari, path] = pisah(kunci);
+        const tanggal = dariInputTanggal(hari);
+        return db.kunjunganHarian.upsert({
+          where: { tanggal_path: { tanggal, path } },
+          create: { tanggal, path, tampilan: jumlah },
+          update: { tampilan: { increment: jumlah } },
+        });
+      }),
+      ...pengunjung.map((kunci) => {
+        const [hari, sidik] = pisah(kunci);
+        const tanggal = dariInputTanggal(hari);
+        return db.jejakPengunjung.upsert({
+          where: { tanggal_sidik: { tanggal, sidik } },
+          create: { tanggal, sidik },
+          update: {},
+        });
+      }),
+      ...peristiwa.map(([kunci, jumlah]) => {
+        const [hari, jenis] = pisah(kunci);
+        const tanggal = dariInputTanggal(hari);
+        return db.peristiwaAnalitik.upsert({
+          where: { tanggal_jenis: { tanggal, jenis: jenis as JenisPeristiwa } },
+          create: { tanggal, jenis: jenis as JenisPeristiwa, jumlah },
+          update: { jumlah: { increment: jumlah } },
+        });
+      }),
+    ]);
+  } catch {
+    // Database sedang tidak siap: hitungan periode ini dilepas. Statistik boleh
+    // kehilangan sedikit angka, halaman pembeli tidak boleh ikut gagal.
+  }
+}
+
+function pisah(kunci: string): [string, string] {
+  const batas = kunci.indexOf("|");
+  return [kunci.slice(0, batas), kunci.slice(batas + 1)];
+}
+
+function tambah(penampung: Map<string, number>, kunci: string): void {
+  if (!penampung.has(kunci) && penampung.size >= MAKS_PENAMPUNG) return;
+  penampung.set(kunci, (penampung.get(kunci) ?? 0) + 1);
+  jadwalkanSetor();
+}
+
+// Setor sisa hitungan saat proses diberhentikan dengan tertib (mis. `docker stop`).
+if (typeof process !== "undefined" && typeof process.once === "function") {
+  for (const sinyal of ["SIGTERM", "SIGINT", "beforeExit"] as const) {
+    process.once(sinyal, () => {
+      void setorAnalitik();
+    });
+  }
+}
+
 /**
  * Mencatat satu kunjungan halaman. Dipanggil dari layout toko, dan sengaja
  * tidak pernah melempar error: statistik tidak boleh menjatuhkan halaman yang
@@ -38,7 +149,7 @@ export async function catatKunjungan(): Promise<void> {
     const path = rapikanPath(pathMentah);
     if (!path) return;
 
-    const tanggal = dariInputTanggal(hariIniWib());
+    const hari = hariIniWib();
 
     const ip =
       daftarHeader.get("x-forwarded-for")?.split(",")[0].trim() ||
@@ -50,36 +161,20 @@ export async function catatKunjungan(): Promise<void> {
       .update(`${ip}|${agen}|${garamHarian()}`)
       .digest("hex");
 
-    await Promise.all([
-      db.kunjunganHarian.upsert({
-        where: { tanggal_path: { tanggal, path } },
-        create: { tanggal, path, tampilan: 1 },
-        update: { tampilan: { increment: 1 } },
-      }),
-      // Baris pengunjung unik cukup dibuat sekali per sidik per hari.
-      db.jejakPengunjung.upsert({
-        where: { tanggal_sidik: { tanggal, sidik } },
-        create: { tanggal, sidik },
-        update: {},
-      }),
-    ]);
+    tambah(penampungTampilan, `${hari}|${path}`);
+
+    if (penampungPengunjung.size < MAKS_PENAMPUNG) {
+      penampungPengunjung.add(`${hari}|${sidik}`);
+      jadwalkanSetor();
+    }
   } catch {
-    // Database sedang tidak siap: lewati pencatatan tanpa mengganggu halaman.
+    // Di luar konteks request: lewati pencatatan tanpa mengganggu halaman.
   }
 }
 
 /** Menambah hitungan satu peristiwa corong pemesanan. */
 export async function catatPeristiwa(jenis: JenisPeristiwa): Promise<void> {
-  try {
-    const tanggal = dariInputTanggal(hariIniWib());
-    await db.peristiwaAnalitik.upsert({
-      where: { tanggal_jenis: { tanggal, jenis } },
-      create: { tanggal, jenis, jumlah: 1 },
-      update: { jumlah: { increment: 1 } },
-    });
-  } catch {
-    // Sama seperti di atas: statistik tidak boleh menggagalkan aksi bisnis.
-  }
+  tambah(penampungPeristiwa, `${hariIniWib()}|${jenis}`);
 }
 
 export interface BarisHarian {
@@ -127,6 +222,9 @@ export async function ringkasanAnalitik(
   };
 
   try {
+    // Pemilik harus melihat angka hari ini, bukan angka sepuluh detik lalu.
+    await setorAnalitik();
+
     const hariIni = dariInputTanggal(hariIniWib());
     const mulai = new Date(hariIni);
     mulai.setUTCDate(mulai.getUTCDate() - (jumlahHari - 1));

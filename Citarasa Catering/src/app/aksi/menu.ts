@@ -11,8 +11,10 @@ import {
   validasiBerkasUnggahan,
 } from "@/lib/unggah";
 import { MAKS_FOTO_PER_MENU, type HasilFotoMenu } from "@/lib/foto-menu";
+import { lupakanSinggahanMenu } from "@/lib/menu";
 
 function segarkanHalamanMenu(slug?: string) {
+  lupakanSinggahanMenu();
   revalidatePath("/admin/menu");
   revalidatePath("/menu");
   revalidatePath("/");
@@ -159,9 +161,7 @@ export async function aksiToggleAktifMenu(id: string, aktifBaru: boolean) {
     data: { aktif: aktifBaru },
   });
 
-  revalidatePath("/admin/menu");
-  revalidatePath("/menu");
-  revalidatePath("/");
+  segarkanHalamanMenu();
   return { sukses: true };
 }
 
@@ -171,12 +171,19 @@ export async function aksiUpdateKapasitasMenu(
 ) {
   await wajibPemilik();
 
+  if (
+    kapasitas !== null &&
+    (!Number.isInteger(kapasitas) || kapasitas < 0)
+  ) {
+    return { sukses: false, pesan: "Kuota harian harus bilangan bulat 0 atau lebih." };
+  }
+
   await db.menu.update({
     where: { id },
     data: { kapasitasHarian: kapasitas },
   });
 
-  revalidatePath("/admin/menu");
+  segarkanHalamanMenu();
   return { sukses: true };
 }
 

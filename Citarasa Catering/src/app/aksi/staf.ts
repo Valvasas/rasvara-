@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
-import { hashSandi, wajibPemilik } from "@/lib/auth";
+import { hashSandi, lupakanSinggahanPeran, wajibPemilik } from "@/lib/auth";
 import { normalkanTelepon } from "@/lib/format";
 import { ambilIpKlien, periksaBatasLaju } from "@/lib/pembatas-laju";
 
@@ -123,6 +123,7 @@ export async function aksiHapusStaf(
   await db.pengguna.delete({
     where: { id },
   });
+  lupakanSinggahanPeran(id);
 
   revalidatePath("/admin/pengaturan");
   return { sukses: true };

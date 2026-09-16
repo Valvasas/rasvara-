@@ -34,15 +34,25 @@ import {
   rupiah,
 } from "@/lib/format";
 import { IkonPeringatan } from "@/components/ikon/Ikon";
-import type { Menu, Pengaturan, Pengguna } from "@/generated/prisma/client";
+import { LABEL_KATEGORI, URUTAN_KATEGORI } from "@/lib/pesanan";
+import type { MenuUntukPemesanan } from "@/lib/menu";
+import type { KategoriMenu, Pengaturan, Pengguna } from "@/generated/prisma/client";
 
 interface FormPemesananProps {
-  daftarMenu: Menu[];
+  daftarMenu: MenuUntukPemesanan[];
   menuAwalSlug?: string;
   pengaturan: Pengaturan;
   tanggalLibur: string[];
   pengguna: Pengguna | null;
 }
+
+/**
+ * Berapa kartu menu yang ditampilkan sekaligus sebelum tombol "tampilkan
+ * lainnya". Katalog katering bisa tumbuh sampai ratusan item, dan menumpuk
+ * semuanya dalam satu kolom panjang membuat bagian jadwal & data pemesan di
+ * bawahnya praktis tidak pernah terlihat.
+ */
+const TAMPIL_AWAL = 8;
 
 export function FormPemesanan({
   daftarMenu,
@@ -52,6 +62,14 @@ export function FormPemesanan({
   pengguna,
 }: FormPemesananProps) {
   const [state, action, isPending] = useActionState(aksiBuatPesanan, null);
+
+  // Menelusuri seluruh daftar untuk tiap menu yang dipilih membuat kerjanya
+  // tumbuh sebanyak (jumlah menu x jumlah pilihan) pada setiap penekanan tombol
+  // tambah/kurang. Peta ini membuat pencariannya langsung.
+  const petaMenu = useMemo(
+    () => new Map(daftarMenu.map((m) => [m.id, m])),
+    [daftarMenu]
+  );
 
   // State kuantiti per menu id
   const [jumlahMenu, setJumlahMenu] = useState<Record<string, number>>(() => {
@@ -64,6 +82,45 @@ export function FormPemesanan({
     }
     return awal;
   });
+
+  // --- Penyaring katalog ---
+  // Pembeli yang tiba lewat tombol "Pesan Menu Ini" harus langsung melihat menu
+  // yang ia klik, bukan mencarinya sendiri di antara kartu yang lain.
+  const [cari, setCari] = useState(
+    () => daftarMenu.find((m) => m.slug === menuAwalSlug)?.nama ?? ""
+  );
+  const [kategoriAktif, setKategoriAktif] = useState<KategoriMenu | "SEMUA">(
+    "SEMUA"
+  );
+  const [batasTampil, setBatasTampil] = useState(TAMPIL_AWAL);
+
+  const kategoriTersedia = useMemo(() => {
+    const ada = new Set(daftarMenu.map((m) => m.kategori));
+    return URUTAN_KATEGORI.filter((k) => ada.has(k));
+  }, [daftarMenu]);
+
+  const menuTersaring = useMemo(() => {
+    const kunci = cari.trim().toLowerCase();
+    return daftarMenu.filter((m) => {
+      if (kategoriAktif !== "SEMUA" && m.kategori !== kategoriAktif) return false;
+      if (!kunci) return true;
+      return (
+        m.nama.toLowerCase().includes(kunci) ||
+        m.deskripsi.toLowerCase().includes(kunci)
+      );
+    });
+  }, [daftarMenu, cari, kategoriAktif]);
+
+  // Mengganti penyaring mengembalikan daftar ke panjang semula, supaya hasil
+  // pencarian baru tidak diam-diam mewarisi "tampilkan lainnya" sebelumnya.
+  useEffect(() => {
+    setBatasTampil(TAMPIL_AWAL);
+  }, [cari, kategoriAktif]);
+
+  const menuTampil = useMemo(
+    () => menuTersaring.slice(0, batasTampil),
+    [menuTersaring, batasTampil]
+  );
 
   const [caraAmbil, setCaraAmbil] = useState<"AMBIL_SENDIRI" | "DIANTAR">(
     "AMBIL_SENDIRI"
@@ -93,7 +150,7 @@ export function FormPemesanan({
   const itemTerpilih = useMemo(() => {
     return Object.entries(jumlahMenu)
       .map(([id, jml]) => {
-        const m = daftarMenu.find((item) => item.id === id);
+        const m = petaMenu.get(id);
         if (!m || jml <= 0) return null;
         return {
           menuId: m.id,
@@ -107,7 +164,7 @@ export function FormPemesanan({
         };
       })
       .filter(Boolean);
-  }, [jumlahMenu, daftarMenu]);
+  }, [jumlahMenu, petaMenu]);
 
   // Maksimal preorder hari dari menu yang dipilih
   const maxPreorder = useMemo(() => {
@@ -158,24 +215,31 @@ export function FormPemesanan({
   // menambah atau mengurangi porsi setelah memakai voucher akan melihat angka
   // potongan lama yang sudah tidak sesuai — dan tampilan jadi berbeda dari
   // hitungan server saat pesanan benar-benar dibuat.
+  // Ditunda sesaat, bukan dikirim tiap penekanan tombol tambah/kurang. Menaikkan
+  // porsi dari 10 ke 20 berarti sepuluh penekanan; tanpa jeda ini tiap
+  // penekanan jadi satu panggilan server, dan pembeli malah kena batas laju
+  // pengecekan voucher lalu kehilangan potongannya di tengah mengisi formulir.
   useEffect(() => {
     if (!kodeTerpakai) return;
 
     let dibatalkan = false;
-    aksiCekVoucher(kodeTerpakai, subtotal).then((hasil) => {
-      if (dibatalkan) return;
-      if (hasil.berlaku) {
-        setPotongan(hasil.potongan);
-        setPesanVoucher(null);
-      } else {
-        setKodeTerpakai(null);
-        setPotongan(0);
-        setPesanVoucher(hasil.pesan);
-      }
-    });
+    const penunda = setTimeout(() => {
+      aksiCekVoucher(kodeTerpakai, subtotal).then((hasil) => {
+        if (dibatalkan) return;
+        if (hasil.berlaku) {
+          setPotongan(hasil.potongan);
+          setPesanVoucher(null);
+        } else {
+          setKodeTerpakai(null);
+          setPotongan(0);
+          setPesanVoucher(hasil.pesan);
+        }
+      });
+    }, 500);
 
     return () => {
       dibatalkan = true;
+      clearTimeout(penunda);
     };
   }, [kodeTerpakai, subtotal]);
 
@@ -272,8 +336,54 @@ export function FormPemesanan({
           </p>
         </div>
 
+        {/* Penyaring katalog: cari nama hidangan atau pilih kategorinya */}
+        <div className="space-y-3">
+          <label htmlFor="cari-menu" className="sr-only">
+            Cari menu
+          </label>
+          <input
+            id="cari-menu"
+            type="search"
+            value={cari}
+            onChange={(e) => setCari(e.target.value)}
+            placeholder="Cari hidangan, misalnya: ayam, tumpeng, risoles..."
+            autoComplete="off"
+            className="w-full min-h-[48px] px-4 py-2.5 rounded-xl border border-krem-gelap bg-krem/40 text-kayu text-sm focus:outline-none focus:border-bata focus:ring-1 focus:ring-bata"
+          />
+
+          {kategoriTersedia.length > 1 && (
+            <div className="flex items-center gap-2 overflow-x-auto pb-1">
+              {(["SEMUA", ...kategoriTersedia] as const).map((k) => {
+                const aktif = kategoriAktif === k;
+                return (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => setKategoriAktif(k)}
+                    aria-pressed={aktif}
+                    className={`min-h-[40px] px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-colors cursor-pointer ${
+                      aktif
+                        ? "bg-bata text-white shadow-sm"
+                        : "bg-white text-kayu border border-krem-gelap hover:bg-krem-tua"
+                    }`}
+                  >
+                    {k === "SEMUA" ? "Semua" : LABEL_KATEGORI[k]}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          <p role="status" className="text-[11px] text-kayu-sedang">
+            Menampilkan {menuTampil.length} dari {menuTersaring.length} hidangan
+            {itemTerpilih.length > 0
+              ? ` · ${itemTerpilih.length} sudah dipilih`
+              : ""}
+          </p>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {daftarMenu.map((m) => {
+          {menuTampil.map((m) => {
             const jml = jumlahMenu[m.id] || 0;
             const dipilih = jml > 0;
 
@@ -356,6 +466,22 @@ export function FormPemesanan({
             );
           })}
         </div>
+
+        {menuTersaring.length === 0 && (
+          <p className="text-xs text-kayu-sedang text-center py-4">
+            Tidak ada hidangan yang cocok dengan pencarian Anda.
+          </p>
+        )}
+
+        {menuTersaring.length > menuTampil.length && (
+          <button
+            type="button"
+            onClick={() => setBatasTampil((n) => n + TAMPIL_AWAL)}
+            className="w-full min-h-[48px] px-6 py-2.5 rounded-xl font-bold text-sm text-kayu bg-krem-tua border border-krem-gelap hover:bg-krem-gelap transition-colors cursor-pointer"
+          >
+            Tampilkan {menuTersaring.length - menuTampil.length} hidangan lainnya
+          </button>
+        )}
 
         {itemTerpilih.length === 0 && (
           <p className="text-xs text-bahaya font-medium text-center">
