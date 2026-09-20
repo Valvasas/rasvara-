@@ -4,7 +4,7 @@ Marketplace-style catering website for Rasvara with a static frontend and an Exp
 
 ## Structure
 
-- `Citarasa Catering/` - **Aplikasi Utama Produksi**: Next.js 16 (App Router) + React 19 + Tailwind v4 + PostgreSQL + Prisma. Halaman pembeli, pelacakan, dapur, kas, dan admin dalam satu tempat.
+- `Citarasa_Catering/` - **Aplikasi Utama Produksi**: Next.js 16 (App Router) + React 19 + Tailwind v4 + PostgreSQL + Prisma. Halaman pembeli, pelacakan, dapur, kas, dan admin dalam satu tempat.
 - `public/` - aset browser dan uploads untuk Express legacy marketplace.
 - `backend/` - Express API legacy marketplace.
 - `firebase.json` - Firebase Hosting config legacy.

@@ -23,30 +23,30 @@ jobs:
           # di server.
           node-version: 24
           cache: "npm"
-          cache-dependency-path: "Citarasa Catering/package-lock.json"
+          cache-dependency-path: "Citarasa_Catering/package-lock.json"
 
       - name: Install dependencies
-        working-directory: "Citarasa Catering"
+        working-directory: "Citarasa_Catering"
         run: npm ci
 
       - name: Generate Prisma Client
-        working-directory: "Citarasa Catering"
+        working-directory: "Citarasa_Catering"
         run: npm run db:generate
 
       - name: Check TypeScript types
-        working-directory: "Citarasa Catering"
+        working-directory: "Citarasa_Catering"
         run: npm run typecheck
 
       - name: Lint
-        working-directory: "Citarasa Catering"
+        working-directory: "Citarasa_Catering"
         run: npm run lint
 
       - name: Run unit tests
-        working-directory: "Citarasa Catering"
+        working-directory: "Citarasa_Catering"
         run: npm test
 
       - name: Build Next.js application
-        working-directory: "Citarasa Catering"
+        working-directory: "Citarasa_Catering"
         env:
           DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/citarasa?schema=public"
           SESSION_SECRET: "ci-dummy-session-secret-for-build-step-minimal-32-chars"
