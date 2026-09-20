@@ -18,7 +18,10 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # Samakan dengan Dockerfile (node:24-alpine). CI yang memakai versi
+          # Node berbeda dari produksi bisa lulus untuk kode yang justru gagal
+          # di server.
+          node-version: 24
           cache: "npm"
           cache-dependency-path: "Citarasa Catering/package-lock.json"
 
@@ -33,6 +36,10 @@ jobs:
       - name: Check TypeScript types
         working-directory: "Citarasa Catering"
         run: npm run typecheck
+
+      - name: Lint
+        working-directory: "Citarasa Catering"
+        run: npm run lint
 
       - name: Run unit tests
         working-directory: "Citarasa Catering"

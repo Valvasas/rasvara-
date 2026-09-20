@@ -4,11 +4,10 @@ Marketplace-style catering website for Rasvara with a static frontend and an Exp
 
 ## Structure
 
-- `public/` - all browser-facing pages, styles, scripts, icons, brand assets, and public uploads.
-- `backend/` - Express API, auth/session handling, order/customer/vendor/admin endpoints, and server config.
-- `backend/data/data.json` - local runtime data for menus, orders, ledger, reviews, vendors, and website settings.
-- `public/uploads/` - images served to visitors and uploaded from admin/vendor tools.
-- `firebase.json` - Firebase Hosting config; it serves the `public/` directory.
+- `Citarasa Catering/` - **Aplikasi Utama Produksi**: Next.js 16 (App Router) + React 19 + Tailwind v4 + PostgreSQL + Prisma. Halaman pembeli, pelacakan, dapur, kas, dan admin dalam satu tempat.
+- `public/` - aset browser dan uploads untuk Express legacy marketplace.
+- `backend/` - Express API legacy marketplace.
+- `firebase.json` - Firebase Hosting config legacy.
 
 Root-level HTML/CSS/JS files are intentionally not used. Keep frontend changes inside `public/`.
 

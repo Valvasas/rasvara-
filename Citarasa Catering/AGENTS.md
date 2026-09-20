@@ -87,7 +87,7 @@ Ini adalah aturan bisnis yang sudah didesain sengaja. Kalau perubahanmu menyentu
   npm run build
   ```
   (belum ada test suite — build + typecheck adalah baris pertahanan utama saat ini, lihat TASKS.md untuk rencana menambah test).
-- **Jangan commit** `src/generated/prisma/`, `.env`, atau isi `public/unggahan/*` (sudah di `.gitignore`).
+- **Jangan commit** `src/generated/prisma/`, berkas `.env*` (kecuali `*.example`), atau isi `data/` (sudah di `.gitignore`).
 - Proyek ini **belum berupa git repository** (tidak ada folder `.git`). Jangan asumsikan riwayat git ada; jika perlu menjalankan operasi git, cek dulu apakah user sudah `git init`.
 
 ## 6. Konvensi penamaan (Bahasa Indonesia domain, kode konsisten)
@@ -112,7 +112,7 @@ Kode ini sengaja memakai istilah domain berbahasa Indonesia untuk model, variabe
 
 - `src/lib/auth.ts` dan `src/app/aksi/auth.ts`: logika sesi, hashing password, cookie signing. Perubahan di sini berdampak langsung ke keamanan login.
 - `SESSION_SECRET` (env var): jangan pernah di-hardcode, log, atau expose ke client.
-- Endpoint upload bukti transfer (`public/unggahan/`): jika menambah fitur upload, validasi tipe/ukuran file di server.
+- Berkas unggahan disimpan di `DIREKTORI_UNGGAHAN` (bawaan `data/unggahan`), **di luar `public/`**, dan hanya dilayani lewat `src/app/unggahan/[nama]/route.ts` yang memeriksa wewenang: foto menu terbuka untuk umum, bukti transfer hanya untuk dapur dan pemilik pesanannya. Jangan memindahkan berkas unggahan kembali ke `public/` — apa pun di sana dilayani kepada siapa saja yang tahu URL-nya, tanpa pemeriksaan. Jika menambah fitur upload, validasi tipe/ukuran file di server.
 - Middleware/guard akses admin ada terpusat di `src/app/admin/layout.tsx` — jangan buat halaman admin baru yang melewati layout ini.
 
 ## 8. Yang TIDAK ada saat ini (jangan berasumsi)

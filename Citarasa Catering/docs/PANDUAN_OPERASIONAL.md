@@ -24,10 +24,10 @@ Proyek telah dilengkapi dengan `Dockerfile` multi-stage dan `.dockerignore`.
      -e DATABASE_URL="postgresql://user:password@db-host:5432/citarasa?sslmode=require" \
      -e SESSION_SECRET="minimal-32-karakter-acak-dan-sangat-rahasia" \
      -e NEXT_PUBLIC_BASE_URL="https://citarasacatering.com" \
-     -v citarasa_unggahan:/app/public/unggahan \
+     -v citarasa_unggahan:/app/data/unggahan \
      citarasa-catering:latest
    ```
-   > **Catatan Volume:** Volume `citarasa_unggahan:/app/public/unggahan` penting agar bukti transfer pelanggan tidak hilang saat container di-restart atau diperbarui.
+   > **Catatan Volume:** Volume `citarasa_unggahan:/app/data/unggahan` penting agar bukti transfer pelanggan tidak hilang saat container di-restart atau diperbarui. Folder ini sengaja berada di luar `public/` supaya bukti transfer hanya bisa dibuka lewat route yang memeriksa wewenang.
 
 ---
 
@@ -128,10 +128,10 @@ pg_dump -U postgres -d citarasa -F c -b -v -f "/var/backups/citarasa-$(date +\%Y
 
 ---
 
-## 4. Tinjauan Media Penyimpanan Berkas (`public/unggahan/`)
+## 4. Tinjauan Media Penyimpanan Berkas (`data/unggahan/`)
 
-Saat ini foto bukti transfer disimpan secara lokal di `public/unggahan/`:
-- **Lingkungan VPS / Server Tunggal:** Aman dan efisien. Pastikan direktori `public/unggahan/` memiliki izin tulis untuk user nodejs/nextjs dan disertakan dalam jadwal backup file.
+Foto bukti transfer dan foto menu disimpan secara lokal di folder `DIREKTORI_UNGGAHAN` (bawaan `data/unggahan`), **di luar `public/`**. Berkas di `public/` dilayani apa adanya kepada siapa pun yang tahu URL-nya, sedangkan bukti transfer memuat data rekening pembeli; karena itu semuanya dilayani lewat `src/app/unggahan/[nama]/route.ts` yang memeriksa wewenang lebih dulu.
+- **Lingkungan VPS / Server Tunggal:** Aman dan efisien. Pastikan direktori ini memiliki izin tulis untuk user nodejs/nextjs dan disertakan dalam jadwal backup file — `npm run db:backup` sudah ikut menyalinnya ke `backups/unggahan/`.
 - **Lingkungan Stateless / Serverless (Vercel, AWS Lambda, Google Cloud Run):**
   Filesystem lokal bersifat ephemeral (sementara). Untuk deployment ke platform stateless di masa depan, gunakan adapter penyimpanan object storage berbasis S3 (misalnya AWS S3 atau Cloudflare R2). Abstraksi penyimpanan di `src/lib/unggah.ts` siap diintegrasikan dengan AWS SDK `@aws-sdk/client-s3` tanpa mengubah antarmuka halaman pelanggan.
 

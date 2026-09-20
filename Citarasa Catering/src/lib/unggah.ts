@@ -4,6 +4,33 @@ import fs from "fs/promises";
 
 export const BATAS_UKURAN_GAMBAR = 5 * 1024 * 1024; // 5 MB
 
+/**
+ * Berkas unggahan sengaja TIDAK disimpan di `public/`.
+ *
+ * Apa pun yang ada di `public/` dilayani apa adanya kepada siapa pun yang tahu
+ * URL-nya, tanpa sempat melewati pemeriksaan apa pun — padahal bukti transfer
+ * memuat nama, nomor rekening, dan nominal milik pembeli. Berkas di sini hanya
+ * bisa dibaca lewat route `/unggahan/[nama]`, yang memeriksa dulu siapa yang
+ * meminta. Foto menu pun ikut ke sini supaya hanya ada satu tempat penyimpanan.
+ *
+ * Selain itu `public/` ikut tersalin ke dalam image Docker saat build; berkas
+ * yang diunggah setelah itu akan hilang setiap kali kontainer dibangun ulang,
+ * kecuali disimpan di folder terpisah yang bisa dipasangi volume.
+ */
+export function direktoriUnggahan(): string {
+  const disetel = process.env.DIREKTORI_UNGGAHAN?.trim();
+  return disetel && disetel.length > 0
+    ? path.resolve(disetel)
+    : path.join(process.cwd(), "data", "unggahan");
+}
+
+/**
+ * Bentuk nama berkas yang boleh dilayani: persis seperti yang dihasilkan
+ * `buatNamaFileAman`. Dipakai route pelayan berkas untuk menolak apa pun yang
+ * tidak pernah ditulis oleh kode ini — termasuk `..` dan pemisah folder.
+ */
+export const POLA_NAMA_BERKAS = /^(bukti|menu)-\d{13,}-[0-9a-f]{24}\.(jpg|png|webp)$/;
+
 export const TIPE_MIME_DIIZINKAN = [
   "image/jpeg",
   "image/png",
@@ -17,6 +44,18 @@ const EKSTENSI_DARI_MIME: Record<TipeMimeGambar, string> = {
   "image/png": "png",
   "image/webp": "webp",
 };
+
+const MIME_DARI_EKSTENSI: Record<string, TipeMimeGambar> = {
+  jpg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+};
+
+/** Tipe konten untuk balasan route pelayan berkas. */
+export function tipeMimeDariNama(nama: string): TipeMimeGambar | null {
+  const ekstensi = nama.split(".").pop()?.toLowerCase() ?? "";
+  return MIME_DARI_EKSTENSI[ekstensi] ?? null;
+}
 
 /**
  * Memeriksa header magic bytes file buffer untuk memastikan file benar-benar gambar
@@ -125,7 +164,11 @@ export async function validasiBerkasUnggahan(
 }
 
 /**
- * Menyimpan buffer bukti transfer ke disk lokal secara aman (public/unggahan/).
+ * Menyimpan buffer unggahan ke direktori data (di luar `public/`).
+ *
+ * Yang dikembalikan tetap URL `/unggahan/<nama>` seperti sebelumnya, karena itu
+ * yang tersimpan di database dan dipakai di halaman — bedanya sekarang URL itu
+ * dilayani oleh route yang memeriksa wewenang, bukan oleh server berkas statis.
  */
 export async function simpanBerkasUnggahan(
   buffer: Buffer,
@@ -133,7 +176,7 @@ export async function simpanBerkasUnggahan(
 ): Promise<string> {
   // Hanya ambil nama file tanpa path untuk mencegah directory traversal
   const namaAman = path.basename(namaFile);
-  const direktoriUnggah = path.join(process.cwd(), "public", "unggahan");
+  const direktoriUnggah = direktoriUnggahan();
 
   await fs.mkdir(direktoriUnggah, { recursive: true });
 
@@ -141,6 +184,20 @@ export async function simpanBerkasUnggahan(
   await fs.writeFile(pathTujuan, buffer);
 
   return `/unggahan/${namaAman}`;
+}
+
+/**
+ * Membaca berkas unggahan untuk dilayani. Mengembalikan null bila namanya tidak
+ * berbentuk nama buatan `buatNamaFileAman` atau berkasnya tidak ada.
+ */
+export async function bacaBerkasUnggahan(nama: string): Promise<Buffer | null> {
+  if (!POLA_NAMA_BERKAS.test(nama)) return null;
+
+  try {
+    return await fs.readFile(path.join(direktoriUnggahan(), nama));
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -153,8 +210,7 @@ export async function hapusBerkasLama(urlRelatif: string | null | undefined): Pr
 
   try {
     const namaAman = path.basename(urlRelatif);
-    const pathFile = path.join(process.cwd(), "public", "unggahan", namaAman);
-    await fs.unlink(pathFile);
+    await fs.unlink(path.join(direktoriUnggahan(), namaAman));
   } catch {
     // Abaikan jika file tidak ditemukan
   }

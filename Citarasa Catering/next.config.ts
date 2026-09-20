@@ -31,6 +31,19 @@ const nextConfig: NextConfig = {
   outputFileTracingExcludes: {
     "*": ["./legacy/**"],
   },
+  experimental: {
+    serverActions: {
+      /**
+       * Bukti transfer dan foto menu dikirim lewat Server Action, dan batas
+       * bawaannya 1 MB. Foto dari kamera ponsel hampir selalu lebih besar dari
+       * itu, jadi dengan nilai bawaan unggahan gagal sebelum sempat divalidasi.
+       * Angkanya di atas batas 5 MB di `lib/unggah.ts` supaya yang menolak
+       * berkas kebesaran adalah pemeriksaan kita — lengkap dengan pesan yang
+       * bisa dibaca pembeli — bukan galat mentah dari Next.js.
+       */
+      bodySizeLimit: "6mb",
+    },
+  },
   async headers() {
     return [
       {

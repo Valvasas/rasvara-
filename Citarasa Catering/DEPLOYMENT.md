@@ -85,7 +85,7 @@ Sangat cocok untuk VPS murah (DigitalOcean Droplet, Hetzner, Biznet Gio, IDCloud
 2. Tambahkan variabel lingkungan `DATABASE_URL`, `SESSION_SECRET`, dan `NEXT_PUBLIC_BASE_URL`.
 3. Perintah Build: `npm run build`
 4. Perintah Start: `npm run db:deploy && npm start`
-5. **Penting**: Pasang persistent volume pada folder `/app/public/unggahan` agar foto bukti transfer tidak hilang saat container restart, atau beralih ke Object Storage S3.
+5. **Penting**: Pasang persistent volume pada folder `/app/data/unggahan` agar foto bukti transfer tidak hilang saat container restart, atau beralih ke Object Storage S3.
 
 ---
 
@@ -149,9 +149,11 @@ docker compose start app
 
 ---
 
-## 5. Penyimpanan Berkas Upload (`public/unggahan/`)
+## 5. Penyimpanan Berkas Upload (`data/unggahan/`)
 
-- Saat ini berkas disimpan di filesystem lokal (`public/unggahan/bukti/`).
-- **Pada Docker / VPS**: Gunakan Docker Volume atau persistent directory yang di-mount keluar container.
+- Berkas disimpan di filesystem lokal pada folder `DIREKTORI_UNGGAHAN` (bawaan `data/unggahan`), **sengaja di luar `public/`**.
+- **Kenapa tidak di `public/`**: berkas di `public/` dilayani apa adanya kepada siapa pun yang tahu URL-nya. Bukti transfer memuat nama pemilik rekening, nomor rekening, dan nominal. Karena itu semua berkas unggahan sekarang dilayani oleh `src/app/unggahan/[nama]/route.ts`, yang memeriksa dulu: foto menu (`menu-*`) terbuka untuk umum, bukti transfer (`bukti-*`) hanya untuk pemilik/staf dapur atau pembeli yang memang pemilik pesanannya. Permintaan yang tidak berhak dijawab 404.
+- **Backup**: isi folder ini TIDAK ada di database — yang tersimpan di sana hanya nama berkasnya. `npm run db:backup` ikut menyalin folder ini ke `backups/unggahan/` secara bertahap.
+- **Pada Docker / VPS**: Gunakan Docker Volume atau persistent directory yang di-mount keluar container (`docker-compose.prod.yml` sudah memasang volume ke `/app/data/unggahan`).
 - **Pada Serverless (Vercel / Netlify)**: Serverless functions bersifat stateless dan read-only pada filesystem. Jika mendeploy ke serverless, ganti logika penyimpanan di `src/app/aksi/pesanan.ts` (`unggahBuktiTransfer`) untuk mengunggah ke object storage yang kompatibel dengan S3 (mis. Cloudflare R2, AWS S3, atau Supabase Storage).
 

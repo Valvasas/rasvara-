@@ -31,28 +31,62 @@ import type {
   StatusPesanan,
 } from "@/generated/prisma/client";
 
+/**
+ * Batas atas tiap isian.
+ *
+ * Formulir di peramban memang sudah membatasi panjangnya, tapi Server Action
+ * ini bisa dipanggil langsung tanpa lewat formulir. Tanpa batas di sini, satu
+ * permintaan bisa menitipkan catatan sepanjang berapa pun ke database, dan
+ * seluruh isinya ikut terbaca ulang setiap kali papan dapur dibuka. Angkanya
+ * dipilih jauh di atas pemakaian wajar supaya tidak pernah mengganggu pemesan
+ * sungguhan.
+ */
 const SkemaItem = z.object({
-  menuId: z.string().min(1),
-  jumlah: z.number().int().positive("Jumlah pesanan harus lebih dari 0"),
-  catatan: z.string().optional(),
+  menuId: z.string().min(1).max(64),
+  jumlah: z
+    .number()
+    .int()
+    .positive("Jumlah pesanan harus lebih dari 0")
+    .max(5000, "Jumlah pesanan terlalu besar. Hubungi dapur untuk pesanan sebesar ini."),
+  catatan: z.string().max(300, "Catatan menu terlalu panjang").optional(),
 });
 
-const SkemaBuatPesanan = z.object({
-  namaPemesan: z.string().min(2, "Nama pemesan minimal 2 karakter"),
-  teleponPemesan: z.string().min(8, "Nomor telepon minimal 8 digit"),
-  tanggalAcara: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Format tanggal tidak valid"),
-  jamAcara: z.string().regex(/^\d{2}:\d{2}$/, "Format jam tidak valid"),
-  caraAmbil: z.enum(["AMBIL_SENDIRI", "DIANTAR"]),
-  alamatAntar: z.string().optional(),
-  caraBayar: z.enum(["TRANSFER", "TUNAI"]),
-  catatanPesanan: z.string().optional(),
-  kodeVoucher: z.string().optional(),
-  // Koordinat titik antar dari peta. Rentangnya dibatasi supaya nilai ngawur
-  // tidak pernah tersimpan dan membuat peta di dashboard melompat.
-  latitude: z.number().min(-90).max(90).optional(),
-  longitude: z.number().min(-180).max(180).optional(),
-  items: z.array(SkemaItem).min(1, "Pilih minimal satu menu"),
-});
+const SkemaBuatPesanan = z
+  .object({
+    namaPemesan: z
+      .string()
+      .min(2, "Nama pemesan minimal 2 karakter")
+      .max(100, "Nama pemesan terlalu panjang"),
+    teleponPemesan: z
+      .string()
+      .min(8, "Nomor telepon minimal 8 digit")
+      .max(20, "Nomor telepon terlalu panjang"),
+    tanggalAcara: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Format tanggal tidak valid"),
+    jamAcara: z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Format jam tidak valid"),
+    caraAmbil: z.enum(["AMBIL_SENDIRI", "DIANTAR"]),
+    alamatAntar: z.string().max(500, "Alamat antar terlalu panjang").optional(),
+    caraBayar: z.enum(["TRANSFER", "TUNAI"]),
+    catatanPesanan: z.string().max(1000, "Catatan pesanan terlalu panjang").optional(),
+    kodeVoucher: z.string().max(32, "Kode voucher terlalu panjang").optional(),
+    // Koordinat titik antar dari peta. Rentangnya dibatasi supaya nilai ngawur
+    // tidak pernah tersimpan dan membuat peta di dashboard melompat.
+    latitude: z.number().min(-90).max(90).optional(),
+    longitude: z.number().min(-180).max(180).optional(),
+    items: z
+      .array(SkemaItem)
+      .min(1, "Pilih minimal satu menu")
+      .max(50, "Terlalu banyak jenis menu dalam satu pesanan"),
+  })
+  // Peta hanyalah pelengkap; alamat tertulis tetap yang dipakai pengantar, jadi
+  // pesanan diantar tanpa alamat tidak boleh masuk ke dapur sama sekali.
+  .refine(
+    (nilai) =>
+      nilai.caraAmbil !== "DIANTAR" || (nilai.alamatAntar?.trim().length ?? 0) >= 10,
+    {
+      path: ["alamatAntar"],
+      message: "Alamat antar wajib diisi lengkap (minimal 10 karakter).",
+    }
+  );
 
 /** Field peta dikirim sebagai teks dari formulir; kosong berarti tidak diisi. */
 function angkaAtauUndefined(nilai: FormDataEntryValue | null): number | undefined {
@@ -572,24 +606,43 @@ export async function aksiPindahStatus(
 ): Promise<{ sukses: boolean; pesan?: string }> {
   const sesi = await wajibStafAtauPemilik();
 
-  const pesanan = await db.pesanan.findUnique({ where: { kode } });
-  if (!pesanan) {
-    return { sukses: false, pesan: "Pesanan tidak ditemukan." };
-  }
-
-  if (!bolehPindahStatus(pesanan.status, statusBaru)) {
-    return {
-      sukses: false,
-      pesan: `Status tidak dapat dipindah dari ${pesanan.status} ke ${statusBaru}.`,
-    };
-  }
-
-  await db.$transaction([
-    db.pesanan.update({
+  // Pemeriksaan alur status dan penulisannya harus berada di dalam transaksi
+  // yang sama. Papan dapur dibuka pemilik dan staf sekaligus di perangkat
+  // berbeda: kalau statusnya dibaca lebih dulu di luar transaksi, dua orang
+  // yang menekan tombol hampir bersamaan sama-sama lolos pemeriksaan, dan
+  // riwayat pesanan mencatat dua perpindahan dari status yang sama — termasuk
+  // kemungkinan "Mulai Masak" dan "Batalkan" sekaligus.
+  const hasil = await db.$transaction(async (tx) => {
+    const pesanan = await tx.pesanan.findUnique({
       where: { kode },
+      select: { id: true, status: true },
+    });
+    if (!pesanan) {
+      return { sukses: false, pesan: "Pesanan tidak ditemukan." };
+    }
+
+    if (!bolehPindahStatus(pesanan.status, statusBaru)) {
+      return {
+        sukses: false,
+        pesan: `Status tidak dapat dipindah dari ${pesanan.status} ke ${statusBaru}.`,
+      };
+    }
+
+    // Kunci optimistis, seperti pada kuota voucher: perpindahan hanya berlaku
+    // bila statusnya masih sama dengan yang barusan dibaca.
+    const terpindah = await tx.pesanan.updateMany({
+      where: { id: pesanan.id, status: pesanan.status },
       data: { status: statusBaru },
-    }),
-    db.riwayatStatus.create({
+    });
+    if (terpindah.count === 0) {
+      return {
+        sukses: false,
+        pesan:
+          "Status pesanan ini baru saja diubah dari perangkat lain. Muat ulang halaman dulu.",
+      };
+    }
+
+    await tx.riwayatStatus.create({
       data: {
         pesananId: pesanan.id,
         dari: pesanan.status,
@@ -597,13 +650,17 @@ export async function aksiPindahStatus(
         olehId: sesi.id,
         catatan: `Status diubah menjadi ${statusBaru} oleh ${sesi.nama}.`,
       },
-    }),
-  ]);
+    });
+
+    return { sukses: true };
+  });
+
+  if (!hasil.sukses) return hasil;
 
   revalidatePath(`/pesanan/${kode}`);
   revalidatePath("/admin/pesanan");
   revalidatePath("/admin");
-  return { sukses: true };
+  return hasil;
 }
 
 export async function aksiTandaiLunas(
@@ -611,25 +668,39 @@ export async function aksiTandaiLunas(
 ): Promise<{ sukses: boolean; pesan?: string }> {
   const sesi = await wajibPemilik();
 
-  const pesanan = await db.pesanan.findUnique({
-    where: { kode },
-    include: { kas: true },
-  });
-
-  if (!pesanan) {
-    return { sukses: false, pesan: "Pesanan tidak ditemukan." };
-  }
-
-  if (pesanan.statusBayar === "LUNAS") {
-    return { sukses: true };
-  }
-
-  // Invarian #3: Satu pesanan maksimal satu baris kas (unique constraint pesananId)
-  await db.$transaction(async (tx) => {
-    await tx.pesanan.update({
+  // Invarian #3: satu pesanan maksimal satu baris kas.
+  //
+  // Pesanan dibaca di dalam transaksi dan pelunasannya dikunci secara optimistis
+  // (`statusBayar` harus masih bukan LUNAS). Dulu pembacaan terjadi di luar
+  // transaksi, sehingga dua klik beruntun pada tombol "Tandai Lunas" — hal yang
+  // lumrah saat jaringan lambat — bisa sama-sama melihat `kas` masih kosong dan
+  // dua-duanya mencoba membuat catatan kas. Yang kalah ditolak batasan unik di
+  // database dan muncul sebagai halaman galat, bukan pesan biasa; lebih buruk
+  // lagi, omzet hari itu berisiko terhitung dua kali kalau batasan itu tidak ada.
+  const hasil = await db.$transaction(async (tx) => {
+    const pesanan = await tx.pesanan.findUnique({
       where: { kode },
+      include: { kas: { select: { id: true } } },
+    });
+
+    if (!pesanan) {
+      return { sukses: false, pesan: "Pesanan tidak ditemukan." };
+    }
+
+    if (pesanan.statusBayar === "LUNAS") {
+      return { sukses: true };
+    }
+
+    const terkunci = await tx.pesanan.updateMany({
+      where: { id: pesanan.id, statusBayar: { not: "LUNAS" } },
       data: { statusBayar: "LUNAS" },
     });
+
+    // Pelunasan sudah dikerjakan permintaan lain yang menang balapan; catatan
+    // kasnya menjadi tanggung jawab permintaan itu.
+    if (terkunci.count === 0) {
+      return { sukses: true };
+    }
 
     if (!pesanan.kas) {
       await tx.catatanKas.create({
@@ -645,12 +716,16 @@ export async function aksiTandaiLunas(
         },
       });
     }
+
+    return { sukses: true };
   });
+
+  if (!hasil.sukses) return hasil;
 
   revalidatePath(`/pesanan/${kode}`);
   revalidatePath("/admin/pesanan");
   revalidatePath("/admin/keuangan");
   revalidatePath("/admin");
-  return { sukses: true };
+  return hasil;
 }
 

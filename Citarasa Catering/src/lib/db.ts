@@ -3,14 +3,6 @@ import { PrismaClient } from "@/generated/prisma/client";
 
 import { Pool } from "pg";
 
-const connectionString = process.env.DATABASE_URL;
-
-if (!connectionString) {
-  throw new Error(
-    "DATABASE_URL belum diisi. Salin .env.example menjadi .env lalu isi koneksi database."
-  );
-}
-
 /**
  * Bawaan `pg` hanya 10 koneksi. Begitu pengunjung serentak melewati angka itu,
  * permintaan berikutnya mengantre sampai ada koneksi yang bebas, dan kalau
@@ -24,6 +16,13 @@ function angkaEnv(nama: string, bawaan: number): number {
 }
 
 function buatClient() {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error(
+      "DATABASE_URL belum diisi. Salin .env.example menjadi .env lalu isi koneksi database."
+    );
+  }
+
   const pool = new Pool({
     connectionString,
     max: angkaEnv("DB_POOL_MAX", 20),
@@ -41,8 +40,35 @@ const globalForPrisma = globalThis as unknown as {
   prisma?: ReturnType<typeof buatClient>;
 };
 
-export const db = globalForPrisma.prisma ?? buatClient();
+let klien: ReturnType<typeof buatClient> | undefined;
 
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = db;
+function ambilKlien(): ReturnType<typeof buatClient> {
+  if (klien) return klien;
+
+  klien = globalForPrisma.prisma ?? buatClient();
+  if (process.env.NODE_ENV !== "production") {
+    globalForPrisma.prisma = klien;
+  }
+  return klien;
 }
+
+/**
+ * Koneksi baru dibuka saat kueri pertama, bukan saat modul diimpor.
+ *
+ * Bedanya terasa di luar server: berkas seperti `lib/auth.ts` mengimpor `db`
+ * hanya untuk satu kueri peran, jadi kalau klien dibuat saat impor, setiap unit
+ * test yang menyentuh berkas itu ikut menuntut `DATABASE_URL` walau tidak
+ * pernah menyentuh database sama sekali. Pesan galat yang sama tetap muncul
+ * pada pemakaian pertama, jadi salah konfigurasi di server tetap kelihatan.
+ */
+export const db: ReturnType<typeof buatClient> = new Proxy(
+  {} as ReturnType<typeof buatClient>,
+  {
+    get(_sasaran, nama) {
+      const nyata = ambilKlien();
+      const nilai = Reflect.get(nyata, nama, nyata);
+      // `this` harus tetap menunjuk klien asli, bukan proxy kosong ini.
+      return typeof nilai === "function" ? nilai.bind(nyata) : nilai;
+    },
+  }
+);

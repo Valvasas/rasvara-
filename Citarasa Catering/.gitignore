@@ -16,15 +16,19 @@ dist/
 src/generated/
 
 # environment
+# Pola berikut sengaja mencakup .env.production juga: berkas itu memuat kunci
+# sesi, sandi database, dan sandi akun pemilik.
 .env
-.env*.local
+.env.*
 !.env.example
+!.env.production.example
 .pgdata/
 
 
 # uploads (foto bukti transfer & foto menu diunggah pemilik)
-public/unggahan/*
-!public/unggahan/.gitkeep
+# Disimpan di luar public/ karena bukti transfer hanya boleh dilayani lewat
+# route yang memeriksa wewenang — lihat src/app/unggahan/[nama]/route.ts.
+data/
 
 # backups
 backups/

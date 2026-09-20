@@ -1,0 +1,77 @@
+# ==============================================================================
+# CITARASA CATERING - DOCKER COMPOSE PRODUKSI
+# ==============================================================================
+# Perintah menjalankan:
+#   docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
+# Migrasi database pertama kali:
+#   docker compose --env-file .env.production -f docker-compose.prod.yml exec app npm run db:deploy
+#   docker compose --env-file .env.production -f docker-compose.prod.yml exec app npm run db:seed
+#
+# `--env-file` itu wajib, bukan pemanis: variabel ${POSTGRES_PASSWORD} di bawah
+# disubstitusi Compose saat membaca berkas ini, dan Compose mengambilnya dari
+# berkas `.env` biasa atau dari flag ini — TIDAK dari berkas di `env_file:`.
+# Tanpa flag ini, kontainer database dibuat dengan sandi yang berbeda dari yang
+# dipakai aplikasi, dan keduanya gagal terhubung.
+# ==============================================================================
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: citarasa-prod-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-citarasa_user}
+      # Tanpa nilai bawaan, dan dengan `:?` compose menolak jalan kalau belum
+      # diisi. Sandi bawaan di berkas yang ikut dibagikan sama saja dengan
+      # database tanpa sandi.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD wajib diisi di .env.production}
+      POSTGRES_DB: ${POSTGRES_DB:-citarasa}
+    volumes:
+      - data-postgres-prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-citarasa_user} -d ${POSTGRES_DB:-citarasa}"]
+    # Port database sengaja tidak dipublikasikan ke host: hanya kontainer app
+    # yang perlu menjangkaunya, lewat jaringan internal compose.
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - citarasa-internal
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: citarasa-prod-app
+    restart: always
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - .env.production
+    environment:
+      # Menimpa DATABASE_URL dari .env.production: di dalam compose, databasenya
+      # ada di host `db`, bukan localhost.
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-citarasa_user}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD wajib diisi di .env.production}@db:5432/${POSTGRES_DB:-citarasa}?schema=public"
+      NODE_ENV: production
+      HOSTNAME: "0.0.0.0"
+      PORT: 3000
+      DIREKTORI_UNGGAHAN: /app/data/unggahan
+    # Bind hanya ke localhost agar lalu lintas publik wajib melewati Nginx reverse proxy
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - unggahan-prod:/app/data/unggahan
+    networks:
+      - citarasa-internal
+
+networks:
+  citarasa-internal:
+    driver: bridge
+
+volumes:
+  data-postgres-prod:
+    name: citarasa_data_postgres_prod
+  unggahan-prod:
+    name: citarasa_unggahan_prod
+

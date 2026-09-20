@@ -17,9 +17,10 @@ async function hashSandi(sandi: string): Promise<string> {
   return `${salt.toString("hex")}:${turunan.toString("hex")}`;
 }
 
-const TELEPON_PEMILIK = "6281234567890";
+const TELEPON_PEMILIK = process.env.SEED_TELEPON_PEMILIK ?? "6281234567890";
+const NAMA_PEMILIK = process.env.SEED_NAMA_PEMILIK ?? "Pemilik Citarasa";
 const SANDI_PEMILIK = process.env.SEED_SANDI_PEMILIK ?? "citarasa123";
-const TELEPON_STAF_DAPUR = "6281234567891";
+const TELEPON_STAF_DAPUR = process.env.SEED_TELEPON_STAF ?? "6281234567891";
 const SANDI_STAF_DAPUR = process.env.SEED_SANDI_STAF ?? "dapur123";
 
 type BenihMenu = {
@@ -221,7 +222,7 @@ async function main() {
     where: { telepon: TELEPON_PEMILIK },
     update: { peran: "PEMILIK" },
     create: {
-      nama: "Pemilik Citarasa",
+      nama: NAMA_PEMILIK,
       telepon: TELEPON_PEMILIK,
       sandiHash: await hashSandi(SANDI_PEMILIK),
       peran: "PEMILIK",

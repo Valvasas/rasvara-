@@ -18,8 +18,8 @@ describe("Keamanan & Pencegahan Injeksi", () => {
 
     it("menambahkan petik tunggal jika diawali tanda tambah (+)", () => {
       const input = "+cmd|' /C calc'!A0";
-      assert.equal(amankanCsv(input), "\"' +cmd|' /C calc'!A0\"".replace("+cmd", "+cmd"));
-      assert.equal(amankanCsv("+123"), "\"' +123\"".replace("+123", "+123"));
+      assert.equal(amankanCsv(input), "\"'+cmd|' /C calc'!A0\"");
+      assert.equal(amankanCsv("+123"), "\"'+123\"");
       assert.equal(amankanCsv("+SUM(A1:A5)"), "\"'+SUM(A1:A5)\"");
     });
 

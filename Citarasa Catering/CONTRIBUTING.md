@@ -21,7 +21,7 @@ Toko: `http://localhost:3000` — Admin: `http://localhost:3000/admin` (akun see
 Proyek ini belum menjadi git repository saat dokumen ini ditulis. Setelah `git init`:
 
 - **Branch**: buat branch per fitur/perbaikan dari branch utama, mis. `fitur/laporan-ekspor-csv`, `perbaikan/kapasitas-harian`.
-- **Commit**: pesan singkat, present tense, jelaskan *apa* dan bila perlu *kenapa*. Jangan commit `.env`, `src/generated/`, atau isi `public/unggahan/*` (sudah di-`.gitignore`, tapi selalu cek `git status` sebelum commit besar).
+- **Commit**: pesan singkat, present tense, jelaskan *apa* dan bila perlu *kenapa*. Jangan commit berkas `.env*` (kecuali `*.example`), `src/generated/`, atau isi `data/` (sudah di-`.gitignore`, tapi selalu cek `git status` sebelum commit besar).
 - **Migrasi Prisma**: satu migrasi = satu perubahan skema yang logis. Jangan edit migrasi yang sudah pernah di-commit/di-apply — buat migrasi baru untuk perbaikan.
 
 ## Checklist sebelum menganggap perubahan selesai

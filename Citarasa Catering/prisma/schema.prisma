@@ -176,6 +176,10 @@ model Pesanan {
   @@index([tanggalAcara])
   @@index([teleponPemesan])
   @@index([dibuatPada])
+  /// Route `/unggahan/[nama]` mencari pemilik sah sebuah bukti transfer lewat
+  /// kolom ini pada setiap permintaan gambar; tanpa indeks, tiap kartu pesanan
+  /// yang menampilkan bukti memicu pemindaian seluruh tabel pesanan.
+  @@index([buktiBayarUrl])
 }
 
 model ItemPesanan {
