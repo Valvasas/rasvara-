@@ -18,7 +18,7 @@ import { LencanaBayar, LencanaStatus } from "@/components/Lencana";
 import { FormUnggahBukti } from "@/components/toko/FormUnggahBukti";
 import { TombolCetakPesanan } from "@/components/admin/TombolCetakPesanan";
 import { TombolSalin } from "@/components/TombolSalin";
-import { IkonCek } from "@/components/ikon/Ikon";
+import { IkonCek, IkonWhatsapp } from "@/components/ikon/Ikon";
 
 interface HalamanPesananProps {
   params: Promise<{ kode: string }>;
@@ -35,10 +35,7 @@ export default async function HalamanDetailPesanan({
   const [pesanan, sesi, aksesCookie, pengaturan] = await Promise.all([
     db.pesanan.findUnique({
       where: { kode },
-      include: {
-        item: true,
-        riwayat: { orderBy: { dibuatPada: "desc" } },
-      },
+      include: { item: true },
     }),
     bacaSesi(),
     punyaAksesPesanan(kode),
@@ -67,258 +64,222 @@ export default async function HalamanDetailPesanan({
     ? linkWhatsapp(pengaturan.whatsapp, pesanWa)
     : null;
 
-  // Alur tahapan dapur
   const tahapan = [
-    { kunci: "BARU", nama: "Diterima" },
+    { kunci: "BARU", nama: "Dipesan" },
     { kunci: "DIKONFIRMASI", nama: "Dikonfirmasi" },
     { kunci: "DIPROSES", nama: "Dimasak" },
-    { kunci: "SIAP", nama: "Siap Saji" },
+    { kunci: "SIAP", nama: "Siap" },
     { kunci: "SELESAI", nama: "Selesai" },
   ];
-
   const indeksAktif = tahapan.findIndex((t) => t.kunci === pesanan.status);
+  const dibatalkan = pesanan.status === "DIBATALKAN";
+  const perluBayar = !dibatalkan && pesanan.statusBayar !== "LUNAS";
+  const rekeningAda = Boolean(pengaturan.namaBank && pengaturan.nomorRekening);
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-3xl space-y-6">
-      {/* Sambutan pesanan baru berhasil dibuat */}
+    <div className="mx-auto max-w-2xl px-4 sm:px-6 py-8 sm:py-12 space-y-5">
       {baru === "1" && (
-        <div className="anim-masuk bg-daun-lembut border border-daun/30 rounded-2xl p-4 flex items-center gap-4">
-          <img
-            src="/ilustrasi/pesanan-berhasil.png"
-            alt=""
-            aria-hidden="true"
-            width={126}
-            height={150}
-            className="h-16 w-auto shrink-0"
-          />
+        <div role="status" className="kotak-sukses flex items-start gap-3 anim-masuk">
+          <IkonCek className="w-5 h-5 shrink-0 mt-0.5" strokeWidth={2.25} />
           <div>
-            <p className="font-bold text-sm text-daun-tua">Pesanan berhasil dibuat!</p>
-            <p className="text-xs text-daun-tua/80 mt-0.5">
-              Simpan kode pesanan Anda untuk melacak status masakan di dapur.
+            <p className="font-semibold">Pesanan terkirim</p>
+            <p className="mt-0.5">
+              Simpan kode di bawah. Dapur akan mengonfirmasi lewat WhatsApp.
             </p>
           </div>
         </div>
       )}
 
-      {/* Banner Ringkasan Kode */}
-      <div className="bg-white rounded-3xl border border-krem-gelap p-6 md:p-8 shadow-sm space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-krem-gelap/60 pb-6">
+      {/* Kepala nota */}
+      <header className="kartu kartu-isi">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-kayu-sedang block">
-              Nota Pesanan Digital
-            </span>
+            <p className="teks-redup">Kode pesanan</p>
             <div className="flex items-center gap-2 mt-1">
-              <h1 className="text-2xl sm:text-3xl font-extrabold text-kayu font-mono tracking-tight">
-                {pesanan.kode}
-              </h1>
-              <TombolSalin teks={pesanan.kode} label="Salin Kode" ringkas />
+              <h1 className="text-2xl font-bold text-kayu font-mono tracking-tight">{pesanan.kode}</h1>
+              <TombolSalin teks={pesanan.kode} label="Salin" ringkas />
             </div>
           </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <LencanaStatus status={pesanan.status} untukPelanggan={true} />
-            <LencanaBayar statusBayar={pesanan.statusBayar} />
+          <div className="flex flex-wrap gap-2">
+            <LencanaStatus status={pesanan.status} untukPelanggan />
+            {!dibatalkan && <LencanaBayar statusBayar={pesanan.statusBayar} />}
           </div>
         </div>
 
-        {/* Indikator Progres Dapur */}
-        {pesanan.status !== "DIBATALKAN" && (
-          <div className="bg-krem-tua/50 p-4 rounded-2xl border border-krem-gelap/60 space-y-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-kayu-sedang block">
-              Progres Masakan di Dapur
-            </span>
-            <div className="grid grid-cols-5 gap-1 text-center">
-              {tahapan.map((t, idx) => {
-                const selesai = idx <= indeksAktif;
-                const sedang = idx === indeksAktif;
-
-                return (
-                  <div key={t.kunci} className="flex flex-col items-center">
-                    <div
-                      className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                        selesai
-                          ? sedang
-                            ? "bg-bata text-white ring-4 ring-bata/20"
-                            : "bg-daun text-white"
-                          : "bg-krem-gelap text-kayu-sedang"
-                      }`}
-                    >
-                      {selesai && !sedang ? (
-                        <IkonCek className="w-3.5 h-3.5" strokeWidth={3} />
-                      ) : (
-                        idx + 1
-                      )}
-                    </div>
+        {dibatalkan ? (
+          <div className="mt-5 kotak-galat">
+            <p className="font-semibold">Pesanan dibatalkan</p>
+            {pesanan.alasanBatal && <p className="mt-0.5">Alasan: {pesanan.alasanBatal}</p>}
+          </div>
+        ) : (
+          <ol className="mt-6 grid grid-cols-5" aria-label="Progres pesanan">
+            {tahapan.map((t, idx) => {
+              const lewat = idx < indeksAktif || pesanan.status === "SELESAI";
+              const sekarang = idx === indeksAktif && pesanan.status !== "SELESAI";
+              return (
+                <li
+                  key={t.kunci}
+                  aria-current={sekarang ? "step" : undefined}
+                  className="relative flex flex-col items-center text-center"
+                >
+                  {idx > 0 && (
                     <span
-                      className={`text-[10px] sm:text-xs mt-1.5 font-medium ${
-                        sedang
-                          ? "text-bata font-bold"
-                          : selesai
-                          ? "text-kayu"
-                          : "text-kayu-sedang/70"
+                      aria-hidden="true"
+                      className={`absolute top-3.5 right-1/2 w-full h-0.5 -z-0 ${
+                        idx <= indeksAktif ? "bg-daun" : "bg-krem-gelap"
                       }`}
-                    >
-                      {t.nama}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Informasi Waktu & Pengiriman */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-          <div className="p-4 bg-krem/40 rounded-2xl border border-krem-gelap">
-            <span className="font-bold text-kayu-sedang uppercase block mb-1">
-              Jadwal Acara
-            </span>
-            <p className="font-bold text-kayu text-sm">
-              {tanggalPanjang(pesanan.tanggalAcara)}
-            </p>
-            <p className="text-kayu-sedang mt-0.5">
-              Pukul {jamTampil(pesanan.jamAcara)} WIB
-            </p>
-          </div>
-
-          <div className="p-4 bg-krem/40 rounded-2xl border border-krem-gelap">
-            <span className="font-bold text-kayu-sedang uppercase block mb-1">
-              Pengambilan
-            </span>
-            <p className="font-bold text-kayu text-sm">
-              {LABEL_AMBIL[pesanan.caraAmbil]}
-            </p>
-            {pesanan.alamatAntar && (
-              <p className="text-kayu-sedang mt-0.5">{pesanan.alamatAntar}</p>
-            )}
-          </div>
-        </div>
-
-        {/* Rincian Menu Dipesan */}
-        <div className="space-y-3">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-kayu-sedang">
-            Daftar Hidangan
-          </h2>
-          <div className="border border-krem-gelap rounded-2xl overflow-hidden divide-y divide-krem-gelap/60">
-            {pesanan.item.map((it) => (
-              <div
-                key={it.id}
-                className="p-4 flex items-center justify-between gap-4 text-sm"
-              >
-                <div>
-                  <h3 className="font-bold text-kayu">{it.namaMenu}</h3>
-                  <div className="text-xs text-kayu-sedang mt-0.5">
-                    {it.jumlah} {it.satuan} &times; {rupiah(it.hargaSatuan)}
-                  </div>
-                  {it.catatan && (
-                    <p className="text-xs text-kayu-sedang/80 italic mt-1">
-                      Catatan: {it.catatan}
-                    </p>
+                    />
                   )}
-                </div>
-                <span className="font-bold text-kayu">{rupiah(it.subtotal)}</span>
-              </div>
-            ))}
-
-            {/* Total dan Ongkir */}
-            <div className="p-4 bg-krem/30 space-y-1.5 text-xs">
-              <div className="flex justify-between text-kayu-sedang">
-                <span>Subtotal Hidangan</span>
-                <span>{rupiah(pesanan.subtotal)}</span>
-              </div>
-              {pesanan.diskon > 0 && (
-                <div className="flex justify-between text-daun-tua font-semibold">
-                  <span>
-                    Potongan
-                    {pesanan.kodeVoucher ? ` (${pesanan.kodeVoucher})` : ""}
+                  <span
+                    className={`relative z-10 w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold ${
+                      lewat
+                        ? "bg-daun text-white"
+                        : sekarang
+                        ? "bg-bata text-white ring-4 ring-bata/15"
+                        : "bg-white border border-krem-gelap text-kayu-sedang"
+                    }`}
+                  >
+                    {lewat ? <IkonCek className="w-3.5 h-3.5" strokeWidth={3} /> : idx + 1}
                   </span>
-                  <span>-{rupiah(pesanan.diskon)}</span>
-                </div>
-              )}
-              <div className="flex justify-between text-kayu-sedang">
-                <span>Ongkir</span>
-                <span>{pesanan.ongkir === 0 ? "Gratis" : rupiah(pesanan.ongkir)}</span>
-              </div>
-              <div className="flex justify-between text-base font-extrabold text-kayu pt-2 border-t border-krem-gelap/60">
-                <span>Total Pembayaran</span>
-                <span className="text-bata">{rupiah(pesanan.total)}</span>
-              </div>
-            </div>
-          </div>
-        </div>
+                  <span
+                    className={`mt-2 text-xs ${
+                      sekarang ? "font-semibold text-kayu" : lewat ? "text-kayu" : "text-kayu-sedang"
+                    }`}
+                  >
+                    {t.nama}
+                  </span>
+                </li>
+              );
+            })}
+          </ol>
+        )}
+      </header>
 
-        {/* Informasi Pembayaran & Tombol Konfirmasi */}
-        {pesanan.statusBayar !== "LUNAS" && (
-          <div className="p-6 bg-bata-lembut/30 rounded-2xl border border-bata/20 space-y-4">
-            <div>
-              <h3 className="font-bold text-sm text-bata-tua">
-                Instruksi Pembayaran: {LABEL_BAYAR[pesanan.caraBayar]}
-              </h3>
-              {pesanan.caraBayar === "TRANSFER" && pengaturan.nomorRekening ? (
-                <div className="mt-2 text-xs text-kayu-sedang space-y-1">
-                  <p>Silakan transfer total pembayaran ke rekening berikut:</p>
-                  <div className="flex flex-wrap items-center gap-2 pt-0.5">
-                    <p className="font-bold text-kayu text-sm font-mono">
-                      {pengaturan.namaBank} {pengaturan.nomorRekening}
-                    </p>
-                    <TombolSalin teks={pengaturan.nomorRekening} label="Salin Rekening" ringkas />
+      {/* Pembayaran: satu-satunya hal yang perlu dilakukan pembeli, jadi di atas */}
+      {perluBayar && (
+        <section aria-labelledby="judul-bayar" className="kartu kartu-isi">
+          <h2 id="judul-bayar" className="judul-bagian">
+            {pesanan.caraBayar === "TRANSFER" ? "Bayar dengan transfer" : "Bayar tunai"}
+          </h2>
+
+          {pesanan.caraBayar === "TRANSFER" ? (
+            rekeningAda ? (
+              <>
+                <div className="mt-4 rounded-xl bg-krem-tua/70 p-4 flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <p className="text-sm text-kayu-sedang">{pengaturan.namaBank} a.n. {pengaturan.namaRekening}</p>
+                    <p className="mt-0.5 text-lg font-semibold font-mono text-kayu">{pengaturan.nomorRekening}</p>
                   </div>
-                  <p>a.n. {pengaturan.namaRekening}</p>
+                  <TombolSalin teks={pengaturan.nomorRekening} label="Salin nomor" />
                 </div>
-              ) : (
-                <p className="mt-1 text-xs text-kayu-sedang">
-                  Pembayaran tunai dapat diserahkan saat pesanan diambil atau tiba
-                  di tempat Anda.
-                </p>
-              )}
-            </div>
-
-            {pesanan.caraBayar === "TRANSFER" && (
-              <div className="pt-2">
-                <FormUnggahBukti
-                  kode={pesanan.kode}
-                  buktiSaatIni={pesanan.buktiBayarUrl}
-                  statusBayar={pesanan.statusBayar}
-                />
-              </div>
-            )}
-
-            {pesanan.statusBayar === "MENUNGGU_VERIFIKASI" && !pesanan.buktiBayarUrl && (
-              <p className="text-xs font-semibold text-kunyit-tua bg-kunyit-lembut p-3 rounded-xl border border-kunyit/30 text-center">
-                Konfirmasi Anda sudah diterima dapur. Kami sedang memverifikasi transfer.
+                <div className="mt-3 flex items-center justify-between text-sm">
+                  <span className="text-kayu-sedang">Jumlah transfer</span>
+                  <span className="flex items-center gap-2">
+                    <span className="font-semibold text-kayu angka-tabel">{rupiah(pesanan.total)}</span>
+                    <TombolSalin teks={String(pesanan.total)} label="Salin" ringkas />
+                  </span>
+                </div>
+                <div className="mt-5 pt-5 border-t border-krem-gelap">
+                  <FormUnggahBukti
+                    kode={pesanan.kode}
+                    buktiSaatIni={pesanan.buktiBayarUrl}
+                    statusBayar={pesanan.statusBayar}
+                  />
+                </div>
+              </>
+            ) : (
+              <p className="mt-3 teks-redup">
+                Nomor rekening belum tersedia. Hubungi dapur lewat WhatsApp untuk cara pembayaran.
               </p>
-            )}
+            )
+          ) : (
+            <p className="mt-3 teks-redup">
+              Siapkan {rupiah(pesanan.total)} saat pesanan{" "}
+              {pesanan.caraAmbil === "DIANTAR" ? "tiba di lokasimu" : "diambil di dapur"}.
+            </p>
+          )}
+
+          {pesanan.statusBayar === "MENUNGGU_VERIFIKASI" && !pesanan.buktiBayarUrl && (
+            <p className="mt-4 kotak-peringatan">Konfirmasimu sudah diterima. Dapur sedang mengecek transfer.</p>
+          )}
+        </section>
+      )}
+
+      {/* Jadwal */}
+      <section aria-label="Jadwal" className="kartu kartu-isi grid gap-5 sm:grid-cols-2 text-sm">
+        <div>
+          <p className="text-kayu-sedang">Jadwal</p>
+          <p className="mt-1 font-medium text-kayu">{tanggalPanjang(pesanan.tanggalAcara)}</p>
+          <p className="text-kayu-sedang">Siap pukul {jamTampil(pesanan.jamAcara)} WIB</p>
+        </div>
+        <div>
+          <p className="text-kayu-sedang">{LABEL_AMBIL[pesanan.caraAmbil]}</p>
+          <p className="mt-1 font-medium text-kayu">
+            {pesanan.caraAmbil === "DIANTAR" ? pesanan.alamatAntar : pengaturan.alamat || "Di dapur kami"}
+          </p>
+        </div>
+        {pesanan.catatan && (
+          <div className="sm:col-span-2">
+            <p className="text-kayu-sedang">Catatan</p>
+            <p className="mt-1 text-kayu whitespace-pre-line">{pesanan.catatan}</p>
           </div>
         )}
+      </section>
 
-        {/* Aksi Tambahan: WhatsApp & Cetak */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-krem-gelap/60">
-          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-            {waUrl && (
-              <a
-                href={waUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="min-h-[48px] px-5 py-2.5 rounded-xl font-bold text-xs text-daun bg-daun-lembut hover:bg-daun hover:text-white transition-colors inline-flex items-center justify-center gap-2 w-full sm:w-auto"
-              >
-                <span>Tanya Pesanan via WhatsApp</span>
-              </a>
-            )}
-
-            {(adalahPemilik || adalahStaf) && (
-              <TombolCetakPesanan ringkas kode={pesanan.kode} />
-            )}
+      {/* Rincian */}
+      <section aria-labelledby="judul-rincian" className="kartu kartu-isi">
+        <h2 id="judul-rincian" className="judul-bagian">
+          Rincian
+        </h2>
+        <ul className="mt-4 space-y-3 text-sm">
+          {pesanan.item.map((it) => (
+            <li key={it.id} className="flex justify-between gap-4">
+              <span className="min-w-0">
+                <span className="text-kayu">{it.namaMenu}</span>
+                <span className="block text-xs text-kayu-sedang angka-tabel">
+                  {it.jumlah} {it.satuan} × {rupiah(it.hargaSatuan)}
+                </span>
+              </span>
+              <span className="text-kayu angka-tabel shrink-0">{rupiah(it.subtotal)}</span>
+            </li>
+          ))}
+        </ul>
+        <dl className="mt-4 pt-4 border-t border-krem-gelap space-y-2 text-sm">
+          <div className="flex justify-between">
+            <dt className="text-kayu-sedang">Subtotal</dt>
+            <dd className="angka-tabel">{rupiah(pesanan.subtotal)}</dd>
           </div>
+          {pesanan.diskon > 0 && (
+            <div className="flex justify-between text-daun-tua">
+              <dt>Voucher{pesanan.kodeVoucher ? ` ${pesanan.kodeVoucher}` : ""}</dt>
+              <dd className="angka-tabel">−{rupiah(pesanan.diskon)}</dd>
+            </div>
+          )}
+          <div className="flex justify-between">
+            <dt className="text-kayu-sedang">Ongkir</dt>
+            <dd className="angka-tabel">
+              {pesanan.caraAmbil === "AMBIL_SENDIRI" ? "—" : pesanan.ongkir === 0 ? "Gratis" : rupiah(pesanan.ongkir)}
+            </dd>
+          </div>
+          <div className="flex justify-between items-baseline pt-3 border-t border-krem-gelap">
+            <dt className="font-semibold text-kayu">Total · {LABEL_BAYAR[pesanan.caraBayar]}</dt>
+            <dd className="text-lg font-bold text-kayu angka-tabel">{rupiah(pesanan.total)}</dd>
+          </div>
+        </dl>
+      </section>
 
-          <Link
-            href="/pesan"
-            className="min-h-[48px] px-5 py-2.5 rounded-xl font-bold text-xs text-kayu bg-krem-tua hover:bg-krem-gelap transition-colors inline-flex items-center justify-center w-full sm:w-auto"
-          >
-            Buat Pesanan Lain
-          </Link>
-        </div>
+      <div className="flex flex-col sm:flex-row gap-3">
+        {waUrl && (
+          <a href={waUrl} target="_blank" rel="noopener noreferrer" className="tombol-kedua flex-1">
+            <IkonWhatsapp className="w-4 h-4 text-daun" />
+            Tanya dapur
+          </a>
+        )}
+        {(adalahPemilik || adalahStaf) && <TombolCetakPesanan ringkas kode={pesanan.kode} />}
+        <Link href="/pesan" className="tombol-hantu flex-1">
+          Buat pesanan lain
+        </Link>
       </div>
     </div>
   );
 }
-

@@ -38,27 +38,27 @@ type InfoStatus = {
 
 export const INFO_STATUS: Record<StatusPesanan, InfoStatus> = {
   BARU: {
-    label: "Pesanan Baru",
+    label: "Pesanan baru",
     labelPelanggan: "Menunggu dikonfirmasi",
-    aksiLanjut: "Terima Pesanan",
+    aksiLanjut: "Terima pesanan",
     statusLanjut: "DIKONFIRMASI",
-    kelas: "bg-kunyit-lembut text-kunyit-tua border-kunyit/40",
+    kelas: "bg-kunyit-lembut text-kunyit-tua border-kunyit/30",
     penjelasan: "Pesanan baru masuk dan menunggu jawaban Anda.",
   },
   DIKONFIRMASI: {
     label: "Diterima",
     labelPelanggan: "Pesanan diterima",
-    aksiLanjut: "Mulai Masak",
+    aksiLanjut: "Mulai masak",
     statusLanjut: "DIPROSES",
-    kelas: "bg-kayu-lembut text-kayu-tua border-kayu/40",
+    kelas: "bg-kayu-lembut text-kayu border-kayu/15",
     penjelasan: "Sudah Anda terima, menunggu giliran dimasak.",
   },
   DIPROSES: {
-    label: "Sedang Dimasak",
+    label: "Sedang dimasak",
     labelPelanggan: "Sedang dimasak",
-    aksiLanjut: "Tandai Siap",
+    aksiLanjut: "Tandai siap",
     statusLanjut: "SIAP",
-    kelas: "bg-bata-lembut text-bata-tua border-bata/40",
+    kelas: "bg-bata-lembut text-bata-tua border-bata/20",
     penjelasan: "Dapur sedang mengerjakan pesanan ini.",
   },
   SIAP: {
@@ -66,7 +66,7 @@ export const INFO_STATUS: Record<StatusPesanan, InfoStatus> = {
     labelPelanggan: "Siap diambil / diantar",
     aksiLanjut: "Selesaikan",
     statusLanjut: "SELESAI",
-    kelas: "bg-daun-lembut text-daun-tua border-daun/40",
+    kelas: "bg-daun-lembut text-daun-tua border-daun/20",
     penjelasan: "Masakan sudah siap, tinggal diserahkan ke pemesan.",
   },
   SELESAI: {
@@ -74,7 +74,7 @@ export const INFO_STATUS: Record<StatusPesanan, InfoStatus> = {
     labelPelanggan: "Selesai",
     aksiLanjut: null,
     statusLanjut: null,
-    kelas: "bg-daun-lembut text-daun-tua border-daun/40",
+    kelas: "bg-daun-lembut text-daun-tua border-daun/20",
     penjelasan: "Pesanan sudah diserahkan dan beres.",
   },
   DIBATALKAN: {
@@ -82,7 +82,7 @@ export const INFO_STATUS: Record<StatusPesanan, InfoStatus> = {
     labelPelanggan: "Dibatalkan",
     aksiLanjut: null,
     statusLanjut: null,
-    kelas: "bg-bahaya-lembut text-bahaya border-bahaya/30",
+    kelas: "bg-bahaya-lembut text-bahaya border-bahaya/20",
     penjelasan: "Pesanan ini dibatalkan.",
   },
 };
@@ -98,15 +98,15 @@ export const KOLOM_PAPAN: StatusPesanan[] = [
 export const INFO_BAYAR: Record<StatusBayar, { label: string; kelas: string }> = {
   BELUM_BAYAR: {
     label: "Belum bayar",
-    kelas: "bg-bahaya-lembut text-bahaya border-bahaya/30",
+    kelas: "bg-bahaya-lembut text-bahaya border-bahaya/20",
   },
   MENUNGGU_VERIFIKASI: {
     label: "Cek pembayaran",
-    kelas: "bg-kunyit-lembut text-kunyit-tua border-kunyit/40",
+    kelas: "bg-kunyit-lembut text-kunyit-tua border-kunyit/30",
   },
   LUNAS: {
     label: "Lunas",
-    kelas: "bg-daun-lembut text-daun-tua border-daun/40",
+    kelas: "bg-daun-lembut text-daun-tua border-daun/20",
   },
 };
 

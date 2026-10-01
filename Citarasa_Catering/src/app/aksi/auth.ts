@@ -4,10 +4,13 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import {
+  awalSesiBaru,
+  bacaSesi,
   buatSesi,
   cocokkanSandi,
   hapusSesi,
   hashSandi,
+  lupakanSinggahanPeran,
 } from "@/lib/auth";
 import { normalkanTelepon } from "@/lib/format";
 import {
@@ -16,16 +19,18 @@ import {
   resetBatasLaju,
 } from "@/lib/pembatas-laju";
 
+// Akun lama mungkin bersandi 6 karakter (aturan sebelumnya), jadi saat masuk
+// cukup dipastikan tidak kosong; aturan panjang hanya berlaku saat membuat sandi.
 const SkemaMasuk = z.object({
-  telepon: z.string().min(8, "Nomor telepon minimal 8 digit"),
-  sandi: z.string().min(6, "Kata sandi minimal 6 karakter"),
+  telepon: z.string().min(8, "Nomor HP minimal 8 digit").max(20, "Nomor HP terlalu panjang"),
+  sandi: z.string().min(1, "Isi kata sandi").max(128, "Kata sandi terlalu panjang"),
 });
 
 const SkemaDaftar = z.object({
-  nama: z.string().min(2, "Nama minimal 2 karakter"),
-  telepon: z.string().min(8, "Nomor telepon minimal 8 digit"),
-  sandi: z.string().min(6, "Kata sandi minimal 6 karakter"),
-  alamat: z.string().optional(),
+  nama: z.string().trim().min(2, "Nama minimal 2 karakter").max(100, "Nama terlalu panjang"),
+  telepon: z.string().min(8, "Nomor HP minimal 8 digit").max(20, "Nomor HP terlalu panjang"),
+  sandi: z.string().min(8, "Kata sandi minimal 8 karakter").max(128, "Kata sandi terlalu panjang"),
+  alamat: z.string().max(500, "Alamat terlalu panjang").optional(),
 });
 
 export type HasilAuth = {
@@ -206,3 +211,98 @@ export async function aksiKeluar(): Promise<void> {
   redirect("/masuk");
 }
 
+
+const SkemaGantiSandi = z
+  .object({
+    sandiLama: z.string().min(1, "Isi kata sandi saat ini"),
+    sandiBaru: z
+      .string()
+      .min(8, "Kata sandi baru minimal 8 karakter")
+      .max(128, "Kata sandi terlalu panjang"),
+    ulangiSandi: z.string(),
+  })
+  .refine((d) => d.sandiBaru === d.ulangiSandi, {
+    message: "Pengulangan kata sandi tidak sama",
+    path: ["ulangiSandi"],
+  })
+  .refine((d) => d.sandiBaru !== d.sandiLama, {
+    message: "Kata sandi baru harus berbeda dari yang lama",
+    path: ["sandiBaru"],
+  });
+
+/**
+ * Ganti sandi untuk akun yang sedang login (pemilik, staf, maupun pelanggan).
+ *
+ * Setelah berhasil, `sesiSejak` dimajukan sehingga sesi pemilik/staf di
+ * perangkat lain langsung tidak berlaku — penting kalau sandi diganti karena
+ * dicurigai bocor. Perangkat yang sedang dipakai mendapat token baru agar
+ * tidak ikut terlempar keluar.
+ */
+export async function aksiGantiSandi(
+  _prevState: HasilAuth | null,
+  formData: FormData
+): Promise<HasilAuth> {
+  const sesi = await bacaSesi();
+  if (!sesi) {
+    return { sukses: false, pesan: "Sesi Anda sudah berakhir. Silakan masuk lagi." };
+  }
+
+  const cekLaju = periksaBatasLaju({
+    kunci: `ganti-sandi:${sesi.id}`,
+    maksimal: 5,
+    jendelaDetik: 15 * 60,
+  });
+  if (!cekLaju.diizinkan) {
+    return {
+      sukses: false,
+      pesan: `Terlalu banyak percobaan. Coba lagi dalam ${Math.ceil(
+        cekLaju.tungguDetik / 60
+      )} menit.`,
+    };
+  }
+
+  const parsed = SkemaGantiSandi.safeParse({
+    sandiLama: formData.get("sandiLama") ?? "",
+    sandiBaru: formData.get("sandiBaru") ?? "",
+    ulangiSandi: formData.get("ulangiSandi") ?? "",
+  });
+  if (!parsed.success) {
+    return {
+      sukses: false,
+      kesalahan: parsed.error.flatten().fieldErrors,
+      pesan: "Periksa kembali isian Anda.",
+    };
+  }
+
+  const pengguna = await db.pengguna.findUnique({ where: { id: sesi.id } });
+  if (!pengguna) {
+    return { sukses: false, pesan: "Akun tidak ditemukan." };
+  }
+
+  const cocok = await cocokkanSandi(parsed.data.sandiLama, pengguna.sandiHash);
+  if (!cocok) {
+    return {
+      sukses: false,
+      kesalahan: { sandiLama: ["Kata sandi saat ini salah"] },
+      pesan: "Kata sandi saat ini salah.",
+    };
+  }
+
+  await db.pengguna.update({
+    where: { id: pengguna.id },
+    data: {
+      sandiHash: await hashSandi(parsed.data.sandiBaru),
+      sesiSejak: awalSesiBaru(),
+    },
+  });
+  lupakanSinggahanPeran(pengguna.id);
+
+  await buatSesi({
+    id: pengguna.id,
+    nama: pengguna.nama,
+    telepon: pengguna.telepon,
+    peran: pengguna.peran,
+  });
+
+  return { sukses: true, pesan: "Kata sandi berhasil diganti." };
+}

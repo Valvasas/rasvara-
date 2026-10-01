@@ -55,7 +55,7 @@ export function GaleriFotoMenu({ foto, nama, kategori }: GaleriFotoMenuProps) {
         foto={[]}
         kategori={kategori}
         nama={nama}
-        className="aspect-[4/3] w-full rounded-3xl border border-krem-gelap"
+        className="aspect-[4/3] w-full rounded-2xl border border-krem-gelap"
         ukuranIkon="w-20 h-20"
         priority
       />
@@ -76,7 +76,7 @@ export function GaleriFotoMenu({ foto, nama, kategori }: GaleriFotoMenuProps) {
           ref={trekRef}
           onScroll={saatGeser}
           tabIndex={0}
-          className="flex overflow-x-auto snap-x snap-mandatory scroll-smooth rounded-3xl border border-krem-gelap bg-krem/40 focus:outline-none focus-visible:ring-4 focus-visible:ring-bata/30"
+          className="flex overflow-x-auto snap-x snap-mandatory scroll-smooth rounded-2xl border border-krem-gelap bg-krem/40 focus:outline-none focus-visible:ring-4 focus-visible:ring-bata/30"
           style={{ scrollbarWidth: "none" }}
         >
           {foto.map((f, i) => (
@@ -96,7 +96,7 @@ export function GaleriFotoMenu({ foto, nama, kategori }: GaleriFotoMenuProps) {
                 className="object-cover"
               />
               {f.keterangan && (
-                <p className="absolute bottom-0 inset-x-0 bg-kayu/80 text-krem text-xs font-medium px-4 py-2">
+                <p className="absolute bottom-0 inset-x-0 bg-white/90 text-kayu text-xs font-medium px-4 py-2">
                   {f.keterangan}
                 </p>
               )}
@@ -144,7 +144,7 @@ export function GaleriFotoMenu({ foto, nama, kategori }: GaleriFotoMenuProps) {
               </svg>
             </button>
 
-            <span className="absolute top-3 right-3 text-[11px] font-bold px-2.5 py-1 rounded-full bg-kayu/80 text-krem">
+            <span className="absolute top-3 right-3 text-[11px] font-bold px-2.5 py-1 rounded-full bg-white/90 text-kayu">
               {aktif + 1} / {foto.length}
             </span>
           </>

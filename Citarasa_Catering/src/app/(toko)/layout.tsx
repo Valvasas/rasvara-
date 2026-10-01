@@ -14,7 +14,7 @@ export default async function LayoutToko({
   return (
     <div className="flex flex-col min-h-screen">
       <KopToko />
-      <main className="flex-1 pb-16">{children}</main>
+      <main id="isi" className="flex-1">{children}</main>
       <KakiToko />
     </div>
   );

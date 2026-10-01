@@ -5,7 +5,7 @@ import { angka } from "@/lib/format";
 import { ringkasanAnalitik } from "@/lib/analitik";
 import { GrafikKunjungan } from "@/components/admin/GrafikKunjungan";
 
-export const metadata = { title: "Performa Website" };
+export const metadata = { title: "Pengunjung" };
 
 const RENTANG = [7, 14, 30] as const;
 
@@ -60,12 +60,12 @@ export default async function HalamanAnalitik({
 
   return (
     <div className="space-y-6">
-      <div className="bg-white p-6 rounded-3xl border border-krem-gelap flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-kayu">
-            Performa Website
+          <h1 className="judul-halaman">
+            Pengunjung website
           </h1>
-          <p className="text-xs text-kayu-sedang mt-0.5 max-w-xl">
+          <p className="teks-redup mt-1 max-w-xl">
             Statistik kunjungan untuk memantau kesehatan website. Dihitung tanpa
             cookie dan tanpa menyimpan identitas pengunjung.
           </p>
@@ -83,7 +83,7 @@ export default async function HalamanAnalitik({
               aria-current={hari === r}
               className={`min-h-[40px] px-3.5 py-2 rounded-lg text-xs font-bold transition-colors inline-flex items-center ${
                 hari === r
-                  ? "bg-kayu text-white shadow-sm"
+                  ? "bg-kayu text-white"
                   : "text-kayu-sedang hover:text-kayu"
               }`}
             >
@@ -95,7 +95,7 @@ export default async function HalamanAnalitik({
 
       {!data.adaData && (
         <div className="p-5 rounded-2xl bg-kunyit-lembut border border-kunyit/30 text-sm text-kayu">
-          <strong className="font-extrabold">Belum ada data kunjungan.</strong>{" "}
+          <strong className="font-semibold">Belum ada data kunjungan.</strong>{" "}
           Angka akan terisi sendiri begitu ada yang membuka halaman toko.
           Kunjungan dari halaman admin sengaja tidak dihitung supaya statistik
           tetap mencerminkan pembeli, bukan aktivitas Anda sendiri.
@@ -134,9 +134,9 @@ export default async function HalamanAnalitik({
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Halaman terpopuler */}
-        <div className="bg-white rounded-3xl border border-krem-gelap shadow-sm overflow-hidden">
+        <div className="kartu overflow-hidden">
           <div className="p-4 bg-krem-tua/60 border-b border-krem-gelap">
-            <h2 className="font-extrabold text-sm text-kayu">
+            <h2 className="judul-bagian">
               Halaman Paling Sering Dibuka
             </h2>
           </div>
@@ -157,7 +157,7 @@ export default async function HalamanAnalitik({
                       <span className="text-xs font-bold text-kayu truncate">
                         {LABEL_PATH[h.path] ?? h.path}
                       </span>
-                      <span className="text-xs font-extrabold text-bata shrink-0">
+                      <span className="text-xs font-semibold text-bata shrink-0">
                         {angka(h.tampilan)}
                       </span>
                     </div>
@@ -175,9 +175,9 @@ export default async function HalamanAnalitik({
         </div>
 
         {/* Corong pemesanan */}
-        <div className="bg-white rounded-3xl border border-krem-gelap shadow-sm overflow-hidden">
+        <div className="kartu overflow-hidden">
           <div className="p-4 bg-krem-tua/60 border-b border-krem-gelap">
-            <h2 className="font-extrabold text-sm text-kayu">
+            <h2 className="judul-bagian">
               Perjalanan Pembeli
             </h2>
           </div>
@@ -189,7 +189,7 @@ export default async function HalamanAnalitik({
                   <span className="text-xs font-bold text-kayu">
                     {i + 1}. {c.label}
                   </span>
-                  <span className="text-xs font-extrabold text-kayu">
+                  <span className="text-xs font-semibold text-kayu">
                     {angka(c.nilai)}
                   </span>
                 </div>
@@ -239,11 +239,11 @@ function KartuAngka({
   warna: string;
 }) {
   return (
-    <div className="bg-white p-5 rounded-2xl border border-krem-gelap shadow-sm">
-      <p className="text-[11px] font-bold uppercase tracking-wide text-kayu-sedang">
+    <div className="kartu p-5">
+      <p className="teks-redup">
         {label}
       </p>
-      <p className={`text-3xl font-extrabold mt-1.5 ${warna}`}>{nilai}</p>
+      <p className={`text-2xl font-semibold mt-1 angka-tabel ${warna}`}>{nilai}</p>
       <p className="text-[11px] text-kayu-sedang mt-1">{keterangan}</p>
     </div>
   );

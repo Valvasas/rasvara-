@@ -1,134 +1,124 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { bacaSesi } from "@/lib/auth";
-import { rupiah, tanggalPanjang, teleponTampil } from "@/lib/format";
-import { LencanaBayar, LencanaStatus } from "@/components/Lencana";
+import { rupiah, tanggalPendek, teleponTampil } from "@/lib/format";
+import { LencanaStatus } from "@/components/Lencana";
 import { TombolKeluar } from "@/components/TombolKeluar";
-import { IkonRiwayat } from "@/components/ikon/Ikon";
+import { KomponenPaginasi } from "@/components/KomponenPaginasi";
+import { FormGantiSandi } from "@/components/FormGantiSandi";
+import { IkonPanahKanan } from "@/components/ikon/Ikon";
 
-export default async function HalamanRiwayat() {
-  const sesi = await bacaSesi();
+export const metadata: Metadata = { title: "Pesanan saya", robots: { index: false } };
 
-  if (!sesi) {
-    redirect("/masuk");
-  }
+const UKURAN_HALAMAN = 10;
 
-  const [pesananSaya, pengguna] = await Promise.all([
+interface HalamanRiwayatProps {
+  searchParams: Promise<{ halaman?: string }>;
+}
+
+export default async function HalamanRiwayat({ searchParams }: HalamanRiwayatProps) {
+  const [sesi, params] = await Promise.all([bacaSesi(), searchParams]);
+  if (!sesi) redirect("/masuk");
+
+  const where = { OR: [{ penggunaId: sesi.id }, { teleponPemesan: sesi.telepon }] };
+  const diminta = Math.max(1, Math.floor(Number(params.halaman) || 1));
+
+  const total = await db.pesanan.count({ where });
+  const totalHalaman = Math.max(1, Math.ceil(total / UKURAN_HALAMAN));
+  const halaman = Math.min(diminta, totalHalaman);
+
+  const [daftar, pengguna] = await Promise.all([
     db.pesanan.findMany({
-      where: {
-        OR: [
-          { penggunaId: sesi.id },
-          { teleponPemesan: sesi.telepon },
-        ],
-      },
-      include: {
-        item: true,
+      where,
+      select: {
+        kode: true,
+        tanggalAcara: true,
+        status: true,
+        statusBayar: true,
+        total: true,
+        item: { select: { namaMenu: true, jumlah: true, satuan: true }, take: 2 },
+        _count: { select: { item: true } },
       },
       orderBy: { dibuatPada: "desc" },
-      take: 50,
+      skip: (halaman - 1) * UKURAN_HALAMAN,
+      take: UKURAN_HALAMAN,
     }),
-    db.pengguna.findUnique({
-      where: { id: sesi.id },
-    }),
+    db.pengguna.findUnique({ where: { id: sesi.id }, select: { nama: true } }),
   ]);
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl space-y-8">
-      {/* Header Profil & Tombol Keluar */}
-      <div className="bg-white rounded-3xl border border-krem-gelap p-6 md:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
-        <div className="space-y-1">
-          <span className="text-xs font-bold uppercase tracking-wider text-kayu-sedang">
-            Akun Pelanggan
-          </span>
-          <h1 className="text-2xl font-extrabold text-kayu">{pengguna?.nama}</h1>
-          <p className="text-xs text-kayu-sedang">
-            No. Telepon: {teleponTampil(sesi.telepon)}
+    <div className="mx-auto max-w-3xl px-4 sm:px-6 py-10 sm:py-14">
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="font-tampil text-3xl font-bold text-kayu">Pesanan saya</h1>
+          <p className="teks-redup mt-1.5">
+            {pengguna?.nama} · {teleponTampil(sesi.telepon)}
           </p>
         </div>
-
-        <div className="flex items-center gap-3">
-          <Link
-            href="/pesan"
-            className="min-h-[48px] px-5 py-2.5 rounded-xl font-bold text-xs text-white bg-bata hover:bg-bata-tua transition-colors inline-flex items-center justify-center shadow-sm"
-          >
-            + Pesan Baru
-          </Link>
+        <div className="flex gap-2">
           <TombolKeluar />
+          <Link href="/pesan" className="tombol-utama">
+            Pesan lagi
+          </Link>
         </div>
-      </div>
+      </header>
 
-      {/* Daftar Riwayat Pesanan */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-bold text-kayu">Riwayat Pesanan Anda</h2>
-
-        {pesananSaya.length === 0 ? (
-          <div className="bg-white rounded-2xl border border-krem-gelap p-12 text-center max-w-md mx-auto space-y-4">
-            <div className="w-14 h-14 rounded-2xl bg-krem-tua text-kayu-sedang mx-auto flex items-center justify-center">
-              <IkonRiwayat className="w-7 h-7" />
-            </div>
-            <h3 className="text-base font-bold text-kayu">
-              Belum Ada Pesanan
-            </h3>
-            <p className="text-xs text-kayu-sedang">
-              Anda belum pernah membuat pesanan katering dengan akun ini.
-            </p>
-            <Link
-              href="/menu"
-              className="min-h-[48px] px-6 py-2.5 rounded-xl font-bold text-xs text-white bg-bata hover:bg-bata-tua transition-colors inline-flex items-center justify-center"
-            >
-              Lihat Menu Sekarang
-            </Link>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-4">
-            {pesananSaya.map((p) => (
-              <div
-                key={p.id}
-                className="bg-white rounded-2xl border border-krem-gelap p-6 hover:border-bata/40 hover:shadow-sm transition-all space-y-4"
-              >
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-krem-gelap/60 pb-3">
-                  <div className="flex items-center gap-3">
-                    <span className="font-mono font-bold text-sm text-kayu">
-                      {p.kode}
-                    </span>
-                    <span className="text-xs text-kayu-sedang">
-                      {tanggalPanjang(p.tanggalAcara)}
-                    </span>
+      {daftar.length === 0 ? (
+        <div className="kartu kartu-isi mt-8 text-center">
+          <p className="font-semibold text-kayu">Belum ada pesanan</p>
+          <p className="teks-redup mt-1">Pesanan yang kamu buat dengan nomor ini akan muncul di sini.</p>
+          <Link href="/menu" className="tombol-kedua mt-5">
+            Lihat menu
+          </Link>
+        </div>
+      ) : (
+        <ul className="kartu mt-8 divide-y divide-krem-gelap overflow-hidden">
+          {daftar.map((p) => {
+            const lainnya = p._count.item - p.item.length;
+            return (
+              <li key={p.kode}>
+                <Link
+                  href={`/pesanan/${p.kode}`}
+                  className="flex items-center gap-4 px-5 py-4 hover:bg-krem transition-colors"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                      <span className="font-mono text-sm font-medium text-kayu">{p.kode}</span>
+                      <LencanaStatus status={p.status} untukPelanggan />
+                    </div>
+                    <p className="mt-1 text-sm text-kayu-sedang truncate">
+                      {p.item.map((i) => `${i.namaMenu} (${i.jumlah})`).join(", ")}
+                      {lainnya > 0 ? ` +${lainnya} lainnya` : ""}
+                    </p>
+                    <p className="mt-0.5 text-xs text-kayu-sedang">Acara {tanggalPendek(p.tanggalAcara)}</p>
                   </div>
-
-                  <div className="flex items-center gap-2">
-                    <LencanaStatus status={p.status} untukPelanggan={true} />
-                    <LencanaBayar statusBayar={p.statusBayar} />
+                  <div className="text-right shrink-0">
+                    <p className="font-semibold text-kayu angka-tabel">{rupiah(p.total)}</p>
+                    <p className="text-xs text-kayu-sedang">
+                      {p.statusBayar === "LUNAS" ? "Lunas" : p.status === "DIBATALKAN" ? "—" : "Belum lunas"}
+                    </p>
                   </div>
-                </div>
+                  <IkonPanahKanan className="w-4 h-4 text-kayu-sedang shrink-0 hidden sm:block" />
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
 
-                <div className="text-xs text-kayu-sedang">
-                  <span className="font-semibold text-kayu">Menu: </span>
-                  {p.item.map((it) => `${it.namaMenu} (${it.jumlah} ${it.satuan})`).join(", ")}
-                </div>
+      <KomponenPaginasi halamanAktif={halaman} totalHalaman={totalHalaman} basePath="/riwayat" />
 
-                <div className="flex items-center justify-between pt-2">
-                  <div>
-                    <span className="text-xs text-kayu-sedang block">Total</span>
-                    <span className="text-base font-extrabold text-bata">
-                      {rupiah(p.total)}
-                    </span>
-                  </div>
-
-                  <Link
-                    href={`/pesanan/${p.kode}`}
-                    className="min-h-[44px] px-4 py-2 rounded-xl text-xs font-bold text-kayu bg-krem-tua hover:bg-krem-gelap transition-colors inline-flex items-center justify-center"
-                  >
-                    Buka Nota Pesanan &rarr;
-                  </Link>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      <details className="kartu mt-10 group">
+        <summary className="kartu-isi cursor-pointer list-none flex items-center justify-between font-medium text-kayu">
+          Keamanan akun
+          <span className="text-sm text-kayu-sedang group-open:hidden">Ganti kata sandi</span>
+        </summary>
+        <div className="px-5 sm:px-6 pb-6">
+          <FormGantiSandi />
+        </div>
+      </details>
     </div>
   );
 }
-

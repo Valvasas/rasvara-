@@ -19,25 +19,37 @@ const UMUR_SESI_DETIK = 60 * 60 * 24 * 30; // 30 hari: pemilik tidak mau login u
  * supaya tiap permintaan tidak menambah satu kueri.
  */
 const UMUR_SINGGAHAN_PERAN_MS = 30 * 1000;
-const singgahanPeran = new Map<string, { peran: Peran | null; kedaluwarsa: number }>();
+type AkunTerkini = { peran: Peran; sesiSejak: number } | null;
+const singgahanPeran = new Map<string, { akun: AkunTerkini; kedaluwarsa: number }>();
 
-async function peranTerkini(id: string): Promise<Peran | null> {
+async function akunTerkini(id: string): Promise<AkunTerkini> {
   const tersimpan = singgahanPeran.get(id);
   if (tersimpan && tersimpan.kedaluwarsa > Date.now()) {
-    return tersimpan.peran;
+    return tersimpan.akun;
   }
 
   const pengguna = await db.pengguna.findUnique({
     where: { id },
-    select: { peran: true },
+    select: { peran: true, sesiSejak: true },
   });
 
-  const peran = pengguna?.peran ?? null;
+  const akun = pengguna
+    ? { peran: pengguna.peran, sesiSejak: pengguna.sesiSejak.getTime() }
+    : null;
   singgahanPeran.set(id, {
-    peran,
+    akun,
     kedaluwarsa: Date.now() + UMUR_SINGGAHAN_PERAN_MS,
   });
-  return peran;
+  return akun;
+}
+
+/**
+ * Batas waktu terbit token baru setelah sandi diganti. Dibulatkan ke detik
+ * karena klaim `iat` di JWT bersatuan detik — tanpa pembulatan, token yang
+ * diterbitkan pada detik yang sama ikut tertolak.
+ */
+export function awalSesiBaru(): Date {
+  return new Date(Math.floor(Date.now() / 1000) * 1000);
 }
 
 /** Dipanggil saat peran/akun berubah supaya perubahannya langsung berlaku. */
@@ -118,6 +130,7 @@ export const bacaSesi = cache(async (): Promise<DataSesi | null> => {
   if (!token) return null;
 
   let sesi: DataSesi;
+  let terbitPada: number;
   try {
     const { payload } = await jwtVerify(token, kunciRahasia());
     sesi = {
@@ -126,6 +139,7 @@ export const bacaSesi = cache(async (): Promise<DataSesi | null> => {
       telepon: payload.telepon as string,
       peran: payload.peran as Peran,
     };
+    terbitPada = (payload.iat ?? 0) * 1000;
   } catch {
     // Token kedaluwarsa atau tanda tangannya tidak cocok: perlakukan sebagai belum login.
     return null;
@@ -138,9 +152,11 @@ export const bacaSesi = cache(async (): Promise<DataSesi | null> => {
   }
 
   try {
-    const peran = await peranTerkini(sesi.id);
-    if (!peran) return null; // Akunnya sudah dihapus.
-    return { ...sesi, peran };
+    const akun = await akunTerkini(sesi.id);
+    if (!akun) return null; // Akunnya sudah dihapus.
+    // Sandi sudah diganti setelah token ini terbit: perangkat lama dikeluarkan.
+    if (terbitPada < akun.sesiSejak) return null;
+    return { ...sesi, peran: akun.peran };
   } catch {
     // Database tidak terjangkau: tolak akses istimewa daripada memberikannya
     // hanya berdasarkan token lama.

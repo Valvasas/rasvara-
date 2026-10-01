@@ -1,43 +1,47 @@
 "use client";
 
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { aksiToggleAktifMenu } from "@/app/aksi/menu";
 
-export function TombolToggleMenu({
-  id,
-  aktif,
-}: {
-  id: string;
-  aktif: boolean;
-}) {
+/** Saklar tampil/sembunyi menu di katalog pembeli. */
+export function TombolToggleMenu({ id, aktif, nama }: { id: string; aktif: boolean; nama: string }) {
   const [isPending, startTransition] = useTransition();
+  const [galat, setGalat] = useState(false);
 
-  const handleToggle = () => {
+  const ubah = () => {
+    setGalat(false);
     startTransition(async () => {
-      await aksiToggleAktifMenu(id, !aktif);
+      try {
+        await aksiToggleAktifMenu(id, !aktif);
+      } catch {
+        setGalat(true);
+      }
     });
   };
 
   return (
-    <button
-      type="button"
-      onClick={handleToggle}
-      disabled={isPending}
-      className={`min-h-[40px] px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer inline-flex items-center gap-1.5 ${
-        aktif
-          ? "bg-daun-lembut text-daun-tua hover:bg-bahaya-lembut hover:text-bahaya border border-daun/40"
-          : "bg-krem-gelap text-kayu-sedang hover:bg-daun-lembut hover:text-daun-tua border border-krem-gelap"
-      }`}
-    >
-      <span
-        className={`w-2 h-2 rounded-full ${
-          aktif ? "bg-daun" : "bg-kayu-sedang"
+    <span className="inline-flex items-center gap-2">
+      <button
+        type="button"
+        role="switch"
+        aria-checked={aktif}
+        aria-label={`Tampilkan ${nama} di katalog`}
+        onClick={ubah}
+        disabled={isPending}
+        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors cursor-pointer disabled:opacity-50 ${
+          aktif ? "bg-daun" : "bg-krem-gelap"
         }`}
-      />
-      <span>
-        {isPending ? "Menyimpan..." : aktif ? "Menu Aktif" : "Dinonaktifkan"}
+      >
+        <span
+          aria-hidden="true"
+          className={`inline-block h-5 w-5 rounded-full bg-white shadow transition-transform ${
+            aktif ? "translate-x-[22px]" : "translate-x-0.5"
+          }`}
+        />
+      </button>
+      <span className={`text-xs ${galat ? "text-bahaya" : "text-kayu-sedang"}`}>
+        {galat ? "Gagal, coba lagi" : aktif ? "Tampil" : "Disembunyikan"}
       </span>
-    </button>
+    </span>
   );
 }
-

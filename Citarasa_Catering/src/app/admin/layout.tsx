@@ -1,59 +1,62 @@
+import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { bacaSesi } from "@/lib/auth";
 import { Wordmark } from "@/components/Wordmark";
 import { TombolKeluar } from "@/components/TombolKeluar";
 import { NavAdmin } from "@/components/admin/NavAdmin";
 
-export default async function LayoutAdmin({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export const metadata: Metadata = {
+  title: { default: "Dapur", template: "%s — Dapur Citarasa" },
+  robots: { index: false, follow: false },
+};
+
+export default async function LayoutAdmin({ children }: { children: React.ReactNode }) {
   const sesi = await bacaSesi();
 
-  if (!sesi) {
-    redirect("/masuk");
-  }
+  if (!sesi) redirect("/masuk");
+  if (sesi.peran !== "PEMILIK" && sesi.peran !== "STAF_DAPUR") redirect("/riwayat");
 
-  if (sesi.peran !== "PEMILIK" && sesi.peran !== "STAF_DAPUR") {
-    redirect("/riwayat");
-  }
-
-  const adalahStaf = sesi.peran === "STAF_DAPUR";
+  const labelPeran = sesi.peran === "STAF_DAPUR" ? "Staf dapur" : "Pemilik";
 
   return (
-    <div className="min-h-screen bg-krem flex flex-col">
-      {/* Header Dapur Admin */}
-      <header className="sticky top-0 z-40 bg-kayu text-krem border-b border-kayu-sedang shadow-md">
-        <div className="container mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3 shrink-0">
-            <Wordmark href="/admin" compact={true} className="text-white" />
-            <span
-              className={`text-xs font-extrabold uppercase tracking-widest px-2.5 py-0.5 rounded-full ${
-                adalahStaf
-                  ? "bg-bata text-white"
-                  : "bg-kunyit text-kayu"
-              }`}
-            >
-              {adalahStaf ? "Staf Dapur" : "Dapur"}
-            </span>
+    <div className="min-h-screen lg:grid lg:grid-cols-[232px_1fr]">
+      {/* Sidebar (layar lebar) */}
+      <aside className="hidden lg:flex lg:flex-col sticky top-0 h-screen border-r border-krem-gelap bg-white px-3 py-5">
+        <div className="px-2">
+          <Wordmark href="/admin" compact label="Dapur" />
+        </div>
+        <div className="mt-8 flex-1 overflow-y-auto gulir-tipis">
+          <NavAdmin peran={sesi.peran} arah="vertikal" />
+        </div>
+        <div className="mt-4 pt-4 border-t border-krem-gelap px-2 space-y-3">
+          <div className="text-sm">
+            <p className="font-medium text-kayu truncate">{sesi.nama}</p>
+            <p className="text-xs text-kayu-sedang">{labelPeran}</p>
           </div>
+          <div className="flex items-center justify-between">
+            <Link href="/" className="text-xs text-kayu-sedang hover:text-kayu" target="_blank">
+              Lihat toko ↗
+            </Link>
+            <TombolKeluar className="tombol-kecil -mr-2" />
+          </div>
+        </div>
+      </aside>
 
-          {/* Navigasi Admin Dapur - Tombol Besar & Jelas */}
-          <div className="flex items-center gap-1 sm:gap-2 min-w-0 w-full sm:w-auto">
-            <NavAdmin peran={sesi.peran} />
-            <div className="ml-2 pl-2 border-l border-kayu-sedang shrink-0">
-              <TombolKeluar label="Keluar" className="min-h-[42px] text-xs py-1.5" />
-            </div>
-          </div>
+      {/* Bar atas (ponsel & tablet) */}
+      <header className="lg:hidden sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-krem-gelap">
+        <div className="px-4 h-14 flex items-center justify-between">
+          <Wordmark href="/admin" compact label="Dapur" />
+          <TombolKeluar className="tombol-kecil" />
+        </div>
+        <div className="px-3 pb-2 overflow-x-auto tanpa-scrollbar">
+          <NavAdmin peran={sesi.peran} arah="horizontal" />
         </div>
       </header>
 
-      {/* Konten Utama Admin */}
-      <main className="flex-1 container mx-auto px-4 py-6 max-w-7xl">
-        {children}
+      <main className="min-w-0 px-4 sm:px-6 lg:px-10 py-6 lg:py-8">
+        <div className="mx-auto max-w-[1400px]">{children}</div>
       </main>
     </div>
   );
 }
-

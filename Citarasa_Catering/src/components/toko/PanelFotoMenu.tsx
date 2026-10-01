@@ -11,10 +11,12 @@ const GAYA_KATEGORI: Record<
   KategoriMenu,
   { latar: string; ikonWarna: string; Ikon: typeof IkonKotakNasi }
 > = {
-  NASI_KOTAK: { latar: "bg-bata-lembut", ikonWarna: "text-bata-tua/70", Ikon: IkonKotakNasi },
-  SNACK: { latar: "bg-kunyit-lembut", ikonWarna: "text-kunyit-tua/70", Ikon: IkonSnack },
-  TUMPENG: { latar: "bg-daun-lembut", ikonWarna: "text-daun-tua/70", Ikon: IkonTumpeng },
-  NASI_GORENG: { latar: "bg-kayu-lembut", ikonWarna: "text-kayu-sedang/70", Ikon: IkonNasiGoreng },
+  // Satu keluarga warna hangat yang sama, hanya beda nada tipis per kategori,
+  // supaya grid menu tanpa foto tidak terlihat seperti papan permen warna-warni.
+  NASI_KOTAK: { latar: "bg-[#F6E7DC]", ikonWarna: "text-bata/45", Ikon: IkonKotakNasi },
+  SNACK: { latar: "bg-[#F8EDD8]", ikonWarna: "text-kunyit-tua/45", Ikon: IkonSnack },
+  TUMPENG: { latar: "bg-[#F4EAD6]", ikonWarna: "text-kunyit-tua/45", Ikon: IkonTumpeng },
+  NASI_GORENG: { latar: "bg-[#F3E4DA]", ikonWarna: "text-bata-tua/40", Ikon: IkonNasiGoreng },
 };
 
 interface PanelFotoMenuProps {
@@ -58,14 +60,14 @@ export function PanelFotoMenu({
             className="object-cover"
           />
           {foto.length > 1 && (
-            <span className="absolute bottom-2 right-2 text-[10px] font-bold px-2 py-0.5 rounded-full bg-kayu/80 text-krem">
+            <span className="absolute bottom-2 right-2 text-[11px] font-medium px-2 py-0.5 rounded-full bg-white/90 text-kayu">
               {foto.length} foto
             </span>
           )}
         </>
       ) : (
         <div className={`absolute inset-0 flex items-center justify-center ${gaya.latar}`}>
-          <gaya.Ikon className={`${ukuranIkon} ${gaya.ikonWarna}`} strokeWidth={1.25} />
+          <gaya.Ikon className={`${ukuranIkon} ${gaya.ikonWarna}`} strokeWidth={1.1} />
         </div>
       )}
     </div>

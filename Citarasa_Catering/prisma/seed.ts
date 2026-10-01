@@ -19,9 +19,14 @@ async function hashSandi(sandi: string): Promise<string> {
 
 const TELEPON_PEMILIK = process.env.SEED_TELEPON_PEMILIK ?? "6281234567890";
 const NAMA_PEMILIK = process.env.SEED_NAMA_PEMILIK ?? "Pemilik Citarasa";
+const MODE_DEMO = process.env.SEED_DEMO === "1";
+const PRODUKSI = process.env.NODE_ENV === "production";
 const SANDI_PEMILIK = process.env.SEED_SANDI_PEMILIK ?? "citarasa123";
 const TELEPON_STAF_DAPUR = process.env.SEED_TELEPON_STAF ?? "6281234567891";
-const SANDI_STAF_DAPUR = process.env.SEED_SANDI_STAF ?? "dapur123";
+// Akun staf hanya dibuat untuk demo atau bila sandinya sengaja diberikan.
+// Dulu akun ini selalu dibuat dengan sandi "dapur123" — di produksi itu pintu
+// belakang ke papan dapur yang diketahui siapa pun yang membaca repo ini.
+const SANDI_STAF_DAPUR = process.env.SEED_SANDI_STAF ?? (MODE_DEMO ? "dapur123" : null);
 
 type BenihMenu = {
   nama: string;
@@ -218,6 +223,15 @@ const CERITA =
 async function main() {
   console.log("Menyiapkan data awal Citarasa Catering...\n");
 
+  if (PRODUKSI && !process.env.SEED_SANDI_PEMILIK) {
+    throw new Error(
+      "SEED_SANDI_PEMILIK wajib diisi di produksi. Sandi bawaan tertulis di repo dan tidak boleh dipakai."
+    );
+  }
+  if (PRODUKSI && MODE_DEMO) {
+    throw new Error("SEED_DEMO=1 tidak boleh dipakai di produksi: pesanan contoh akan merusak laporan kas.");
+  }
+
   const pemilik = await db.pengguna.upsert({
     where: { telepon: TELEPON_PEMILIK },
     update: { peran: "PEMILIK" },
@@ -230,17 +244,19 @@ async function main() {
   });
   console.log(`  Akun pemilik siap  : ${pemilik.telepon}`);
 
-  const stafDapur = await db.pengguna.upsert({
-    where: { telepon: TELEPON_STAF_DAPUR },
-    update: { peran: "STAF_DAPUR" },
-    create: {
-      nama: "Budi (Staf Dapur)",
-      telepon: TELEPON_STAF_DAPUR,
-      sandiHash: await hashSandi(SANDI_STAF_DAPUR),
-      peran: "STAF_DAPUR",
-    },
-  });
-  console.log(`  Akun staf dapur siap: ${stafDapur.telepon}`);
+  if (SANDI_STAF_DAPUR) {
+    const stafDapur = await db.pengguna.upsert({
+      where: { telepon: TELEPON_STAF_DAPUR },
+      update: { peran: "STAF_DAPUR" },
+      create: {
+        nama: "Staf Dapur",
+        telepon: TELEPON_STAF_DAPUR,
+        sandiHash: await hashSandi(SANDI_STAF_DAPUR),
+        peran: "STAF_DAPUR",
+      },
+    });
+    console.log(`  Akun staf dapur siap: ${stafDapur.telepon}`);
+  }
 
   await db.pengaturan.upsert({
     where: { id: "utama" },
@@ -251,12 +267,15 @@ async function main() {
       tagline: "Masakan hangat, siap tepat waktu.",
       cerita: CERITA,
       whatsapp: TELEPON_PEMILIK,
-      alamat: "Jl. Melati No. 17, Sukamaju",
+      // Alamat & rekening contoh hanya untuk demo. Di produksi dibiarkan kosong
+      // supaya dashboard menagih pemilik mengisinya — rekening palsu yang
+      // tampil ke pembeli berarti uang ditransfer ke nomor yang tidak ada.
+      alamat: MODE_DEMO ? "Jl. Melati No. 17, Sukamaju" : "",
       jamBuka: "16:00",
       jamTutup: "23:00",
-      namaBank: "BCA",
-      nomorRekening: "1234567890",
-      namaRekening: "Citarasa Catering",
+      namaBank: MODE_DEMO ? "BCA" : "",
+      nomorRekening: MODE_DEMO ? "1234567890" : "",
+      namaRekening: MODE_DEMO ? "Citarasa Catering" : "",
       ongkirDefault: 15000,
       minOrderAntar: 100000,
     },
@@ -272,13 +291,17 @@ async function main() {
   }
   console.log(`  Menu terisi        : ${MENU.length} item`);
 
-  if (process.env.SEED_DEMO === "1") {
+  if (MODE_DEMO) {
     await isiContohPesanan(pemilik.id);
   }
 
   console.log("\nSelesai. Masuk ke /admin memakai:");
   console.log(`  Nomor HP : 0${TELEPON_PEMILIK.slice(2)}`);
-  console.log(`  Sandi    : ${SANDI_PEMILIK}`);
+  console.log(
+    process.env.SEED_SANDI_PEMILIK
+      ? "  Sandi    : (sesuai SEED_SANDI_PEMILIK)"
+      : `  Sandi    : ${SANDI_PEMILIK}`
+  );
   console.log("\nGanti sandi ini sebelum website dipakai sungguhan.\n");
 }
 

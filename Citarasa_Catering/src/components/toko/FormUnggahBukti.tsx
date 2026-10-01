@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState, useState, useTransition, useRef, type ChangeEvent } from "react";
+import { useActionState, useEffect, useState, useTransition, useRef, type ChangeEvent } from "react";
 import { aksiUnggahBuktiBayar, aksiKonfirmasiBayar, type HasilAksiPesanan } from "@/app/aksi/pesanan";
-import { IkonLampiran } from "@/components/ikon/Ikon";
+import { IkonFoto, IkonLampiran } from "@/components/ikon/Ikon";
 
 interface FormUnggahBuktiProps {
   kode: string;
@@ -43,6 +43,15 @@ export function FormUnggahBukti({
     }
   };
 
+  // Setelah unggahan berhasil, pratinjau dibersihkan supaya tombol "Kirim"
+  // tidak tetap muncul dan membuat pembeli mengira unggahannya belum masuk.
+  useEffect(() => {
+    if (!state?.sukses) return;
+    setPratinjau(null);
+    setNamaFile("");
+    if (inputRef.current) inputRef.current.value = "";
+  }, [state]);
+
   const handleKonfirmasiCepat = () => {
     startTransition(async () => {
       await aksiKonfirmasiBayar(kode);
@@ -54,155 +63,86 @@ export function FormUnggahBukti({
 
   return (
     <div className="space-y-4">
-      {/* Tampilan Bukti yang Sudah Ada */}
       {buktiSaatIni && (
-        <div className="p-4 bg-white rounded-2xl border border-krem-gelap space-y-2">
-          <div className="flex items-center justify-between text-xs">
-            <span className="font-bold text-kayu flex items-center gap-1.5">
-              <IkonLampiran className="w-4 h-4" /> Bukti Transfer Terlampir
-            </span>
-            <a
-              href={buktiSaatIni}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-bold text-bata hover:underline inline-flex items-center gap-1"
-            >
-              Lihat Foto Asli &rarr;
-            </a>
-          </div>
-
-          <div className="relative w-full max-w-[200px] h-32 rounded-xl overflow-hidden border border-krem-gelap bg-krem/40">
-            {/* Menggunakan img biasa agar kompatibel dengan file statis lokal tanpa optimasi domain */}
-            <img
-              src={buktiSaatIni}
-              alt="Bukti Transfer Pembeli"
-              className="w-full h-full object-cover"
-            />
+        <div className="flex items-center gap-3">
+          <a
+            href={buktiSaatIni}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="relative w-16 h-16 rounded-lg overflow-hidden border border-krem-gelap bg-krem-tua shrink-0"
+          >
+            {/* img biasa: berkas dilayani route berizin, bukan aset statis */}
+            <img src={buktiSaatIni} alt="Bukti transfer yang terkirim" className="w-full h-full object-cover" />
+          </a>
+          <div className="text-sm">
+            <p className="font-medium text-kayu flex items-center gap-1.5">
+              <IkonLampiran className="w-4 h-4" /> Bukti transfer terkirim
+            </p>
+            <p className="text-kayu-sedang">
+              {isLunas ? "Pembayaran sudah dikonfirmasi." : "Menunggu dicek dapur."}
+            </p>
           </div>
         </div>
       )}
 
-      {/* Form Upload Bukti */}
       {!isLunas && (
         <form action={formAction} className="space-y-3">
           <input type="hidden" name="kode" value={kode} />
 
-          {/* Feedback Hasil Aksi */}
-          {state && !state.sukses && (
-            <div className="p-3 bg-bahaya-lembut text-bahaya rounded-xl text-xs font-semibold border border-bahaya/20">
+          {state && (
+            <div role={state.sukses ? "status" : "alert"} className={state.sukses ? "kotak-sukses" : "kotak-galat"}>
               {state.pesan}
             </div>
           )}
 
-          {state && state.sukses && (
-            <div className="p-3 bg-daun-lembut text-daun-tua rounded-xl text-xs font-semibold border border-daun/20">
-              {state.pesan}
-            </div>
-          )}
+          <p className="label mb-0">{buktiSaatIni ? "Ganti bukti transfer" : "Sudah transfer? Kirim buktinya"}</p>
 
-          <div className="space-y-2">
-            <label className="block text-xs font-bold text-kayu">
-              Unggah Foto Struk / Tangkapan Layar Bukti Transfer:
-            </label>
+          <input
+            ref={inputRef}
+            type="file"
+            name="berkas"
+            id="berkas-bukti"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={handlePilihGambar}
+            className="sr-only"
+            disabled={isPendingUpload}
+          />
 
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-              <input
-                ref={inputRef}
-                type="file"
-                name="berkas"
-                id="berkas-bukti"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={handlePilihGambar}
-                className="hidden"
-                disabled={isPendingUpload}
-              />
-
-              <label
-                htmlFor="berkas-bukti"
-                className="min-h-[48px] px-4 py-2.5 rounded-xl border-2 border-dashed border-bata/40 bg-bata-lembut/30 hover:bg-bata-lembut/50 text-bata font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                  />
-                </svg>
-                <span>{pratinjau ? "Ganti Foto Bukti" : "Pilih / Foto Struk Transfer"}</span>
-              </label>
-
-              {pratinjau && (
-                <button
-                  type="submit"
-                  disabled={isPendingUpload}
-                  className="min-h-[48px] px-6 py-2.5 rounded-xl font-bold text-xs text-white bg-daun hover:bg-daun-tua disabled:opacity-50 transition-colors shadow-sm inline-flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  {isPendingUpload ? (
-                    <span>Mengunggah...</span>
-                  ) : (
-                    <>
-                      <span>Kirim Bukti Pembayaran</span>
-                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                      </svg>
-                    </>
-                  )}
-                </button>
-              )}
-
-              {pratinjau && (
-                <button
-                  type="button"
-                  onClick={handleBatalPilih}
-                  disabled={isPendingUpload}
-                  className="min-h-[48px] px-3 py-2 text-xs font-semibold text-kayu-sedang hover:text-bahaya transition-colors"
-                >
+          {pratinjau ? (
+            <div className="flex flex-wrap items-center gap-3 rounded-xl border border-krem-gelap p-3">
+              <img src={pratinjau} alt="Pratinjau bukti" className="w-14 h-14 rounded-lg object-cover border border-krem-gelap" />
+              <p className="flex-1 min-w-0 text-sm text-kayu truncate">{namaFile}</p>
+              <div className="flex gap-2">
+                <button type="button" onClick={handleBatalPilih} disabled={isPendingUpload} className="tombol-hantu tombol-kecil">
                   Batal
                 </button>
-              )}
-            </div>
-
-            <p className="text-[11px] text-kayu-sedang">
-              Format JPG, PNG, atau WebP. Ukuran berkas maksimal 5 MB.
-            </p>
-          </div>
-
-          {/* Pratinjau Gambar Sebelum Unggah */}
-          {pratinjau && (
-            <div className="p-3 bg-white rounded-xl border border-krem-gelap flex items-center gap-3">
-              <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-krem-gelap flex-shrink-0 bg-krem/40">
-                <img
-                  src={pratinjau}
-                  alt="Pratinjau Bukti"
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="text-xs overflow-hidden">
-                <p className="font-bold text-kayu truncate">{namaFile}</p>
-                <p className="text-[11px] text-daun font-semibold mt-0.5">
-                  Foto siap diunggah. Klik tombol &quot;Kirim Bukti Pembayaran&quot;.
-                </p>
+                <button type="submit" disabled={isPendingUpload} className="tombol-utama tombol-kecil">
+                  {isPendingUpload ? "Mengunggah..." : "Kirim bukti"}
+                </button>
               </div>
             </div>
+          ) : (
+            <label
+              htmlFor="berkas-bukti"
+              className="flex items-center justify-center gap-2 min-h-[52px] rounded-xl border border-dashed border-kayu-sedang/40 text-sm font-medium text-kayu hover:bg-krem-tua cursor-pointer transition-colors has-[:focus-visible]:ring-2"
+            >
+              <IkonFoto className="w-5 h-5 text-kayu-sedang" />
+              Pilih foto / screenshot
+            </label>
           )}
+          <p className="petunjuk mt-0">JPG, PNG, atau WebP, maksimal 5 MB.</p>
         </form>
       )}
 
-      {/* Opsi Cepat: Sudah Transfer tapi belum/tidak ada foto */}
-      {!isLunas && !isMenungguVerifikasi && !pratinjau && (
-        <div className="pt-1">
-          <button
-            type="button"
-            onClick={handleKonfirmasiCepat}
-            disabled={isPendingKonfirmasi}
-            className="text-xs font-semibold text-kayu-sedang hover:text-bata transition-colors underline cursor-pointer"
-          >
-            {isPendingKonfirmasi
-              ? "Mengirim konfirmasi..."
-              : "Sudah transfer lewat ATM/Tunai tapi tidak punya bukti foto? Klik konfirmasi di sini."}
-          </button>
-        </div>
+      {!isLunas && !isMenungguVerifikasi && !pratinjau && !buktiSaatIni && (
+        <button
+          type="button"
+          onClick={handleKonfirmasiCepat}
+          disabled={isPendingKonfirmasi}
+          className="text-sm text-kayu-sedang hover:text-kayu underline underline-offset-2 cursor-pointer"
+        >
+          {isPendingKonfirmasi ? "Mengirim konfirmasi..." : "Sudah transfer tapi tidak punya fotonya? Konfirmasi tanpa bukti"}
+        </button>
       )}
     </div>
   );

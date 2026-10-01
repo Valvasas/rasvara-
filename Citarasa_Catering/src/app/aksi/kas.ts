@@ -10,9 +10,13 @@ import type { JenisKas } from "@/generated/prisma/client";
 
 const SkemaKas = z.object({
   jenis: z.enum(["MASUK", "KELUAR"]),
-  kategori: z.string().min(1, "Pilih kategori kas"),
-  jumlah: z.number().int().positive("Jumlah harus lebih dari 0"),
-  keterangan: z.string().min(2, "Keterangan wajib diisi"),
+  kategori: z.string().trim().min(1, "Pilih kategori").max(50, "Kategori terlalu panjang"),
+  jumlah: z
+    .number({ message: "Isi jumlah dalam angka" })
+    .int("Jumlah harus bilangan bulat")
+    .positive("Jumlah harus lebih dari 0")
+    .max(10_000_000_000, "Jumlah terlalu besar"),
+  keterangan: z.string().trim().min(2, "Keterangan wajib diisi").max(200, "Keterangan terlalu panjang"),
   tanggal: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Format tanggal tidak valid"),
 });
 
@@ -78,3 +82,26 @@ export async function aksiTambahKas(
   return { sukses: true, pesan: "Catatan kas berhasil ditambahkan." };
 }
 
+
+/**
+ * Menghapus catatan kas MANUAL yang salah ketik.
+ *
+ * Catatan yang lahir dari pelunasan pesanan sengaja tidak bisa dihapus di sini:
+ * ia terikat ke pesanannya (invarian #3), dan menghapusnya diam-diam membuat
+ * pesanan berstatus lunas tanpa jejak uangnya di buku.
+ */
+export async function aksiHapusKas(id: string): Promise<HasilAksiKas> {
+  await wajibPemilik();
+
+  const hasil = await db.catatanKas.deleteMany({ where: { id, sumber: "MANUAL" } });
+  if (hasil.count === 0) {
+    return {
+      sukses: false,
+      pesan: "Catatan ini tidak bisa dihapus. Catatan dari pelunasan pesanan terkunci ke pesanannya.",
+    };
+  }
+
+  revalidatePath("/admin/keuangan");
+  revalidatePath("/admin/laporan");
+  return { sukses: true, pesan: "Catatan dihapus." };
+}

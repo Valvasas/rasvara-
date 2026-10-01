@@ -8,9 +8,9 @@ import { normalkanTelepon } from "@/lib/format";
 import { ambilIpKlien, periksaBatasLaju } from "@/lib/pembatas-laju";
 
 const SkemaStaf = z.object({
-  nama: z.string().min(2, "Nama staf minimal 2 karakter"),
-  telepon: z.string().min(8, "Nomor telepon minimal 8 digit"),
-  sandi: z.string().min(6, "Kata sandi minimal 6 karakter"),
+  nama: z.string().trim().min(2, "Nama staf minimal 2 karakter").max(80, "Nama terlalu panjang"),
+  telepon: z.string().min(8, "Nomor HP minimal 8 digit").max(20, "Nomor HP terlalu panjang"),
+  sandi: z.string().min(8, "Kata sandi minimal 8 karakter").max(128, "Kata sandi terlalu panjang"),
 });
 
 export type HasilAksiStaf = {

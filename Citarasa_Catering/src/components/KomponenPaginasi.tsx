@@ -54,25 +54,25 @@ export function KomponenPaginasi({
   const nomorHalaman = susunNomor(halamanAktif, totalHalaman);
 
   const kelasTombol = (aktif: boolean, nonaktif = false) =>
-    `min-h-[48px] min-w-[48px] px-4 py-2 rounded-xl text-sm font-semibold transition-colors inline-flex items-center justify-center ${
+    `min-h-[40px] min-w-[40px] px-3 rounded-lg text-sm font-medium transition-colors inline-flex items-center justify-center angka-tabel ${
       nonaktif
-        ? "opacity-40 pointer-events-none bg-white text-kayu-sedang border border-krem-gelap"
+        ? "opacity-40 pointer-events-none text-kayu-sedang"
         : aktif
-        ? "bg-bata text-white shadow-sm"
-        : "bg-white text-kayu border border-krem-gelap hover:bg-krem-tua"
+        ? "bg-kayu text-white"
+        : "text-kayu hover:bg-krem-tua"
     }`;
 
   return (
     <nav
       aria-label="Navigasi halaman"
-      className="flex items-center justify-center flex-wrap gap-2 pt-4"
+      className="flex items-center justify-center flex-wrap gap-1 pt-6"
     >
       <Link
         href={buatHref(basePath, Math.max(1, halamanAktif - 1), queryLain)}
         aria-disabled={halamanAktif === 1}
         className={kelasTombol(false, halamanAktif === 1)}
       >
-        &larr; Sebelumnya
+        <span aria-hidden="true">&larr;</span><span className="hidden sm:inline ml-1">Sebelumnya</span>
       </Link>
 
       {nomorHalaman.map((n, i) =>
@@ -101,7 +101,7 @@ export function KomponenPaginasi({
         aria-disabled={halamanAktif === totalHalaman}
         className={kelasTombol(false, halamanAktif === totalHalaman)}
       >
-        Berikutnya &rarr;
+        <span className="hidden sm:inline mr-1">Berikutnya</span><span aria-hidden="true">&rarr;</span>
       </Link>
     </nav>
   );
