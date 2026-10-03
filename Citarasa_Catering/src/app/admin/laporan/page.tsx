@@ -11,6 +11,7 @@ import { TabMenuMargin } from "./_tab/MenuMargin";
 import { TabPelanggan } from "./_tab/Pelanggan";
 import { TabPiutang } from "./_tab/Piutang";
 import { TabPerkiraan } from "./_tab/Perkiraan";
+import { TabArsip } from "./_tab/Arsip";
 
 export const metadata: Metadata = { title: "Laporan & insight" };
 
@@ -20,6 +21,7 @@ const TAB = [
   { id: "pelanggan", label: "Pelanggan", pakaiBulan: false, keterangan: "12 bulan terakhir" },
   { id: "piutang", label: "Piutang", pakaiBulan: false, keterangan: "Posisi hari ini" },
   { id: "perkiraan", label: "Perkiraan", pakaiBulan: false, keterangan: "7 hari ke depan" },
+  { id: "arsip", label: "Rekap Excel", pakaiBulan: false, keterangan: "Unduh & arsip bulanan" },
 ] as const;
 type IdTab = (typeof TAB)[number]["id"];
 
@@ -59,8 +61,11 @@ export default async function HalamanLaporan({ searchParams }: HalamanLaporanPro
               <input id="bulan" type="month" name="bulan" defaultValue={bulan} className="isian w-auto" />
               <button type="submit" className="tombol-kedua">Tampilkan</button>
             </form>
-            <a href={`/api/admin/ekspor-laporan?bulan=${bulan}`} download className="tombol-kedua">
-              <IkonUnduh className="w-4 h-4" /> CSV
+            <a href={`/api/admin/rekap-bulanan?bulan=${bulan}`} className="tombol-utama">
+              <IkonUnduh className="w-4 h-4" /> Rekap Excel
+            </a>
+            <a href={`/api/admin/ekspor-laporan?bulan=${bulan}`} download className="tombol-hantu" title="Data kas mentah (CSV)">
+              CSV
             </a>
           </div>
         )}
@@ -85,6 +90,7 @@ export default async function HalamanLaporan({ searchParams }: HalamanLaporanPro
         {tab.id === "pelanggan" && <TabPelanggan segmen={segmen} halaman={halaman} />}
         {tab.id === "piutang" && <TabPiutang umur={umur} halaman={halaman} />}
         {tab.id === "perkiraan" && <TabPerkiraan />}
+        {tab.id === "arsip" && <TabArsip bulanIni={hariIniWib().slice(0, 7)} halaman={halaman} />}
       </div>
     </div>
   );

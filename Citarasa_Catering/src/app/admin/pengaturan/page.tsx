@@ -4,7 +4,7 @@ import { db } from "@/lib/db";
 import { bacaSesi } from "@/lib/auth";
 import { hariIniWib, jam, tanggalPendek } from "@/lib/format";
 import { rentangHari } from "@/lib/laporan";
-import { ambilPengaturan } from "@/lib/pengaturan";
+import { ambilPengaturan, waktuTugasTerakhir } from "@/lib/pengaturan";
 import { FormPengaturan } from "@/components/admin/FormPengaturan";
 import { DaftarStafDapur } from "@/components/admin/DaftarStafDapur";
 import { KelolaTanggalTutup } from "@/components/admin/KelolaTanggalTutup";
@@ -24,6 +24,8 @@ const LABEL_AKTIVITAS: Record<string, string> = {
   pesanan_manual: "Mencatat pesanan manual",
   ubah_pesanan: "Mengubah pesanan",
   arsip_rekap: "Mengarsipkan rekap bulanan",
+  tugas_otomatis: "Tugas otomatis",
+  unduh_rekap: "Mengunduh rekap bulanan",
 };
 
 export default async function HalamanAdminPengaturan() {
@@ -31,7 +33,7 @@ export default async function HalamanAdminPengaturan() {
   if (sesi?.peran !== "PEMILIK") redirect("/admin");
 
   const hariIni = hariIniWib();
-  const [pengaturan, daftarStaf, tanggalTutup, aktivitas] = await Promise.all([
+  const [pengaturan, daftarStaf, tanggalTutup, aktivitas, tugasTerakhir] = await Promise.all([
     ambilPengaturan(),
     db.pengguna.findMany({
       where: { peran: "STAF_DAPUR" },
@@ -48,6 +50,7 @@ export default async function HalamanAdminPengaturan() {
       take: 30,
       include: { pengguna: { select: { nama: true } } },
     }),
+    waktuTugasTerakhir(),
   ]);
 
   return (
@@ -78,8 +81,8 @@ export default async function HalamanAdminPengaturan() {
       <section aria-labelledby="judul-otomasi" className="kartu kartu-isi">
         <h2 id="judul-otomasi" className="judul-bagian">Otomasi</h2>
         <p className="teks-redup mt-1">
-          {pengaturan.tugasTerakhir
-            ? `Tugas otomatis terakhir berjalan ${tanggalPendek(pengaturan.tugasTerakhir)} pukul ${jam(pengaturan.tugasTerakhir)}.`
+          {tugasTerakhir
+            ? `Tugas otomatis terakhir berjalan ${tanggalPendek(tugasTerakhir)} pukul ${jam(tugasTerakhir)}.`
             : "Tugas otomatis belum pernah berjalan. Pasang cron di server (lihat DEPLOYMENT.md) agar rekap bulanan diarsipkan dan pesanan tak dibayar dibatalkan otomatis."}
         </p>
       </section>

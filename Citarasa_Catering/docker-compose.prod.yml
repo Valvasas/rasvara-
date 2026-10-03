@@ -57,11 +57,13 @@ services:
       HOSTNAME: "0.0.0.0"
       PORT: 3000
       DIREKTORI_UNGGAHAN: /app/data/unggahan
+      DIREKTORI_LAPORAN: /app/data/laporan
     # Bind hanya ke localhost agar lalu lintas publik wajib melewati Nginx reverse proxy
     ports:
       - "127.0.0.1:3000:3000"
     volumes:
       - unggahan-prod:/app/data/unggahan
+      - laporan-prod:/app/data/laporan
     networks:
       - citarasa-internal
 
@@ -74,4 +76,6 @@ volumes:
     name: citarasa_data_postgres_prod
   unggahan-prod:
     name: citarasa_unggahan_prod
+  laporan-prod:
+    name: citarasa_laporan_prod
 

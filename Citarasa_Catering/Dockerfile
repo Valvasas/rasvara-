@@ -41,7 +41,8 @@ RUN adduser --system --uid 1001 nextjs
 # dibaca lewat route ber-otorisasi, dan supaya berkasnya bertahan saat image
 # dibangun ulang (dipasangi volume di docker-compose).
 ENV DIREKTORI_UNGGAHAN=/app/data/unggahan
-RUN mkdir -p /app/data/unggahan && chown -R nextjs:nodejs /app/data
+ENV DIREKTORI_LAPORAN=/app/data/laporan
+RUN mkdir -p /app/data/unggahan /app/data/laporan && chown -R nextjs:nodejs /app/data
 
 COPY --from=perakit /app/public ./public
 COPY --from=perakit /app/package.json ./package.json

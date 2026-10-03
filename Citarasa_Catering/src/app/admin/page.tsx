@@ -3,7 +3,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { bacaSesi } from "@/lib/auth";
 import { rentangHari } from "@/lib/laporan";
-import { ambilPengaturan, kekuranganPengaturan } from "@/lib/pengaturan";
+import { ambilPengaturan, kekuranganPengaturan, waktuTugasTerakhir } from "@/lib/pengaturan";
 import {
   dariInputTanggal,
   hariIniWib,
@@ -88,7 +88,7 @@ export default async function HalamanPapanDapur({ searchParams }: HalamanPapanDa
       : {}),
   };
 
-  const [perKolom, hitungan, ringkas, denyut] = await Promise.all([
+  const [perKolom, hitungan, ringkas, denyut, tugasTerakhir] = await Promise.all([
     Promise.all(
       KOLOM_PAPAN.map((status) =>
         db.pesanan.findMany({
@@ -102,12 +102,13 @@ export default async function HalamanPapanDapur({ searchParams }: HalamanPapanDa
     db.pesanan.groupBy({ by: ["status"], where: { ...saringan, status: { in: KOLOM_PAPAN } }, _count: { _all: true } }),
     ambilRingkasanHariIni(adalahPemilik),
     bacaDenyut(),
+    adalahPemilik ? waktuTugasTerakhir() : Promise.resolve(null),
   ]);
   const usaha = usahaUntukWa(pengaturan);
   const tugasMacet =
     adalahPemilik &&
-    ((pengaturan.batasBayarJam > 0 && !pengaturan.tugasTerakhir) ||
-      (pengaturan.tugasTerakhir !== null && Date.now() - pengaturan.tugasTerakhir.getTime() > 2 * 60 * 60 * 1000));
+    ((pengaturan.batasBayarJam > 0 && !tugasTerakhir) ||
+      (tugasTerakhir !== null && Date.now() - tugasTerakhir.getTime() > 2 * 60 * 60 * 1000));
 
   const jumlahStatus = (s: StatusPesanan) => hitungan.find((h) => h.status === s)?._count._all ?? 0;
   const totalAktif = KOLOM_PAPAN.reduce((n, s) => n + jumlahStatus(s), 0);

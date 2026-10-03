@@ -70,6 +70,28 @@ async function cadangkanUnggahan(direktoriBackup) {
   );
 }
 
+/**
+ * Arsip rekap bulanan (XLSX) adalah potret beku tiap bulan — tidak bisa dibuat
+ * ulang persis sama bila data lama sudah diedit. Disalin bertahap seperti unggahan.
+ */
+async function cadangkanArsipRekap(direktoriBackup) {
+  const asal = process.env.DIREKTORI_LAPORAN
+    ? path.resolve(process.env.DIREKTORI_LAPORAN)
+    : path.join(process.cwd(), "data", "laporan");
+  if (!existsSync(asal)) return;
+  const tujuan = path.join(direktoriBackup, "laporan");
+  await fs.mkdir(tujuan, { recursive: true });
+  let baru = 0;
+  for (const entri of await fs.readdir(asal, { withFileTypes: true })) {
+    if (!entri.isFile() || !/^rekap-\d{4}-\d{2}\.xlsx$/.test(entri.name)) continue;
+    const pathTujuan = path.join(tujuan, entri.name);
+    if (existsSync(pathTujuan)) continue;
+    await fs.copyFile(path.join(asal, entri.name), pathTujuan);
+    baru++;
+  }
+  console.info(`📊 Arsip rekap: ${baru} baru disalin.`);
+}
+
 async function main() {
   console.info("📦 Memulai pencadangan (backup) database Citarasa Catering...");
 
@@ -96,6 +118,11 @@ async function main() {
       kunjunganHarian,
       jejakPengunjung,
       peristiwaAnalitik,
+      pembayaran,
+      bahan,
+      resepMenu,
+      logAktivitas,
+      rekapBulanan,
     ] = await Promise.all([
       db.pengaturan.findMany(),
       db.pengguna.findMany({
@@ -122,13 +149,20 @@ async function main() {
       db.kunjunganHarian.findMany(),
       db.jejakPengunjung.findMany(),
       db.peristiwaAnalitik.findMany(),
+      // Tabel di bawah ini wajib ikut: tanpa Pembayaran, baris kas DP/pelunasan
+      // kehilangan pasangannya dan `Pesanan.dibayar` tidak bisa dibuktikan.
+      db.pembayaran.findMany(),
+      db.bahan.findMany(),
+      db.resepMenu.findMany(),
+      db.logAktivitas.findMany(),
+      db.rekapBulanan.findMany(),
     ]);
 
     const dataBackup = {
       meta: {
-        versi: "1.1.0",
+        versi: "1.2.0",
         dibuatPada: sekarang.toISOString(),
-        totalTabel: 13,
+        totalTabel: 18,
       },
       tabel: {
         pengaturan,
@@ -144,6 +178,11 @@ async function main() {
         kunjunganHarian,
         jejakPengunjung,
         peristiwaAnalitik,
+        pembayaran,
+        bahan,
+        resepMenu,
+        logAktivitas,
+        rekapBulanan,
       },
       ringkasan: {
         totalPengguna: pengguna.length,
@@ -157,11 +196,17 @@ async function main() {
         totalTanggalTutup: tanggalTutup.length,
         totalKunjunganHarian: kunjunganHarian.length,
         totalPeristiwaAnalitik: peristiwaAnalitik.length,
+        totalPembayaran: pembayaran.length,
+        totalBahan: bahan.length,
+        totalResepMenu: resepMenu.length,
+        totalLogAktivitas: logAktivitas.length,
+        totalRekapBulanan: rekapBulanan.length,
       },
     };
 
     await fs.writeFile(pathTujuan, JSON.stringify(dataBackup, null, 2), "utf-8");
     await cadangkanUnggahan(direktoriBackup);
+    await cadangkanArsipRekap(direktoriBackup);
 
     console.info(`✅ Backup berhasil disimpan ke: ${pathTujuan}`);
     console.info("📊 Ringkasan Data:");
@@ -176,6 +221,9 @@ async function main() {
     console.info(`   - Tanggal Tutup       : ${tanggalTutup.length}`);
     console.info(`   - Kunjungan Harian    : ${kunjunganHarian.length}`);
     console.info(`   - Peristiwa Analitik  : ${peristiwaAnalitik.length}`);
+    console.info(`   - Pembayaran          : ${pembayaran.length}`);
+    console.info(`   - Bahan / Resep       : ${bahan.length} / ${resepMenu.length}`);
+    console.info(`   - Log Aktivitas       : ${logAktivitas.length}`);
   } catch (err) {
     console.error("❌ Gagal melakukan backup database:", err);
     process.exit(1);

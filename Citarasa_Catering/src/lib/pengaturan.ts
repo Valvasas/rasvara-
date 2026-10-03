@@ -88,3 +88,14 @@ export function kekuranganPengaturan(p: Pengaturan): string[] {
   if (!rekeningLengkap(p)) kurang.push("Rekening bank untuk transfer");
   return kurang;
 }
+
+/**
+ * Waktu tugas otomatis terakhir, langsung dari database (tanpa singgahan).
+ * Ditulis oleh route cron, yang di Next.js bisa berjalan di modul/proses lain
+ * sehingga tidak bisa mengosongkan singgahan halaman — padahal status ini justru
+ * dibuka pemilik untuk memastikan cron yang baru dipasang sudah jalan.
+ */
+export async function waktuTugasTerakhir(): Promise<Date | null> {
+  const r = await db.pengaturan.findUnique({ where: { id: "utama" }, select: { tugasTerakhir: true } });
+  return r?.tugasTerakhir ?? null;
+}

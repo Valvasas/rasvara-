@@ -144,3 +144,25 @@ Foto bukti transfer dan foto menu disimpan secara lokal di folder `DIREKTORI_UNG
 2. **Health Check:**
    - Endpoint root `/` atau `/api/health` dapat digunakan oleh uptime monitor (misal UptimeRobot, BetterStack) untuk memantau ketersediaan sistem 24/7.
 
+
+## 6. Rekap bulanan Excel & tugas otomatis
+
+**Untuk pemilik usaha:**
+
+- **Unduh kapan saja:** `Laporan & insight → Rekap Excel` (atau tombol *Rekap Excel* di Laporan / Buku kas). Angkanya selalu dari data terbaru.
+- **Arsip otomatis:** setiap awal bulan, rekap bulan sebelumnya disimpan sebagai berkas beku. Gunakan arsip ini untuk pembukuan/pajak karena isinya tidak ikut berubah bila pesanan lama diedit.
+- **Isi berkas:**
+  - *Ringkasan* — angka utama vs bulan lalu, pengeluaran per kategori, 10 menu terlaris.
+  - *Harian* — pesanan, porsi, dan kas per hari.
+  - *Pesanan* — semua pesanan bulan itu.
+  - *Menu & margin* — omzet, biaya bahan, laba kotor per menu.
+  - *Kas* — dengan saldo berjalan.
+  - *Piutang* — pesanan yang belum lunas.
+  - *Pelanggan teratas*.
+- Baris total & saldo memakai rumus Excel, sehingga bisa diperiksa ulang.
+- **Produksi harian:** `Produksi & belanja → XLSX` berisi yang harus dimasak, daftar belanja (staf dapur tidak melihat harga), dan jadwal siap.
+
+**Untuk pengelola server:** pasang cron tiap 15 menit sesuai [DEPLOYMENT.md §6](../DEPLOYMENT.md#6-otomasi-terjadwal-cron--rekap-bulanan--pembatalan-otomatis). Bila papan admin menampilkan peringatan "tugas otomatis tidak berjalan", periksa:
+1. `crontab -l`
+2. `/var/log/citarasa-tugas.log`
+3. bahwa `CRON_SECRET` di server sama dengan isi `/etc/citarasa-cron-secret`.

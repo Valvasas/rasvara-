@@ -157,3 +157,45 @@ docker compose start app
 - **Pada Docker / VPS**: Gunakan Docker Volume atau persistent directory yang di-mount keluar container (`docker-compose.prod.yml` sudah memasang volume ke `/app/data/unggahan`).
 - **Pada Serverless (Vercel / Netlify)**: Serverless functions bersifat stateless dan read-only pada filesystem. Jika mendeploy ke serverless, ganti logika penyimpanan di `src/app/aksi/pesanan.ts` (`unggahBuktiTransfer`) untuk mengunggah ke object storage yang kompatibel dengan S3 (mis. Cloudflare R2, AWS S3, atau Supabase Storage).
 
+
+---
+
+## 6. Otomasi terjadwal (cron) — rekap bulanan & pembatalan otomatis
+
+Aplikasi punya satu endpoint tugas yang **wajib dipanggil cron server tiap 15 menit**:
+
+| Tugas | Kapan bekerja |
+|---|---|
+| Arsip rekap bulanan (XLSX) bulan lalu → `DIREKTORI_LAPORAN` + tabel `RekapBulanan` | Sekali per bulan (panggilan berikutnya melihat arsip sudah ada lalu melewatinya) |
+| Batalkan pesanan **website + transfer** yang belum dibayar sama sekali setelah `batasBayarJam` | Hanya bila pemilik mengisi "Batas waktu bayar" > 0 di Pengaturan |
+| Catat `tugasTerakhir` | Setiap panggilan — papan admin memperingatkan bila lebih dari 2 jam tidak berjalan |
+
+Semua tugas **idempoten**: cron yang dobel/terlambat tidak menggandakan arsip atau pembatalan.
+
+1. Buat rahasia tersendiri (jangan pakai ulang `SESSION_SECRET`) dan isi `CRON_SECRET` di `.env.production`:
+   ```bash
+   node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
+   ```
+2. Simpan rahasia itu di berkas yang hanya bisa dibaca root, lalu pasang crontab (`crontab -e`):
+   ```bash
+   echo 'CRON_SECRET_DI_SINI' | sudo tee /etc/citarasa-cron-secret >/dev/null && sudo chmod 600 /etc/citarasa-cron-secret
+   ```
+   ```cron
+   */15 * * * * curl -fsS -m 120 -X POST -H "Authorization: Bearer $(cat /etc/citarasa-cron-secret)" http://127.0.0.1:3000/api/tugas/jalankan >> /var/log/citarasa-tugas.log 2>&1
+   ```
+   Rahasia sengaja tidak ditulis langsung di crontab supaya tidak terlihat di `ps`/riwayat shell.
+3. Cek: `Pengaturan → Otomasi` menampilkan waktu terakhir berjalan; `Laporan → Rekap Excel` menampilkan arsip.
+
+Keamanan endpoint: hanya `POST`, hanya bearer token (bukan cookie → kebal CSRF), dibandingkan dalam waktu konstan,
+dibatasi 10 panggilan/menit per IP, dan menjawab `503` bila `CRON_SECRET` belum disetel (≥ 32 karakter).
+
+Arsip XLSX disimpan di `DIREKTORI_LAPORAN` (bawaan `data/laporan`; di Docker dipasangi volume `laporan-prod`)
+dan ikut disalin oleh `npm run db:backup`.
+
+## 7. Catatan audit dependensi
+
+`npm audit --omit=dev` masih melaporkan `mysql2` dan `deepmerge-ts` (lewat Prisma CLI) serta `uuid` (lewat `exceljs`).
+Ketiganya tidak terjangkau saat runtime aplikasi ini: Prisma CLI hanya dipakai saat migrasi dan proyek memakai
+PostgreSQL (driver MySQL tidak pernah tersambung), sedangkan `exceljs` hanya memanggil `uuid.v4()` tanpa argumen
+`buf` (celahnya ada di v3/v5/v6 dengan `buf`). Perbaikannya menuntut turun versi mayor, jadi ditunda sampai paket hulu
+memperbarui dependensinya. Next.js wajib ≥ 16.3.6 (celah RCE di `next/og`, dipakai ikon & gambar OG situs ini).

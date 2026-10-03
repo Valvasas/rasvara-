@@ -70,6 +70,12 @@ const nextConfig: NextConfig = {
             value: "strict-origin-when-cross-origin",
           },
           {
+            // Jendela lain (mis. tab yang dibuka dari tautan WA) tidak bisa
+            // memegang referensi ke halaman ini → menutup serangan tabnabbing/XS-Leaks.
+            key: "Cross-Origin-Opener-Policy",
+            value: "same-origin",
+          },
+          {
             key: "Permissions-Policy",
             value: "camera=(), microphone=(), geolocation=(self)",
           },

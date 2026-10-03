@@ -118,6 +118,15 @@ if (baseUrl && baseUrl.startsWith("http://") && !baseUrl.includes("localhost")) 
   );
 }
 
+// 4b. Cek CRON_SECRET — tanpa ini arsip rekap & pembatalan otomatis tidak pernah berjalan.
+const rahasiaCron = process.env.CRON_SECRET;
+cek(
+  "CRON_SECRET",
+  Boolean(rahasiaCron && rahasiaCron.length >= 32 && !rahasiaCron.startsWith("ganti-") && rahasiaCron !== secret),
+  "CRON_SECRET kosong, < 32 karakter, masih templat, atau sama dengan SESSION_SECRET. Buat rahasia acak tersendiri.",
+  "Rahasia cron terisi."
+);
+
 // 5. Cek PROXY_TEPERCAYA
 const proxy = process.env.PROXY_TEPERCAYA;
 cek(
@@ -136,6 +145,7 @@ const dirBackups = path.join(cwd, "backups");
 
 for (const [label, dir] of [
   ["Direktori Unggahan", dirUnggahan],
+  ["Direktori Arsip Rekap", process.env.DIREKTORI_LAPORAN ? path.resolve(process.env.DIREKTORI_LAPORAN) : path.join(cwd, "data", "laporan")],
   ["Direktori Log Sistem", dirLogs],
   ["Direktori Backup", dirBackups],
 ]) {

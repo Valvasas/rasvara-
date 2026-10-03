@@ -76,8 +76,11 @@ export default async function HalamanBukuKas({ searchParams }: HalamanBukuKasPro
             {jenis && <input type="hidden" name="jenis" value={jenis} />}
             <button type="submit" className="tombol-kedua">Tampilkan</button>
           </form>
-          <a href={`/api/admin/ekspor-laporan?bulan=${bulan}`} download className="tombol-kedua">
-            <IkonUnduh className="w-4 h-4" /> CSV
+          <a href={`/api/admin/rekap-bulanan?bulan=${bulan}`} className="tombol-kedua">
+            <IkonUnduh className="w-4 h-4" /> Rekap Excel
+          </a>
+          <a href={`/api/admin/ekspor-laporan?bulan=${bulan}`} download className="tombol-hantu" title="Data kas mentah (CSV)">
+            CSV
           </a>
         </div>
       </header>
