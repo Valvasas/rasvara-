@@ -1,7 +1,11 @@
 const { chromium } = require('playwright');
 const { execSync } = require('child_process');
 const B = 'http://localhost:3000';
-const sql = (q) => execSync(`PGPASSWORD=citarasa psql -h localhost -U citarasa citarasa -At -c "${q.replace(/"/g, '\\"')}"`).toString().trim();
+// psql menolak parameter ?schema=… milik Prisma, jadi dibuang dulu. Menolak URL yang tampak seperti produksi.
+const URL_DB = (process.env.DATABASE_URL || '').split('?')[0];
+if (!URL_DB) throw new Error('Setel DATABASE_URL ke database UJI.');
+if (/produksi|prod/i.test(URL_DB)) throw new Error('Menolak berjalan: DATABASE_URL terlihat seperti produksi.');
+const sql = (q) => execSync(`psql "${URL_DB}" -At -c "${q.replace(/"/g, '\\"')}"`).toString().trim();
 const hasil = []; const masalah = [];
 const ok = (n, k, d = '') => { hasil.push(k); console.log(`${k ? 'PASS' : 'FAIL'}  ${n}${d ? '  — ' + d : ''}`); };
 const digit = (t) => Number((t || '').replace(/[^\d]/g, ''));
@@ -11,7 +15,7 @@ const digit = (t) => Number((t || '').replace(/[^\d]/g, ''));
   a.on('console', (m) => { if (m.type() === 'error' && !/status of 40[14]/.test(m.text())) masalah.push(m.text().slice(0, 200)); });
   a.on('response', (r) => { if (r.status() >= 500) masalah.push(`${r.status()} ${r.url()}`); });
   await a.goto(B + '/masuk');
-  await a.fill('#telepon', '081234567890'); await a.fill('#sandi', process.env.SANDI || 'citarasa123');
+  await a.fill('#telepon', '081234567890'); await a.fill('#sandi', process.env.SANDI || 'sandiProduksi#2026');
   await Promise.all([a.waitForURL(/\/admin/), a.getByRole('button', { name: 'Masuk' }).click()]);
   const bulan = new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 7);
   const bulanLalu = sql(`select to_char((date_trunc('month', now() at time zone 'Asia/Jakarta') - interval '1 month'),'YYYY-MM')`);

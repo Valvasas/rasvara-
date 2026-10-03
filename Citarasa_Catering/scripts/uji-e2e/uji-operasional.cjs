@@ -1,7 +1,11 @@
 const { chromium } = require('playwright');
 const { execSync } = require('child_process');
 const B = 'http://localhost:3000';
-const sql = (q) => execSync(`PGPASSWORD=citarasa psql -h localhost -U citarasa citarasa -At -c "${q.replace(/"/g, '\\"')}"`).toString().trim();
+// psql menolak parameter ?schema=… milik Prisma, jadi dibuang dulu. Menolak URL yang tampak seperti produksi.
+const URL_DB = (process.env.DATABASE_URL || '').split('?')[0];
+if (!URL_DB) throw new Error('Setel DATABASE_URL ke database UJI.');
+if (/produksi|prod/i.test(URL_DB)) throw new Error('Menolak berjalan: DATABASE_URL terlihat seperti produksi.');
+const sql = (q) => execSync(`psql "${URL_DB}" -At -c "${q.replace(/"/g, '\\"')}"`).toString().trim();
 const hasil = []; const masalah = [];
 const ok = (n, k, d = '') => { hasil.push(k); console.log(`${k ? 'PASS' : 'FAIL'}  ${n}${d ? '  — ' + d : ''}`); };
 const tgl = (h) => { const d = new Date(Date.now() + 7 * 3600e3 + h * 86400e3); return d.toISOString().slice(0, 10); };
@@ -76,7 +80,7 @@ const tgl = (h) => { const d = new Date(Date.now() + 7 * 3600e3 + h * 86400e3); 
   await a.getByLabel(/^Takaran Ayam Uji/).fill('0.15');
   await a.getByRole('button', { name: 'Simpan resep' }).click();
   await a.waitForTimeout(1500);
-  ok('Resep tersimpan', sql(`select "jumlahPerPorsi" from "ResepMenu" where "menuId"='${menuId}'`) === '0.15');
+  ok('Resep tersimpan', sql(`select r."jumlahPerPorsi" from "ResepMenu" r join "Bahan" b on b.id = r."bahanId" where r."menuId"='${menuId}' and b.nama='Ayam Uji'`) === '0.15');
 
   await a.goto(B + `/admin/produksi?tanggal=${tanggal}`);
   const kgDb = (+porsiDb * 0.15);

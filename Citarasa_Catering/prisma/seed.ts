@@ -292,6 +292,7 @@ async function main() {
   console.log(`  Menu terisi        : ${MENU.length} item`);
 
   if (MODE_DEMO) {
+    await isiContohResep();
     await isiContohPesanan(pemilik.id);
   }
 
@@ -303,6 +304,50 @@ async function main() {
       : `  Sandi    : ${SANDI_PEMILIK}`
   );
   console.log("\nGanti sandi ini sebelum website dipakai sungguhan.\n");
+}
+
+/**
+ * Contoh bahan & resep untuk tiga menu, supaya "Produksi & belanja" dan
+ * "Menu & margin" langsung bisa dicoba. Harga bahan perkiraan pasar; pemilik
+ * menggantinya di /admin/bahan. Idempoten: aman dijalankan berulang.
+ */
+async function isiContohResep() {
+  const BAHAN: [string, string, number][] = [
+    ["Ayam potong", "kg", 38000],
+    ["Beras", "kg", 14000],
+    ["Bumbu bakar", "kg", 60000],
+    ["Lalapan & sambal", "porsi", 1500],
+    ["Kotak nasi", "pcs", 1200],
+    ["Kue basah", "pcs", 2000],
+    ["Snack box karton", "pcs", 900],
+    ["Telur", "butir", 2000],
+  ];
+  const id = new Map<string, string>();
+  for (const [nama, satuan, hargaPerSatuan] of BAHAN) {
+    const b = await db.bahan.upsert({ where: { nama }, update: {}, create: { nama, satuan, hargaPerSatuan } });
+    id.set(nama, b.id);
+  }
+
+  const RESEP: Record<string, [string, number][]> = {
+    "nasi-kotak-ayam-bakar": [["Ayam potong", 0.15], ["Beras", 0.12], ["Bumbu bakar", 0.02], ["Lalapan & sambal", 1], ["Kotak nasi", 1]],
+    "snack-box-isi-4": [["Kue basah", 4], ["Snack box karton", 1]],
+    "tumpeng-mini": [["Beras", 0.6], ["Ayam potong", 0.4], ["Telur", 3], ["Bumbu bakar", 0.05]],
+  };
+  let jumlah = 0;
+  for (const [slug, baris] of Object.entries(RESEP)) {
+    const menu = await db.menu.findUnique({ where: { slug }, select: { id: true } });
+    if (!menu) continue;
+    for (const [nama, jumlahPerPorsi] of baris) {
+      const bahanId = id.get(nama)!;
+      await db.resepMenu.upsert({
+        where: { menuId_bahanId: { menuId: menu.id, bahanId } },
+        update: {},
+        create: { menuId: menu.id, bahanId, jumlahPerPorsi },
+      });
+      jumlah++;
+    }
+  }
+  console.log(`  Contoh resep       : ${BAHAN.length} bahan, ${jumlah} baris resep`);
 }
 
 /** Contoh pesanan & catatan kas supaya tampilan admin tidak kosong saat dicoba. */

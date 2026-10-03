@@ -213,6 +213,12 @@ body {
   :where(.overflow-x-auto, .overflow-x-scroll, .overflow-auto) {
     position: relative;
   }
+  /* `grid` tanpa grid-cols-* (mis. hanya `lg:grid-cols-2`) memakai kolom `auto`
+     yang ikut lebar min-content isinya → teks nowrap mendorong kartu keluar layar
+     di ponsel. Bawaan satu kolom yang boleh menyusut; utilitas grid-cols-* tetap menang. */
+  :where(.grid) {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* Scrollbar tipis untuk area geser horizontal */

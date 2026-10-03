@@ -6,7 +6,11 @@ const { execSync } = require('child_process');
 const B = process.env.ALAMAT || 'http://localhost:3000';
 const DIR_LAPORAN = require('path').resolve(process.env.DIREKTORI_LAPORAN || 'data/laporan');
 const CRON = process.env.CRON_SECRET || ''; if (CRON.length < 32) throw new Error('Setel CRON_SECRET (sama dengan server) sebelum menjalankan uji ini');
-const sql = (q) => execSync(`PGPASSWORD=citarasa psql -h localhost -U citarasa citarasa -At -c "${q.replace(/"/g, '\\"')}"`).toString().trim();
+// psql menolak parameter ?schema=… milik Prisma, jadi dibuang dulu. Menolak URL yang tampak seperti produksi.
+const URL_DB = (process.env.DATABASE_URL || '').split('?')[0];
+if (!URL_DB) throw new Error('Setel DATABASE_URL ke database UJI.');
+if (/produksi|prod/i.test(URL_DB)) throw new Error('Menolak berjalan: DATABASE_URL terlihat seperti produksi.');
+const sql = (q) => execSync(`psql "${URL_DB}" -At -c "${q.replace(/"/g, '\\"')}"`).toString().trim();
 const hasil = [];
 const ok = (n, k, d = '') => { hasil.push(k); console.log(`${k ? 'PASS' : 'FAIL'}  ${n}${d ? '  — ' + d : ''}`); };
 const wib = (q) => `to_char(${q} at time zone 'UTC' at time zone 'Asia/Jakarta','YYYY-MM')`;

@@ -27,7 +27,7 @@ Website satu-atap untuk usaha katering rumahan (snack box, nasi kotak, tumpeng, 
 | Auth | Custom: cookie `sesi_citarasa` (httpOnly, JWT HS256 via `jose`), password di-hash dengan `scrypt` bawaan Node (format `salt:hash`), login pakai **nomor telepon** |
 | Validasi | Zod, dijalankan di server di dalam file `"use server"` |
 | State | Tidak ada state management client global — mengandalkan Server Components + Server Actions + `revalidatePath` |
-| Test runner | **Tidak ada** (belum dikonfigurasi — lihat TASKS.md) |
+| Test runner | Node test runner + `tsx` (`npm test`, berkas di `tests/`); E2E Playwright di `scripts/uji-e2e/` |
 | Package manager | npm (`package-lock.json`) |
 
 Jangan usulkan/menambahkan library yang menduplikasi hal di atas (mis. NextAuth, Redux, styled-components) tanpa diminta eksplisit oleh user — arsitektur ini sengaja diminimalkan.
@@ -38,7 +38,8 @@ Jangan usulkan/menambahkan library yang menduplikasi hal di atas (mis. NextAuth,
 src/app/
   (toko)/        halaman publik pembeli (home, /menu, /pesan, /pesanan/[kode], /lacak, /riwayat, /masuk, /daftar)
   admin/         dashboard pemilik, dijaga terpusat di admin/layout.tsx
-  aksi/          SEMUA Server Actions ("use server"): auth.ts, pesanan.ts, menu.ts, kas.ts, pengaturan.ts
+  aksi/          SEMUA Server Actions ("use server"): auth, pesanan, pesanan-admin, pembayaran, menu, bahan, kas, pengaturan, ...
+  api/           route handler non-form: admin/denyut (polling papan), admin/rekap-bulanan (+arsip), admin/produksi-xlsx, tugas/jalankan (cron)
 src/components/
   toko/          komponen khusus halaman publik
   admin/         komponen khusus dashboard admin
@@ -56,11 +57,15 @@ src/lib/
   format.ts          helper tanggal/jam WIB, format rupiah, normalisasi telepon, link WhatsApp
   laporan.ts         agregasi kas per hari/bulan (WIB-aware)
   pengaturan.ts      loader pengaturan bisnis dengan cache + default
+  pesanan-server.ts  SATU-SATUNYA inti pembuatan/ubah pesanan (dipakai form pembeli, pesanan manual, ubah pesanan)
+  pembayaran*.ts     DP/pelunasan/refund: fungsi murni + catatPembayaranInti (kunci optimistis)
+  insight*.ts, perkiraan.ts   segmen pelanggan, umur piutang, margin, perkiraan 7 hari (fungsi murni + kueri)
+  rekap-xlsx.ts      penyusun XLSX murni (diuji); rekap-data.ts mengumpulkan datanya; tugas.ts = isi cron
 src/generated/prisma/  hasil `prisma generate` — JANGAN diedit manual, ini git-ignored
 prisma/
   schema.prisma      sumber kebenaran struktur data
   seed.ts            seed akun pemilik + pengaturan + menu (idempotent)
-  migrations/         satu migrasi awal: 20260913000000_struktur_awal
+  migrations/         riwayat migrasi; JANGAN edit migrasi yang sudah ter-apply, buat migrasi baru
 legacy/               proyek marketplace multi-vendor LAMA (Express + HTML statis), DIARSIPKAN — jangan jadikan acuan pola/stack, dan jangan sertakan dalam typecheck/build (sudah di-exclude di tsconfig & next.config)
 ```
 
@@ -70,7 +75,7 @@ Ini adalah aturan bisnis yang sudah didesain sengaja. Kalau perubahanmu menyentu
 
 1. **Harga tidak pernah dipercaya dari browser.** Saat `buatPesanan`, harga dibaca ulang dari DB di server; browser hanya kirim `menuId` + jumlah.
 2. **Isi pesanan adalah snapshot.** `ItemPesanan.namaMenu`/`hargaSatuan` dibekukan saat order dibuat (bukan referensi live ke `Menu`) supaya struk lama tetap benar walau menu berubah/dihapus.
-3. **Satu pesanan maksimal satu baris kas.** `CatatanKas.pesananId` unique — mencegah pencatatan ganda saat "Tandai Lunas" diklik lebih dari sekali.
+3. **Setiap pembayaran tepat satu baris kas, dan uang masuk tidak pernah melebihi total pesanan.** Satu pesanan boleh punya beberapa pembayaran (DP, pelunasan, refund) di tabel `Pembayaran`; tiap baris punya tepat satu `CatatanKas` (`CatatanKas.pembayaranId` unique). `Pesanan.dibayar` adalah jumlah berjalan yang hanya diubah lewat `catatPembayaranInti` (`src/lib/pembayaran-server.ts`) dengan kunci optimistis `where: { id, dibayar: lama }` — dua klik "Catat" bersamaan tidak bisa mencatat dua kali. `statusBayar` selalu diturunkan dari `statusBayarDari()`, jangan diset manual.
 4. **Semua tanggal dihitung dalam WIB** (Asia/Jakarta), terlepas dari timezone server. Selalu pakai helper di `src/lib/format.ts`, jangan `new Date()`/`Date.now()` mentah untuk logika tanggal bisnis.
 5. **Kode pesanan bukan kunci akses.** Untuk melihat detail pesanan, pengunjung harus: memesan dari device itu (cookie `pesanan_saya`), ATAU login sebagai pemilik, ATAU nomor teleponnya cocok di halaman lacak. Jangan buat route yang expose detail pesanan hanya lewat kode di URL tanpa salah satu dari tiga syarat itu.
 6. **Nomor telepon adalah identitas login**, bukan email (email di `Pengguna` opsional).
@@ -84,11 +89,13 @@ Ini adalah aturan bisnis yang sudah didesain sengaja. Kalau perubahanmu menyentu
 - **Setelah mengubah skema atau kode**, jalankan minimal:
   ```
   npm run typecheck
+  npm run lint
+  npm test
   npm run build
   ```
-  (belum ada test suite — build + typecheck adalah baris pertahanan utama saat ini, lihat TASKS.md untuk rencana menambah test).
+  Untuk alur pesanan/pembayaran/kas, jalankan juga E2E di `scripts/uji-e2e/` terhadap server lokal berisi data stres.
 - **Jangan commit** `src/generated/prisma/`, berkas `.env*` (kecuali `*.example`), atau isi `data/` (sudah di `.gitignore`).
-- Proyek ini **belum berupa git repository** (tidak ada folder `.git`). Jangan asumsikan riwayat git ada; jika perlu menjalankan operasi git, cek dulu apakah user sudah `git init`.
+- Repo git ada di folder induk (`../`); aplikasinya di `Citarasa_Catering/`. Commit hanya bila user meminta.
 
 ## 6. Konvensi penamaan (Bahasa Indonesia domain, kode konsisten)
 

@@ -8,7 +8,23 @@ goreng. Satu aplikasi berisi dua sisi yang saling terhubung lewat satu database:
   mencatat uang masuk dan keluar, serta melihat laporan bulanan.
 
 Begitu pemilik memindahkan status pesanan, halaman pelanggan langsung ikut
-berubah. Begitu pesanan ditandai lunas, uangnya otomatis masuk ke buku kas.
+berubah. Setiap uang yang diterima (DP maupun pelunasan) otomatis masuk ke buku kas.
+
+Yang bisa dilakukan pemilik dari dashboard:
+
+| Kebutuhan | Fitur |
+|---|---|
+| Pesanan masuk tanpa menyegarkan halaman | Papan dapur memperbarui diri tiap 20 detik, judul tab menghitung pesanan baru, bunyi opsional |
+| Pesanan dari WA/telepon | *Catat pesanan* (cari pelanggan lama per nomor HP, DP/lunas langsung tercatat) |
+| Salah catat / pelanggan menambah porsi | Ubah pesanan (harga lama dipertahankan, voucher dihitung ulang) |
+| DP | Persen DP minimal diatur di Pengaturan; DP & pelunasan dicatat terpisah, sisa tagihan selalu terlihat |
+| Belanja & masak | *Produksi & belanja*: porsi per menu, daftar belanja dari resep, jadwal siap, cetak/Excel |
+| Untung atau rugi per menu | Resep + harga bahan → HPP & margin; tanda "laku tapi untungnya tipis" |
+| Siapa pelanggan andalan / yang mulai hilang | Segmen pelanggan + tombol sapa lewat WA |
+| Uang yang belum ditagih | Piutang per umur + tombol tagih lewat WA |
+| Persiapan minggu depan | Perkiraan porsi 7 hari (bisa dijelaskan, bukan tebakan AI) |
+| Pembukuan | Rekap bulanan Excel 7 lembar, unduh kapan saja + arsip otomatis tiap awal bulan |
+| Pesanan transfer yang tak kunjung dibayar | Dibatalkan otomatis setelah batas jam yang diatur pemilik |
 
 ## Teknologi
 
@@ -79,7 +95,9 @@ SEED_DEMO=1 npm run db:seed
 
 `scripts/uji-e2e/` berisi data stres (150 menu, 1.200 pesanan, 1.600 catatan
 kas) dan skrip Playwright yang menekan semua tombol penting lalu mencocokkan
-hasilnya ke database. Lihat `scripts/uji-e2e/README.md`.
+hasilnya ke database: regresi umum (`e2e.cjs`), operasional DP/produksi
+(`uji-operasional.cjs`), insight (`uji-insight.cjs`), serta rekap Excel & cron
+(`uji-rekap-otomasi.cjs`). Lihat `scripts/uji-e2e/README.md`.
 
 ## Perintah yang tersedia
 
@@ -124,9 +142,11 @@ Beberapa hal sengaja dibuat begini, jangan diubah tanpa alasan:
   jumlahnya.
 - **Isi pesanan disimpan sebagai salinan.** Nama dan harga menu dibekukan di
   `ItemPesanan`. Kalau harga naik atau menu dihapus, nota lama tetap benar.
-- **Satu pesanan hanya boleh melahirkan satu baris kas.** Kolom `pesananId` di
-  `CatatanKas` bersifat unik, jadi menekan "Tandai Lunas" dua kali tidak membuat
-  pemasukan terhitung dobel.
+- **Setiap pembayaran tepat satu baris kas.** DP, pelunasan, dan pengembalian
+  dana dicatat di tabel `Pembayaran`, masing-masing berpasangan dengan satu baris
+  `CatatanKas`. Jumlah yang sudah dibayar diperbarui dengan kunci optimistis,
+  jadi menekan "Catat" dua kali tidak membuat pemasukan dobel dan total uang masuk
+  tidak bisa melebihi total pesanan.
 - **Semua tanggal dihitung menurut WIB.** Server bisa berjalan di zona waktu
   mana pun; `src/lib/format.ts` memaksa perhitungan harian ke `Asia/Jakarta`.
 - **Kode pesanan bukan kunci akses.** Untuk membuka rincian pesanan, pengunjung

@@ -38,6 +38,17 @@ function sedangMengetik(): boolean {
  * kuota), langsung memeriksa saat tab kembali dilihat, dan menunda
  * penyegaran selama pengguna sedang mengetik (mis. alasan pembatalan).
  */
+function judulTanpaAwalan(): string {
+  return document.title.replace(/^\(\d+\)\s*/, "");
+}
+
+/** "(3) Papan pesanan — …" — terlihat dari tab lain. Hanya menulis bila berbeda (aman untuk MutationObserver). */
+function aturJudul(jumlahBaru: number) {
+  const dasar = judulTanpaAwalan();
+  const ingin = jumlahBaru > 0 ? `(${jumlahBaru}) ${dasar}` : dasar;
+  if (document.title !== ingin) document.title = ingin;
+}
+
 export function PemantauPapan({ versiAwal, baruAwal }: { versiAwal: string; baruAwal: number }) {
   const router = useRouter();
   const versi = useRef(versiAwal);
@@ -47,12 +58,14 @@ export function PemantauPapan({ versiAwal, baruAwal }: { versiAwal: string; baru
   const [diperbarui, setDiperbarui] = useState<Date | null>(null);
   const [pengumuman, setPengumuman] = useState("");
   const [terputus, setTerputus] = useState(false);
-  const judulAsli = useRef<string>("");
+  const jumlahJudul = useRef(baruAwal);
 
   // Props baru tiba setelah router.refresh(): jadikan acuan berikutnya.
   useEffect(() => {
     versi.current = versiAwal;
     baru.current = baruAwal;
+    jumlahJudul.current = baruAwal;
+    aturJudul(baruAwal);
   }, [versiAwal, baruAwal]);
 
   useEffect(() => {
@@ -61,7 +74,14 @@ export function PemantauPapan({ versiAwal, baruAwal }: { versiAwal: string; baru
     } catch {
       /* penyimpanan diblokir: suara tetap mati */
     }
-    judulAsli.current = document.title.replace(/^\(\d+\)\s*/, "");
+    // router.refresh() menulis ulang <title> dari metadata dan menghapus "(n)".
+    // Awasi <head>; pasang kembali awalan bila hilang (aturJudul hanya menulis bila berbeda).
+    const pengamat = new MutationObserver(() => aturJudul(jumlahJudul.current));
+    pengamat.observe(document.head, { childList: true, subtree: true, characterData: true });
+    return () => {
+      pengamat.disconnect();
+      document.title = judulTanpaAwalan();
+    };
   }, []);
 
   useEffect(() => {
@@ -86,7 +106,8 @@ export function PemantauPapan({ versiAwal, baruAwal }: { versiAwal: string; baru
           setPengumuman(`${selisih} pesanan baru masuk`);
           if (audio.current && suara) bunyikan(audio.current);
         }
-        document.title = d.baru > 0 ? `(${d.baru}) ${judulAsli.current}` : judulAsli.current;
+        jumlahJudul.current = d.baru;
+        aturJudul(d.baru);
 
         if (d.versi !== versi.current || tertunda) {
           if (sedangMengetik()) {
@@ -122,7 +143,6 @@ export function PemantauPapan({ versiAwal, baruAwal }: { versiAwal: string; baru
       berhenti = true;
       clearTimeout(pewaktu);
       document.removeEventListener("visibilitychange", saatTerlihat);
-      document.title = judulAsli.current || document.title;
     };
   }, [router, suara]);
 

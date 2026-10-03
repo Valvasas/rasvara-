@@ -13,18 +13,32 @@ Fase 1 (kematangan tampilan & kepercayaan) dan fase 2 (voucher & peta) sudah sel
 - [ ] **Perlindungan anti-bot pada formulir pesanan** — pembeli tamu tidak perlu login dan nomor HP tidak diverifikasi. Batas laju per-IP (10 pesanan/menit) dan batas ukuran input sudah ada, tetapi belum ada CAPTCHA (mis. Cloudflare Turnstile) maupun verifikasi OTP. Pertimbangkan bila mulai ada pesanan palsu.
 - [ ] **Lupa sandi (reset tanpa login)** — ganti sandi saat login sudah ada (lihat bagian Selesai), tetapi pengguna yang lupa sandinya belum punya jalur pemulihan; butuh OTP WhatsApp/SMS. Sesi *pelanggan* juga belum bisa dicabut dari server (sesi pemilik/staf sudah).
 
-- [ ] **Payment gateway (Midtrans Snap, sandbox dulu)** — butuh akun merchant terverifikasi milik pemilik usaha, jadi hanya bisa sampai tahap sandbox dari sisi pengembangan. Alur `StatusBayar` wajib dijaga: satu pesanan tetap maksimal satu `CatatanKas` (invarian #3), dan webhook harus idempotent.
+- [ ] **Payment gateway (Midtrans Snap, sandbox dulu)** — butuh akun merchant terverifikasi milik pemilik usaha, jadi hanya bisa sampai tahap sandbox dari sisi pengembangan. Webhook cukup memanggil `catatPembayaranInti` (invarian #3: satu pembayaran = satu baris kas) dan harus idempotent per ID transaksi gateway.
 - [ ] **Jeda minimum pesanan hari-H** — saat ini pesanan untuk hari ini hanya ditolak bila jamnya sudah lewat. Perlu keputusan pemilik: berapa jam minimum dapur butuh persiapan (mis. 3 jam) sebelum jam acara.
 - [ ] **Batas pemakaian voucher per pelanggan** — sekarang kuota bersifat global. Bila nanti perlu "satu kali per nomor HP", tambahkan tabel pemakaian voucher per pelanggan; jangan andalkan kuota global.
 
+- [ ] **Singgahan pengaturan per proses** — `ambilPengaturan()` menyimpan singgahan 60 detik di memori proses. Di PM2 cluster/beberapa kontainer, perubahan pengaturan baru terlihat di proses lain setelah ≤ 60 detik. Tidak berbahaya untuk tampilan; jalur yang menyangkut uang/otomasi sudah membaca langsung dari DB. Bila nanti horizontal scaling serius, pindahkan ke `revalidateTag` atau Redis.
+- [ ] **Audit dependensi transitif** — `mysql2`/`deepmerge-ts` (Prisma CLI) dan `uuid` (exceljs) masih dilaporkan `npm audit`; tidak terjangkau saat runtime (lihat DEPLOYMENT.md §7). Periksa ulang tiap rilis Prisma/exceljs.
+- [ ] **Stok bahan (gudang)** — sengaja belum: resep + harga bahan sudah memberi daftar belanja & HPP. Stok butuh disiplin input harian; tambahkan hanya bila pemilik siap mencatat pemakaian.
+
 ## Fitur bisnis masa depan (tahap lanjutan)
 
-- [ ] **Verifikasi pembayaran otomatis (Payment Gateway)** — saat ini pembeli mengunggah bukti transfer lalu pemilik verifikasi manual di kanban. Integrasi payment gateway (mis. Midtrans / Xendit) bisa mengotomatiskan ini, tetapi alur `StatusBayar` harus dijaga dengan hati-hati (lihat invarian #3 di AGENTS.md — satu pesanan tetap harus maks satu `CatatanKas`).
+- [ ] **Verifikasi pembayaran otomatis (Payment Gateway)** — saat ini pembeli mengunggah bukti transfer lalu pemilik verifikasi manual di kanban. Integrasi payment gateway (mis. Midtrans / Xendit) bisa mengotomatiskan ini, tetapi pakai jalur `catatPembayaranInti` yang sudah ada (invarian #3 di AGENTS.md).
 - [ ] **Integrasi WhatsApp Business API resmi** — saat ini tombol chat membuka tautan `wa.me` langsung. Penggunaan WhatsApp Cloud API dapat mengirim pesan notifikasi otomatis saat dapur memperbarui status pesanan.
 - [ ] **Multi-cabang / multi-outlet** — skema saat ini eksplisit single-tenant UMKM (`Pengaturan` baris tunggal `id: "utama"`). Jika usaha ingin ekspansi membuka cabang baru, ini membutuhkan perubahan skema multi-cabang.
 - [ ] **Monitoring & Sentry di produksi** — integrasi Sentry / APM untuk menangkap error runtime di sisi klien maupun Server Actions secara terpusat.
 
 ## Selesai
+
+- [x] **Operasional, insight, DP & rekap Excel (2026-10-03)** — lima fase, masing-masing di-commit terpisah di PR #8:
+  - *Fondasi:* tabel `Pembayaran` (DP/pelunasan/refund, satu baris kas per pembayaran, kunci optimistis), migrasi data lama (jumlah kas & total lunas identik sebelum/sesudah), inti pesanan tunggal `pesanan-server.ts`, `GalatBisnis` (pesan galat internal tidak bocor), log aktivitas tanpa IP.
+  - *Operasional:* papan realtime (polling 20 dtk), pesanan manual WA/telepon, detail & ubah pesanan, DP pembeli, templat WA, ringkasan hari ini, navigasi admin berkelompok + bilah bawah ponsel.
+  - *Produksi:* bahan & resep, HPP & margin langsung di halaman menu, rekap produksi + daftar belanja + jadwal siap (cetak & Excel).
+  - *Insight:* margin menu, segmen pelanggan, piutang per umur, perkiraan 7 hari, semuanya dengan angka yang dicocokkan ke SQL.
+  - *Rekap & otomasi:* XLSX 7 lembar (rumus + hasil tersimpan, anti formula injection), arsip otomatis bulanan, batal otomatis pesanan tak dibayar, cron ber-bearer.
+  - *Ditemukan & diperbaiki di jalan:* Next.js 16.3.5 rentan RCE `next/og` → 16.3.8; backup JSON melewatkan tabel baru; angka yang diketik di kolom jumlah hilang bila langsung klik Simpan; span `sr-only` di tabel melebarkan halaman ponsel; acara hari ini sempat terhitung "piutang lewat".
+  - *Verifikasi:* 114 unit test; 5 skrip E2E (239 pemeriksaan) dari database bersih — regresi 62/62, operasional 25/25, insight 26/26, rekap & otomasi 39/39, responsif 390/768/1440 + papan realtime 87/87 — tanpa galat konsol/5xx. Data stres kini realistis (400 pelanggan berulang, jarak pesan 0–13 hari, resep untuk 4 dari 5 menu).
+  - *Ditemukan saat verifikasi akhir:* judul tab "(n) pesanan baru" terhapus setiap kali papan menyegarkan diri (metadata menimpa `<title>`), dan `grid` tanpa kolom dasar membuat kartu melebar 1px di ponsel — keduanya diperbaiki di akar (MutationObserver; aturan dasar `minmax(0,1fr)`).
 
 - [x] **Matang produksi: backend, design system, rombak UI/UX, skalabilitas (2026-10-01)**
   - *Alur yang macet diperbaiki:* status `DIBATALKAN` sebelumnya tidak bisa dicapai dari UI (pesanan palsu tertahan di papan selamanya) — kini ada tombol Batalkan dengan alasan wajib yang tampil ke pembeli, kuota voucher dikembalikan, dan pesanan lunas hanya bisa dibatalkan pemilik. Pesanan tidak bisa "Selesai" sebelum lunas (dulu omzetnya hilang dari Buku Kas), dan pesanan batal tidak bisa ditandai lunas.

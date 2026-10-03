@@ -19,5 +19,18 @@ npm i --no-save playwright && npx playwright install chromium
 DATABASE_URL=... node scripts/uji-e2e/e2e.cjs
 ```
 
+Skrip tambahan (jalankan setelah `e2e.cjs`, karena memakai sandi pemilik yang
+sudah diganti; atur `SANDI=…` bila berbeda):
+
+```bash
+DATABASE_URL=... node scripts/uji-e2e/uji-operasional.cjs   # pesanan manual + DP + ubah + pelunasan, produksi, resep
+DATABASE_URL=... node scripts/uji-e2e/uji-insight.cjs        # tab laporan: angka = SQL, tanpa scroll horizontal
+DATABASE_URL=... CRON_SECRET=... node scripts/uji-e2e/uji-rekap-otomasi.cjs  # XLSX = DB, cron, batal otomatis, traversal
+DATABASE_URL=... node scripts/uji-e2e/uji-responsif-realtime.cjs  # semua halaman di 390/768/1440 + papan realtime
+```
+
+Login dibatasi 5×/menit per IP (fitur keamanan). Bila menjalankan semua skrip
+berturut-turut lalu ada yang berhenti di halaman masuk, tunggu satu menit.
+
 Keluar dengan kode 0 hanya bila semua langkah lulus **dan** tidak ada galat
 konsol, galat halaman, atau respons 5xx selama uji.

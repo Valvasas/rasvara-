@@ -8,12 +8,12 @@ Semua aturan proyek (stack, invarian arsitektur, konvensi, hal yang sensitif) ad
 
 1. `npm run typecheck` — proyek ini `strict: true`, jangan biarkan error TS lolos.
 2. `npm run build` — build memanggil `prisma generate` juga, jadi ini sekaligus memvalidasi skema Prisma cocok dengan kode.
-3. Belum ada test suite otomatis (lihat [TASKS.md](TASKS.md)). Untuk perubahan di alur pesanan/pembayaran/kas, jelaskan ke user langkah manual apa yang perlu dicek di `/menu`, `/pesan`, dan `/admin` sebelum mengklaim selesai — jangan klaim "sudah teruji" hanya berdasarkan typecheck/build.
+3. `npm test` (unit, `tests/`). Untuk perubahan di alur pesanan/pembayaran/kas, jalankan juga E2E di `scripts/uji-e2e/` (butuh PostgreSQL lokal + data stres) — jangan klaim "sudah teruji" hanya berdasarkan typecheck/build.
 4. Jika mengubah `prisma/schema.prisma`, pastikan sudah membuat migrasi (`npm run db:migrate`) — jangan biarkan schema dan folder `prisma/migrations/` tidak sinkron.
 
 ## Batasan lingkungan yang perlu diperhatikan
 
-- Proyek **belum berupa git repository** di direktori ini. Jangan jalankan perintah git (commit/push/branch) tanpa mengonfirmasi dulu ke user apakah mereka ingin `git init`.
+- Repo git ada di folder induk; commit/push hanya bila user meminta.
 - Server dev (`npm run dev`) menulis ulang blok `<!-- BEGIN:nextjs-agent-rules -->...<!-- END:nextjs-agent-rules -->` di [AGENTS.md](AGENTS.md) secara otomatis. Itu perilaku normal dari Next.js — jangan hapus blok itu secara permanen, cukup biarkan/commit apa adanya.
 - `.env` belum tentu ada (hanya `.env.example`). Jika perlu menjalankan `npm run dev`/`db:*`, cek dulu apakah `.env` sudah dibuat dan `DATABASE_URL` menunjuk ke database yang benar-benar bisa diakses — jangan menjalankan migrasi ke database yang tidak dikonfirmasi user.
 
