@@ -4,6 +4,7 @@ import type {
   KategoriMenu,
   StatusBayar,
   StatusPesanan,
+  SumberPesanan,
 } from "@/generated/prisma/client";
 
 /**
@@ -104,6 +105,10 @@ export const INFO_BAYAR: Record<StatusBayar, { label: string; kelas: string }> =
     label: "Cek pembayaran",
     kelas: "bg-kunyit-lembut text-kunyit-tua border-kunyit/30",
   },
+  SEBAGIAN: {
+    label: "DP diterima",
+    kelas: "bg-krem-tua text-kayu border-krem-gelap",
+  },
   LUNAS: {
     label: "Lunas",
     kelas: "bg-daun-lembut text-daun-tua border-daun/20",
@@ -129,6 +134,13 @@ export const LABEL_AMBIL: Record<CaraAmbil, string> = {
   DIANTAR: "Diantar ke alamat",
 };
 
+export const LABEL_SUMBER: Record<SumberPesanan, string> = {
+  WEBSITE: "Website",
+  WHATSAPP: "WhatsApp",
+  TELEPON: "Telepon",
+  LANGSUNG: "Datang langsung",
+};
+
 export const LABEL_BAYAR: Record<CaraBayar, string> = {
   TRANSFER: "Transfer bank",
   TUNAI: "Bayar tunai saat terima",
@@ -142,6 +154,7 @@ export const KATEGORI_PENGELUARAN = [
   "Kemasan",
   "Transport",
   "Upah bantu",
+  "Pengembalian dana",
   "Sewa",
   "Lain-lain",
 ];

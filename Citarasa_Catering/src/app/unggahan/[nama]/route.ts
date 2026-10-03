@@ -41,10 +41,21 @@ async function bolehLihatBukti(nama: string): Promise<boolean> {
     return true;
   }
 
-  const pesanan = await db.pesanan.findFirst({
-    where: { buktiBayarUrl: `/unggahan/${nama}` },
-    select: { kode: true, teleponPemesan: true },
-  });
+  const url = `/unggahan/${nama}`;
+  // Bukti yang belum diverifikasi masih menempel di pesanan; yang sudah
+  // dicatat sebagai pembayaran (DP/pelunasan) pindah ke tabel Pembayaran.
+  const pesanan =
+    (await db.pesanan.findFirst({
+      where: { buktiBayarUrl: url },
+      select: { kode: true, teleponPemesan: true },
+    })) ??
+    (
+      await db.pembayaran.findFirst({
+        where: { buktiUrl: url },
+        select: { pesanan: { select: { kode: true, teleponPemesan: true } } },
+      })
+    )?.pesanan ??
+    null;
   if (!pesanan) return false;
 
   if (sesi && sesi.telepon === pesanan.teleponPemesan) return true;

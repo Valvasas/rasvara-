@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { wajibPemilik } from "@/lib/auth";
 import { dariInputTanggal, hariIniWib } from "@/lib/format";
 import { ambilIpKlien, periksaBatasLaju } from "@/lib/pembatas-laju";
+import { catatAktivitas } from "@/lib/log-aktivitas";
 import type { JenisKas } from "@/generated/prisma/client";
 
 const SkemaKas = z.object({
@@ -91,9 +92,13 @@ export async function aksiTambahKas(
  * pesanan berstatus lunas tanpa jejak uangnya di buku.
  */
 export async function aksiHapusKas(id: string): Promise<HasilAksiKas> {
-  await wajibPemilik();
+  const sesi = await wajibPemilik();
 
+  const target = await db.catatanKas.findFirst({ where: { id, sumber: "MANUAL" }, select: { keterangan: true, jumlah: true, jenis: true } });
   const hasil = await db.catatanKas.deleteMany({ where: { id, sumber: "MANUAL" } });
+  if (hasil.count > 0 && target) {
+    await catatAktivitas({ penggunaId: sesi.id, aksi: "hapus_kas", rincian: `${target.jenis} ${target.jumlah}: ${target.keterangan}` });
+  }
   if (hasil.count === 0) {
     return {
       sukses: false,

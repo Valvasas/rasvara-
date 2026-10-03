@@ -406,15 +406,27 @@ async function isiContohPesanan(pemilikId: string) {
     });
 
     if (c.statusBayar === "LUNAS") {
+      // Invarian #3: uang pesanan selalu lewat baris Pembayaran yang
+      // melahirkan tepat satu catatan kas.
+      const bayar = await db.pembayaran.create({
+        data: {
+          pesananId: pesanan.id,
+          jenis: "PELUNASAN",
+          metode: "TRANSFER",
+          jumlah: pesanan.total,
+          dicatatOlehId: pemilikId,
+        },
+      });
       await db.catatanKas.create({
         data: {
           jenis: "MASUK",
           sumber: "PESANAN",
           kategori: "Penjualan pesanan",
-          keterangan: `Pesanan ${pesanan.kode} - ${c.nama}`,
+          keterangan: `Pelunasan pesanan ${pesanan.kode} a.n. ${c.nama}`,
           jumlah: pesanan.total,
           tanggal: pesanan.tanggalAcara,
           pesananId: pesanan.id,
+          pembayaranId: bayar.id,
           dicatatOlehId: pemilikId,
         },
       });

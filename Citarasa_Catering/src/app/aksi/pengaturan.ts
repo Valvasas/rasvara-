@@ -7,6 +7,7 @@ import { wajibPemilik } from "@/lib/auth";
 import { dariInputTanggal, hariIniWib, normalkanTelepon } from "@/lib/format";
 import { rentangHari } from "@/lib/laporan";
 import { lupakanSinggahanPengaturan } from "@/lib/pengaturan";
+import { catatAktivitas } from "@/lib/log-aktivitas";
 
 const teksOpsional = (maks: number) => z.string().trim().max(maks, `Maksimal ${maks} karakter`).optional();
 
@@ -41,7 +42,7 @@ export async function aksiSimpanPengaturan(
   _prevState: HasilPengaturan | null,
   formData: FormData
 ): Promise<HasilPengaturan> {
-  await wajibPemilik();
+  const sesi = await wajibPemilik();
 
   const raw = {
     namaUsaha: formData.get("namaUsaha"),
@@ -100,6 +101,7 @@ export async function aksiSimpanPengaturan(
   });
 
   lupakanSinggahanPengaturan();
+  await catatAktivitas({ penggunaId: sesi.id, aksi: "ubah_pengaturan" });
 
   revalidatePath("/");
   revalidatePath("/menu");

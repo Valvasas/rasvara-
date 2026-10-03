@@ -13,6 +13,7 @@ import {
   lupakanSinggahanPeran,
 } from "@/lib/auth";
 import { normalkanTelepon } from "@/lib/format";
+import { catatAktivitas } from "@/lib/log-aktivitas";
 import {
   ambilIpKlien,
   periksaBatasLaju,
@@ -112,6 +113,11 @@ export async function aksiMasuk(
   }
 
   resetBatasLaju(kunciAkun);
+
+  if (pengguna.peran !== "PELANGGAN") {
+    // IP sengaja tidak dicatat: kebijakan privasi menjanjikan IP tidak disimpan (invarian #8).
+    await catatAktivitas({ penggunaId: pengguna.id, aksi: "masuk" });
+  }
 
   await buatSesi({
     id: pengguna.id,
@@ -296,6 +302,7 @@ export async function aksiGantiSandi(
     },
   });
   lupakanSinggahanPeran(pengguna.id);
+  await catatAktivitas({ penggunaId: pengguna.id, aksi: "ganti_sandi" });
 
   await buatSesi({
     id: pengguna.id,

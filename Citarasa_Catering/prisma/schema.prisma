@@ -35,7 +35,24 @@ enum StatusPesanan {
 enum StatusBayar {
   BELUM_BAYAR
   MENUNGGU_VERIFIKASI
+  /// Sudah ada pembayaran (mis. DP) tetapi belum menutup total.
+  SEBAGIAN
   LUNAS
+}
+
+/// Asal pesanan. Pesanan yang dicatat pemilik dari WA/telepon tetap terhitung
+/// di laporan, dan pemilik bisa melihat saluran mana yang paling ramai.
+enum SumberPesanan {
+  WEBSITE
+  WHATSAPP
+  TELEPON
+  LANGSUNG
+}
+
+enum JenisPembayaran {
+  DP
+  PELUNASAN
+  REFUND
 }
 
 enum CaraAmbil {
@@ -83,6 +100,8 @@ model Pengguna {
   pesanan      Pesanan[]
   catatanKas   CatatanKas[]
   riwayatStatus RiwayatStatus[]
+  pembayaran   Pembayaran[]
+  aktivitas    LogAktivitas[]
 
   @@index([peran])
 }
@@ -106,6 +125,7 @@ model Menu {
 
   item           ItemPesanan[]
   foto           FotoMenu[]
+  resep          ResepMenu[]
 
   @@index([kategori, aktif])
   @@index([aktif, urutan])
@@ -162,7 +182,15 @@ model Pesanan {
   /// Snapshot kode voucher: nota lama tetap terbaca benar walau vouchernya
   /// kemudian diganti atau dihapus (invarian #2).
   kodeVoucher    String?
+  /// Jumlah bersih yang sudah diterima (DP + pelunasan − refund). Selalu
+  /// diubah di transaksi yang sama dengan baris Pembayaran-nya.
   dibayar        Int           @default(0)
+  /// Snapshot DP minimal saat pesanan dibuat; perubahan persen DP di
+  /// Pengaturan tidak mengubah tagihan pesanan lama (invarian #2).
+  minimalDp      Int           @default(0)
+  sumber         SumberPesanan @default(WEBSITE)
+  /// Bukti transfer yang belum diverifikasi. Setelah dicatat sebagai
+  /// pembayaran, URL-nya pindah ke Pembayaran.buktiUrl.
   buktiBayarUrl  String?
 
   dikonfirmasiPada DateTime?
@@ -174,12 +202,16 @@ model Pesanan {
 
   item           ItemPesanan[]
   riwayat        RiwayatStatus[]
-  kas            CatatanKas?
+  kas            CatatanKas[]
+  pembayaran     Pembayaran[]
 
   @@index([status, tanggalAcara])
   @@index([tanggalAcara])
   @@index([teleponPemesan])
   @@index([dibuatPada])
+  /// Dipakai papan dapur untuk mendeteksi perubahan (denyut) tanpa memuat ulang.
+  @@index([diubahPada])
+  @@index([statusBayar])
   /// Route `/unggahan/[nama]` mencari pemilik sah sebuah bukti transfer lewat
   /// kolom ini pada setiap permintaan gambar; tanpa indeks, tiap kartu pesanan
   /// yang menampilkan bukti memicu pemindaian seluruh tabel pesanan.
@@ -202,8 +234,12 @@ model ItemPesanan {
   jumlah      Int
   catatan     String?
   subtotal    Int
+  /// Snapshot biaya bahan per satuan saat pesanan dibuat (dari resep). Null
+  /// bila menunya belum punya resep. Membuat laporan margin lama tetap benar.
+  hppSatuan   Int?
 
   @@index([pesananId])
+  @@index([menuId])
 }
 
 model RiwayatStatus {
@@ -229,10 +265,13 @@ model CatatanKas {
   jumlah      Int
   tanggal     DateTime
 
-  // Satu pesanan hanya boleh melahirkan satu baris kas masuk.
-  // Unique di sini yang menjaga uang tidak terhitung dobel saat status di-klik ulang.
-  pesananId   String?   @unique
+  // Pesanan bisa punya beberapa baris kas (DP, pelunasan, refund). Yang
+  // mencegah pencatatan ganda kini `pembayaranId @unique`: satu pembayaran
+  // tepat satu baris kas (invarian #3).
+  pesananId   String?
   pesanan     Pesanan?  @relation(fields: [pesananId], references: [id], onDelete: SetNull)
+  pembayaranId String?  @unique
+  pembayaran  Pembayaran? @relation(fields: [pembayaranId], references: [id], onDelete: SetNull)
 
   dicatatOlehId String?
   dicatatOleh   Pengguna? @relation(fields: [dicatatOlehId], references: [id], onDelete: SetNull)
@@ -241,6 +280,76 @@ model CatatanKas {
 
   @@index([tanggal])
   @@index([jenis, tanggal])
+  @@index([pesananId])
+}
+
+/// Satu uang yang benar-benar diterima atau dikembalikan untuk sebuah pesanan.
+model Pembayaran {
+  id            String          @id @default(cuid())
+  pesananId     String
+  pesanan       Pesanan         @relation(fields: [pesananId], references: [id], onDelete: Cascade)
+  jenis         JenisPembayaran
+  metode        CaraBayar
+  /// Selalu positif; arah uang ditentukan `jenis` (REFUND = keluar).
+  jumlah        Int
+  buktiUrl      String?
+  catatan       String?
+  dicatatOlehId String?
+  dicatatOleh   Pengguna?       @relation(fields: [dicatatOlehId], references: [id], onDelete: SetNull)
+  dibuatPada    DateTime        @default(now())
+  kas           CatatanKas?
+
+  @@index([pesananId, dibuatPada])
+  @@index([buktiUrl])
+}
+
+/// Bahan baku dengan harga belinya. Dipakai resep untuk daftar belanja & HPP.
+model Bahan {
+  id             String      @id @default(cuid())
+  nama           String      @unique
+  /// kg, liter, butir, ikat, pcs, ...
+  satuan         String
+  hargaPerSatuan Int
+  aktif          Boolean     @default(true)
+  dibuatPada     DateTime    @default(now())
+  diubahPada     DateTime    @updatedAt
+  resep          ResepMenu[]
+}
+
+model ResepMenu {
+  id             String @id @default(cuid())
+  menuId         String
+  menu           Menu   @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  bahanId        String
+  bahan          Bahan  @relation(fields: [bahanId], references: [id], onDelete: Restrict)
+  /// Takaran untuk SATU satuan menu (mis. 0.15 kg ayam per kotak).
+  jumlahPerPorsi Float
+
+  @@unique([menuId, bahanId])
+  @@index([bahanId])
+}
+
+/// Jejak tindakan penting untuk audit keamanan & menelusuri kesalahan input.
+model LogAktivitas {
+  id         String    @id @default(cuid())
+  penggunaId String?
+  pengguna   Pengguna? @relation(fields: [penggunaId], references: [id], onDelete: SetNull)
+  aksi       String
+  target     String?
+  rincian    String?
+  dibuatPada DateTime  @default(now())
+
+  @@index([dibuatPada])
+}
+
+/// Arsip rekap bulanan XLSX yang dibuat otomatis oleh tugas terjadwal.
+model RekapBulanan {
+  id         String   @id @default(cuid())
+  /// "2026-09"
+  bulan      String   @unique
+  berkas     String
+  ukuran     Int
+  dibuatPada DateTime @default(now())
 }
 
 /// Kode promo. Nilai potongan SELALU dihitung ulang di server saat pesanan
@@ -338,5 +447,12 @@ model Pengaturan {
   namaRekening   String  @default("")
   ongkirDefault  Int     @default(0)
   minOrderAntar  Int     @default(0)
+  /// Persen DP minimal untuk pembayaran transfer. 0 = tanpa DP (wajib lunas).
+  persenDp       Int     @default(0)
+  /// Pesanan transfer tanpa pembayaran dibatalkan otomatis setelah sekian jam.
+  /// 0 = fitur mati.
+  batasBayarJam  Int     @default(0)
+  /// Kapan tugas terjadwal (cron) terakhir berjalan.
+  tugasTerakhir  DateTime?
   diubahPada     DateTime @updatedAt
 }
