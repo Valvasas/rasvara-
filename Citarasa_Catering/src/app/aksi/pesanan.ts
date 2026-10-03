@@ -15,7 +15,7 @@ import {
   normalkanTelepon,
   selisihHari,
 } from "@/lib/format";
-import { ambilPengaturan } from "@/lib/pengaturan";
+import { ambilPengaturan, rekeningLengkap } from "@/lib/pengaturan";
 import { catatPeristiwa } from "@/lib/analitik";
 import { hitungPotongan, normalkanKodeVoucher, pesanTolak } from "@/lib/voucher";
 import { ambilIpKlien, periksaBatasLaju } from "@/lib/pembatas-laju";
@@ -227,6 +227,16 @@ export async function aksiBuatPesanan(
 
   // Ambil pengaturan ongkir
   const pengaturan = await ambilPengaturan();
+
+  // Pembeli yang memilih transfer saat rekening usaha belum diisi akan
+  // menerima instruksi bayar tanpa nomor rekening — pesanannya pasti macet.
+  if (data.caraBayar === "TRANSFER" && !rekeningLengkap(pengaturan)) {
+    return {
+      sukses: false,
+      kesalahan: { caraBayar: ["Pembayaran transfer belum tersedia. Pilih bayar tunai."] },
+      pesan: "Pembayaran transfer belum tersedia saat ini. Silakan pilih bayar tunai.",
+    };
+  }
   let ongkir = 0;
   if (data.caraAmbil === "DIANTAR") {
     ongkir = pengaturan.ongkirDefault;
@@ -615,10 +625,26 @@ export async function aksiPindahStatus(
   const hasil = await db.$transaction(async (tx) => {
     const pesanan = await tx.pesanan.findUnique({
       where: { kode },
-      select: { id: true, status: true },
+      select: { id: true, status: true, statusBayar: true },
     });
     if (!pesanan) {
       return { sukses: false, pesan: "Pesanan tidak ditemukan." };
+    }
+
+    // Pembatalan punya jalurnya sendiri (wajib alasan, mengembalikan kuota
+    // voucher) — lihat aksiBatalkanPesanan.
+    if (statusBaru === "DIBATALKAN") {
+      return { sukses: false, pesan: "Gunakan tombol Batalkan untuk membatalkan pesanan." };
+    }
+
+    // Pesanan yang ditutup sebelum lunas tidak pernah tercatat di Buku Kas,
+    // sehingga omzet di laporan diam-diam lebih kecil dari kenyataan.
+    if (statusBaru === "SELESAI" && pesanan.statusBayar !== "LUNAS") {
+      return {
+        sukses: false,
+        pesan:
+          "Pesanan belum lunas. Tandai lunas dulu (oleh pemilik) supaya uangnya tercatat di Buku Kas.",
+      };
     }
 
     if (!bolehPindahStatus(pesanan.status, statusBaru)) {
@@ -632,7 +658,11 @@ export async function aksiPindahStatus(
     // bila statusnya masih sama dengan yang barusan dibaca.
     const terpindah = await tx.pesanan.updateMany({
       where: { id: pesanan.id, status: pesanan.status },
-      data: { status: statusBaru },
+      data: {
+        status: statusBaru,
+        ...(statusBaru === "DIKONFIRMASI" ? { dikonfirmasiPada: new Date() } : {}),
+        ...(statusBaru === "SELESAI" ? { selesaiPada: new Date() } : {}),
+      },
     });
     if (terpindah.count === 0) {
       return {
@@ -663,6 +693,96 @@ export async function aksiPindahStatus(
   return hasil;
 }
 
+const SkemaBatal = z
+  .string()
+  .trim()
+  .min(3, "Tulis alasan pembatalan (minimal 3 huruf).")
+  .max(200, "Alasan terlalu panjang.");
+
+/**
+ * Membatalkan pesanan yang belum selesai.
+ *
+ * Alasan wajib diisi karena pembeli melihatnya di halaman lacak — pesanan yang
+ * tiba-tiba "Dibatalkan" tanpa penjelasan memancing chat bertubi-tubi.
+ * Pesanan yang sudah lunas hanya boleh dibatalkan pemilik: uangnya sudah masuk
+ * Buku Kas, jadi pengembalian dana harus dicatat oleh orang yang memegang kas.
+ */
+export async function aksiBatalkanPesanan(
+  kode: string,
+  alasan: string
+): Promise<{ sukses: boolean; pesan?: string }> {
+  const sesi = await wajibStafAtauPemilik();
+
+  const alasanValid = SkemaBatal.safeParse(alasan);
+  if (!alasanValid.success) {
+    return { sukses: false, pesan: alasanValid.error.issues[0]?.message };
+  }
+
+  const hasil = await db.$transaction(async (tx) => {
+    const pesanan = await tx.pesanan.findUnique({
+      where: { kode },
+      select: { id: true, status: true, statusBayar: true, voucherId: true },
+    });
+    if (!pesanan) return { sukses: false, pesan: "Pesanan tidak ditemukan." };
+
+    if (!bolehPindahStatus(pesanan.status, "DIBATALKAN")) {
+      return { sukses: false, pesan: "Pesanan ini sudah ditutup dan tidak bisa dibatalkan." };
+    }
+
+    if (pesanan.statusBayar === "LUNAS" && sesi.peran !== "PEMILIK") {
+      return {
+        sukses: false,
+        pesan: "Pesanan ini sudah lunas. Hanya pemilik yang bisa membatalkannya.",
+      };
+    }
+
+    const terpindah = await tx.pesanan.updateMany({
+      where: { id: pesanan.id, status: pesanan.status },
+      data: { status: "DIBATALKAN", alasanBatal: alasanValid.data },
+    });
+    if (terpindah.count === 0) {
+      return {
+        sukses: false,
+        pesan: "Status pesanan ini baru saja diubah dari perangkat lain. Muat ulang halaman dulu.",
+      };
+    }
+
+    // Kuota voucher dikembalikan supaya promo terbatas tidak "habis" oleh
+    // pesanan yang tidak pernah terjadi.
+    if (pesanan.voucherId) {
+      await tx.voucher.updateMany({
+        where: { id: pesanan.voucherId, terpakai: { gt: 0 } },
+        data: { terpakai: { decrement: 1 } },
+      });
+    }
+
+    await tx.riwayatStatus.create({
+      data: {
+        pesananId: pesanan.id,
+        dari: pesanan.status,
+        ke: "DIBATALKAN",
+        olehId: sesi.id,
+        catatan: `Dibatalkan oleh ${sesi.nama}: ${alasanValid.data}`,
+      },
+    });
+
+    return {
+      sukses: true,
+      pesan:
+        pesanan.statusBayar === "LUNAS"
+          ? "Pesanan dibatalkan. Jangan lupa catat pengembalian dana sebagai pengeluaran di Buku Kas."
+          : undefined,
+    };
+  });
+
+  if (!hasil.sukses) return hasil;
+
+  revalidatePath(`/pesanan/${kode}`);
+  revalidatePath("/admin");
+  revalidatePath("/admin/pesanan");
+  return hasil;
+}
+
 export async function aksiTandaiLunas(
   kode: string
 ): Promise<{ sukses: boolean; pesan?: string }> {
@@ -689,6 +809,10 @@ export async function aksiTandaiLunas(
 
     if (pesanan.statusBayar === "LUNAS") {
       return { sukses: true };
+    }
+
+    if (pesanan.status === "DIBATALKAN") {
+      return { sukses: false, pesan: "Pesanan yang sudah dibatalkan tidak bisa ditandai lunas." };
     }
 
     const terkunci = await tx.pesanan.updateMany({

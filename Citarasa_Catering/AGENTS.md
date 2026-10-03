@@ -118,9 +118,24 @@ Kode ini sengaja memakai istilah domain berbahasa Indonesia untuk model, variabe
 ## 8. Yang TIDAK ada saat ini (jangan berasumsi)
 
 - Tidak ada `tailwind.config.*` (memang sengaja, Tailwind v4 CSS-first).
-- Belum ada voucher, peta lokasi, maupun payment gateway — lihat TASKS.md.
+- Belum ada payment gateway — lihat TASKS.md.
 - Tidak ada dark mode.
 - `legacy/` bukan bagian dari aplikasi aktif — jangan impor apa pun dari sana ke `src/`.
+
+## 8b. Design system (wajib diikuti saat menambah UI)
+
+- Token warna & kelas komponen ada di `src/app/globals.css`: `tombol-utama`,
+  `tombol-kedua`, `tombol-hantu`, `kartu`, `isian`, `label`, `lencana`, `tabel`,
+  `pil`, `kotak-sukses/galat/peringatan`. Pakai kelas ini, jangan menulis ulang
+  deretan utilitas untuk tombol/isian.
+- Teks di atas latar `*-lembut` memakai varian `*-tua` (kontras AA). Tidak ada
+  blok latar gelap; `kayu` adalah warna teks, bukan latar.
+- Jangan pakai `alert()`/`confirm()`: konfirmasi dilakukan di tempat (dua langkah).
+- Isian formulir yang bisa ditolak server harus terkendali (atau dikirim lewat
+  `onSubmit` + `startTransition`), karena React 19 mengosongkan isian
+  tak-terkendali setiap aksi formulir selesai.
+- Daftar yang bisa tumbuh (menu, pesanan, kas, riwayat) wajib berpaginasi di
+  database (`skip`/`take`) memakai `KomponenPaginasi`.
 
 Yang **sudah** ada (jangan dibangun ulang): test runner bawaan Node + `tsx` (`npm test`),
 CI di `.github/workflows/ci.yml`, `eslint.config.mjs` (flat config), Dockerfile,

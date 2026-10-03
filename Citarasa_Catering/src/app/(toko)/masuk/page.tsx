@@ -1,31 +1,16 @@
+import type { Metadata } from "next";
 import { FormMasuk } from "@/components/FormMasuk";
-import { IkonPengguna } from "@/components/ikon/Ikon";
+
+export const metadata: Metadata = { title: "Masuk", robots: { index: false } };
 
 export default function HalamanMasuk() {
   return (
-    <div className="container mx-auto px-4 py-12 max-w-md">
-      <div className="bg-white rounded-3xl border border-krem-gelap p-6 sm:p-10 shadow-sm space-y-6">
-        <div className="text-center space-y-2">
-          <img
-            src="/ilustrasi/masuk-akun.png"
-            alt=""
-            aria-hidden="true"
-            width={265}
-            height={303}
-            className="h-28 w-auto mx-auto mb-1"
-          />
-          <div className="w-12 h-12 rounded-2xl bg-bata-lembut text-bata mx-auto flex items-center justify-center">
-            <IkonPengguna className="w-6 h-6" />
-          </div>
-          <h1 className="font-tampil text-2xl font-bold text-kayu">Masuk Akun</h1>
-          <p className="text-xs text-kayu-sedang">
-            Masuk untuk melihat riwayat pesanan Anda atau mengakses dashboard dapur.
-          </p>
-        </div>
-
+    <div className="mx-auto max-w-md px-4 py-12 sm:py-16">
+      <h1 className="font-tampil text-3xl font-bold text-kayu">Masuk</h1>
+      <p className="teks-redup mt-2">Lihat riwayat pesanan atau buka dashboard dapur.</p>
+      <div className="kartu kartu-isi mt-6">
         <FormMasuk />
       </div>
     </div>
   );
 }
-

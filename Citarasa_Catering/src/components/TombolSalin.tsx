@@ -46,18 +46,19 @@ export function TombolSalin({
       type="button"
       onClick={handleSalin}
       title={tersalin ? "Berhasil disalin!" : `Salin "${teks}"`}
-      className={`min-h-[36px] rounded-lg text-xs font-bold transition-all inline-flex items-center justify-center gap-1.5 cursor-pointer select-none ${
+      aria-live="polite"
+      className={`inline-flex items-center justify-center gap-1.5 min-h-[36px] rounded-lg text-xs font-medium border transition-colors cursor-pointer select-none ${
         tersalin
-          ? "bg-daun-lembut text-daun-tua border border-daun/40"
-          : "bg-krem-tua/60 text-kayu hover:bg-krem-gelap border border-krem-gelap"
-      } ${ringkas ? "px-2 py-1 text-[11px]" : "px-3 py-1.5"} ${className}`}
+          ? "bg-daun-lembut text-daun-tua border-daun/20"
+          : "bg-white text-kayu border-krem-gelap hover:bg-krem-tua"
+      } ${ringkas ? "px-2.5" : "px-3"} ${className}`}
     >
       {tersalin ? (
         <IkonCek className="w-3.5 h-3.5" strokeWidth={2.5} />
       ) : (
         <IkonSalin className="w-3.5 h-3.5" />
       )}
-      <span>{tersalin ? "Tersalin!" : label}</span>
+      <span>{tersalin ? "Tersalin" : label}</span>
     </button>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { IkonCetak } from "@/components/ikon/Ikon";
 
 interface TombolCetakPesananProps {
   kode: string;
@@ -13,15 +14,11 @@ export function TombolCetakPesanan({ kode, ringkas = false }: TombolCetakPesanan
       href={`/admin/pesanan/${kode}/cetak`}
       target="_blank"
       rel="noopener noreferrer"
-      className={`min-h-[44px] rounded-xl text-xs font-bold transition-colors inline-flex items-center justify-center gap-1.5 cursor-pointer border ${
-        ringkas
-          ? "px-3 py-1.5 bg-white text-kayu border-krem-gelap hover:bg-krem/50 shadow-sm"
-          : "w-full px-4 py-2 bg-white text-kayu border-krem-gelap hover:bg-krem hover:border-kayu/30 shadow-sm"
-      }`}
-      title="Cetak Lembar Kerja Dapur (KOT) atau Nota"
+      className={ringkas ? "tombol-kedua" : "tombol-hantu tombol-kecil"}
+      title="Cetak lembar dapur atau nota"
     >
-      <span aria-hidden="true">🖨️</span>
-      <span>Cetak Bon / Nota</span>
+      <IkonCetak className="w-4 h-4" />
+      <span>Cetak</span>
     </Link>
   );
 }

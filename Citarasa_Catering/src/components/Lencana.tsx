@@ -25,9 +25,9 @@ export function LencanaStatus({
 
   return (
     <span
-      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${info.kelas} ${className}`}
+      className={`lencana ${info.kelas} ${className}`}
     >
-      <span className="w-1.5 h-1.5 rounded-full mr-1.5 bg-current opacity-75" />
+      <span aria-hidden="true" className="w-1.5 h-1.5 rounded-full bg-current opacity-70" />
       {teks}
     </span>
   );
@@ -46,7 +46,7 @@ export function LencanaBayar({
 
   return (
     <span
-      className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${info.kelas} ${className}`}
+      className={`lencana ${info.kelas} ${className}`}
     >
       {info.label}
     </span>
@@ -66,7 +66,7 @@ export function LencanaKategori({
 
   return (
     <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium bg-krem-tua text-kayu-sedang border border-krem-gelap ${className}`}
+      className={`lencana bg-krem-tua text-kayu-sedang border-transparent ${className}`}
     >
       {label}
     </span>

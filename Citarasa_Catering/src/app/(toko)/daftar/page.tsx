@@ -1,131 +1,110 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
 import { aksiDaftar } from "@/app/aksi/auth";
 import { InputSandi } from "@/components/InputSandi";
-import { IkonMangkuk } from "@/components/ikon/Ikon";
 
 export default function HalamanDaftar() {
   const [state, action, isPending] = useActionState(aksiDaftar, null);
+  // Terkendali supaya isian tidak hilang saat pendaftaran ditolak.
+  const [nama, setNama] = useState("");
+  const [telepon, setTelepon] = useState("");
+  const [alamat, setAlamat] = useState("");
+  const galat = state?.kesalahan ?? {};
 
   return (
-    <div className="container mx-auto px-4 py-12 max-w-md">
-      <div className="bg-white rounded-3xl border border-krem-gelap p-6 sm:p-10 shadow-sm space-y-6">
-        <div className="text-center space-y-2">
-          <img
-            src="/ilustrasi/daftar-akun.png"
-            alt=""
-            aria-hidden="true"
-            width={145}
-            height={144}
-            className="h-24 w-auto mx-auto mb-1"
-          />
-          <div className="w-12 h-12 rounded-2xl bg-daun-lembut text-daun-tua mx-auto flex items-center justify-center">
-            <IkonMangkuk className="w-6 h-6" />
+    <div className="mx-auto max-w-md px-4 py-12 sm:py-16">
+      <h1 className="font-tampil text-3xl font-bold text-kayu">Buat akun</h1>
+      <p className="teks-redup mt-2">
+        Supaya data pemesan terisi otomatis dan riwayat pesanan tersimpan.
+      </p>
+
+      <form action={action} noValidate className="kartu kartu-isi mt-6 space-y-5">
+        {state?.pesan && (
+          <div role="alert" className="kotak-galat">
+            {state.pesan}
           </div>
-          <h1 className="font-tampil text-2xl font-bold text-kayu">Daftar Akun</h1>
-          <p className="text-xs text-kayu-sedang">
-            Buat akun untuk memudahkan pemesanan katering berikutnya dan menyimpan
-            alamat pengiriman Anda.
-          </p>
+        )}
+
+        <div>
+          <label htmlFor="nama" className="label">Nama</label>
+          <input
+            type="text"
+            id="nama"
+            name="nama"
+            required
+            maxLength={100}
+            autoComplete="name"
+            value={nama}
+            onChange={(e) => setNama(e.target.value)}
+            aria-invalid={galat.nama ? true : undefined}
+            className={`isian ${galat.nama ? "isian-galat" : ""}`}
+          />
+          {galat.nama && <p className="pesan-galat">{galat.nama[0]}</p>}
         </div>
 
-        <form action={action} className="space-y-4">
-          {state?.pesan && (
-            <div className="p-3 bg-bahaya-lembut border border-bahaya/30 text-bahaya rounded-xl text-xs font-medium text-center">
-              {state.pesan}
-            </div>
-          )}
-
-          <div>
-            <label
-              htmlFor="nama"
-              className="block text-xs font-bold uppercase tracking-wider text-kayu-sedang mb-1.5"
-            >
-              Nama Lengkap
-            </label>
-            <input
-              type="text"
-              id="nama"
-              name="nama"
-              required
-              placeholder="Contoh: Ibu Ratna Kusuma"
-              className="w-full min-h-[48px] px-4 py-2.5 rounded-xl border border-krem-gelap bg-krem/40 text-kayu text-sm placeholder:text-kayu-sedang/50 focus:outline-none focus:border-bata focus:ring-1 focus:ring-bata"
-            />
-            {state?.kesalahan?.nama && (
-              <p className="text-xs text-bahaya mt-1">
-                {state.kesalahan.nama[0]}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label
-              htmlFor="telepon"
-              className="block text-xs font-bold uppercase tracking-wider text-kayu-sedang mb-1.5"
-            >
-              Nomor Telepon / WhatsApp
-            </label>
-            <input
-              type="tel"
-              id="telepon"
-              name="telepon"
-              inputMode="tel"
-              required
-              placeholder="081234567890"
-              className="w-full min-h-[48px] px-4 py-2.5 rounded-xl border border-krem-gelap bg-krem/40 text-kayu text-sm placeholder:text-kayu-sedang/50 focus:outline-none focus:border-bata focus:ring-1 focus:ring-bata"
-            />
-            {state?.kesalahan?.telepon && (
-              <p className="text-xs text-bahaya mt-1">
-                {state.kesalahan.telepon[0]}
-              </p>
-            )}
-          </div>
-
-          <InputSandi
-            id="sandi"
-            name="sandi"
-            label="Kata Sandi"
-            placeholder="Minimal 6 karakter"
+        <div>
+          <label htmlFor="telepon" className="label">Nomor WhatsApp</label>
+          <input
+            type="tel"
+            id="telepon"
+            name="telepon"
+            inputMode="tel"
+            autoComplete="tel"
             required
-            error={state?.kesalahan?.sandi?.[0]}
+            maxLength={20}
+            value={telepon}
+            onChange={(e) => setTelepon(e.target.value)}
+            placeholder="08xxxxxxxxxx"
+            aria-invalid={galat.telepon ? true : undefined}
+            className={`isian ${galat.telepon ? "isian-galat" : ""}`}
           />
+          {galat.telepon ? (
+            <p className="pesan-galat">{galat.telepon[0]}</p>
+          ) : (
+            <p className="petunjuk">Dipakai untuk masuk.</p>
+          )}
+        </div>
 
-          <div>
-            <label
-              htmlFor="alamat"
-              className="block text-xs font-bold uppercase tracking-wider text-kayu-sedang mb-1.5"
-            >
-              Alamat Pengiriman Default (Opsional)
-            </label>
-            <textarea
-              id="alamat"
-              name="alamat"
-              rows={2}
-              placeholder="Nama jalan, nomor rumah, RT/RW, kelurahan..."
-              className="w-full p-3 rounded-xl border border-krem-gelap bg-krem/40 text-kayu text-sm placeholder:text-kayu-sedang/50 focus:outline-none focus:border-bata focus:ring-1 focus:ring-bata"
-            />
-          </div>
+        <InputSandi
+          id="sandi"
+          name="sandi"
+          label="Kata sandi"
+          placeholder="Minimal 8 karakter"
+          autoComplete="new-password"
+          minLength={8}
+          required
+          error={galat.sandi?.[0]}
+        />
 
-          <button
-            type="submit"
-            disabled={isPending}
-            className="w-full min-h-[48px] px-6 py-3 rounded-xl font-bold text-white bg-bata hover:bg-bata-tua disabled:opacity-60 transition-colors shadow-sm inline-flex items-center justify-center gap-2 cursor-pointer mt-2"
-          >
-            <span>{isPending ? "Mendaftarkan..." : "Daftar Sekarang"}</span>
-            {!isPending && <span aria-hidden="true">&rarr;</span>}
-          </button>
+        <div>
+          <label htmlFor="alamat" className="label">
+            Alamat antar <span className="font-normal text-kayu-sedang">(opsional)</span>
+          </label>
+          <textarea
+            id="alamat"
+            name="alamat"
+            rows={2}
+            maxLength={500}
+            autoComplete="street-address"
+            value={alamat}
+            onChange={(e) => setAlamat(e.target.value)}
+            className="isian py-2.5"
+          />
+        </div>
 
-          <div className="pt-2 text-center text-xs text-kayu-sedang">
-            <span>Sudah memiliki akun? </span>
-            <Link href="/masuk" className="font-bold text-bata hover:underline">
-              Masuk di sini
-            </Link>
-          </div>
-        </form>
-      </div>
+        <button type="submit" disabled={isPending} className="tombol-utama w-full">
+          {isPending ? "Membuat akun..." : "Buat akun"}
+        </button>
+
+        <p className="text-center text-sm text-kayu-sedang">
+          Sudah punya akun?{" "}
+          <Link href="/masuk" className="font-semibold text-bata hover:underline">
+            Masuk
+          </Link>
+        </p>
+      </form>
     </div>
   );
 }
-

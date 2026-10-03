@@ -1,3 +1,5 @@
+import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
@@ -5,237 +7,179 @@ import { bacaSesi } from "@/lib/auth";
 import { rupiah } from "@/lib/format";
 import { LABEL_KATEGORI, URUTAN_KATEGORI } from "@/lib/pesanan";
 import { TombolToggleMenu } from "@/components/admin/TombolToggleMenu";
-import { KelolaFotoMenu } from "@/components/admin/KelolaFotoMenu";
-import { KomponenPaginasi } from "@/components/toko/KomponenPaginasi";
-import type { FotoMenu, KategoriMenu, Menu } from "@/generated/prisma/client";
+import { KomponenPaginasi } from "@/components/KomponenPaginasi";
+import { IkonFoto, IkonTambah } from "@/components/ikon/Ikon";
+import type { KategoriMenu, Prisma } from "@/generated/prisma/client";
 
-type MenuDenganFoto = Menu & { foto: FotoMenu[] };
+export const metadata: Metadata = { title: "Menu" };
+
+const UKURAN_HALAMAN = 25;
 
 interface HalamanAdminMenuProps {
-  searchParams: Promise<{ q?: string; kategori?: string; halaman?: string }>;
+  searchParams: Promise<{ q?: string; kategori?: string; status?: string; halaman?: string }>;
 }
 
-/**
- * Tiap baris menu di sini membawa pengelola galeri fotonya sendiri, jadi satu
- * halaman berisi seratus menu berarti seratus komponen berat sekaligus.
- */
-const UKURAN_HALAMAN = 20;
-
-export default async function HalamanAdminMenu({
-  searchParams,
-}: HalamanAdminMenuProps) {
+export default async function HalamanAdminMenu({ searchParams }: HalamanAdminMenuProps) {
   const sesi = await bacaSesi();
-  if (sesi?.peran !== "PEMILIK") {
-    redirect("/admin");
-  }
+  if (sesi?.peran !== "PEMILIK") redirect("/admin");
 
   const params = await searchParams;
-  const kataKunci = params.q?.trim() || "";
-  const filterKategori = params.kategori || "";
-
-  const filterKategoriEnum =
-    filterKategori && URUTAN_KATEGORI.includes(filterKategori as KategoriMenu)
-      ? (filterKategori as KategoriMenu)
-      : undefined;
-
-  const kondisiPencarian = kataKunci
-    ? [
-        { nama: { contains: kataKunci, mode: "insensitive" as const } },
-        { deskripsi: { contains: kataKunci, mode: "insensitive" as const } },
-      ]
+  const kataKunci = (params.q ?? "").trim().slice(0, 60);
+  const kategori = URUTAN_KATEGORI.includes(params.kategori as KategoriMenu)
+    ? (params.kategori as KategoriMenu)
+    : undefined;
+  const status = params.status === "aktif" || params.status === "nonaktif" || params.status === "tanpa-foto"
+    ? params.status
     : undefined;
 
-  const where = {
-    ...(filterKategoriEnum ? { kategori: filterKategoriEnum } : {}),
-    ...(kondisiPencarian ? { OR: kondisiPencarian } : {}),
+  const where: Prisma.MenuWhereInput = {
+    ...(kategori ? { kategori } : {}),
+    ...(status === "aktif" ? { aktif: true } : status === "nonaktif" ? { aktif: false } : {}),
+    ...(status === "tanpa-foto" ? { foto: { none: {} } } : {}),
+    ...(kataKunci
+      ? {
+          OR: [
+            { nama: { contains: kataKunci, mode: "insensitive" } },
+            { deskripsi: { contains: kataKunci, mode: "insensitive" } },
+          ],
+        }
+      : {}),
   };
 
-  let daftarMenu: MenuDenganFoto[] = [];
-  let totalMenu = 0;
-  const halamanDiminta = Number(params.halaman ?? "1");
-  let halamanAktif =
-    Number.isFinite(halamanDiminta) && halamanDiminta >= 1
-      ? Math.floor(halamanDiminta)
-      : 1;
+  const [total, totalSemua, tanpaFoto] = await Promise.all([
+    db.menu.count({ where }),
+    db.menu.count(),
+    db.menu.count({ where: { aktif: true, foto: { none: {} } } }),
+  ]);
+  const totalHalaman = Math.max(1, Math.ceil(total / UKURAN_HALAMAN));
+  const halaman = Math.min(Math.max(1, Math.floor(Number(params.halaman) || 1)), totalHalaman);
 
-  try {
-    totalMenu = await db.menu.count({ where });
-    halamanAktif = Math.min(
-      halamanAktif,
-      Math.max(1, Math.ceil(totalMenu / UKURAN_HALAMAN))
-    );
+  const daftar = await db.menu.findMany({
+    where,
+    orderBy: [{ kategori: "asc" }, { urutan: "asc" }, { nama: "asc" }],
+    include: { foto: { orderBy: { urutan: "asc" }, take: 1 }, _count: { select: { foto: true } } },
+    skip: (halaman - 1) * UKURAN_HALAMAN,
+    take: UKURAN_HALAMAN,
+  });
 
-    daftarMenu = await db.menu.findMany({
-      where,
-      orderBy: [{ kategori: "asc" }, { urutan: "asc" }, { nama: "asc" }],
-      include: { foto: { orderBy: { urutan: "asc" } } },
-      skip: (halamanAktif - 1) * UKURAN_HALAMAN,
-      take: UKURAN_HALAMAN,
-    });
-  } catch {
-    // Fallback saat DB belum jalan
-  }
-
-  const totalHalaman = Math.max(1, Math.ceil(totalMenu / UKURAN_HALAMAN));
+  const adaSaringan = Boolean(kataKunci || kategori || status);
 
   return (
-    <div className="space-y-6">
-      <div className="bg-white p-6 rounded-3xl border border-krem-gelap flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm">
+    <div>
+      <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-kayu">
-            Kelola Menu & Kuota Harian
-          </h1>
-          <p className="text-xs text-kayu-sedang mt-0.5">
-            Nyalakan atau matikan menu yang kehabisan bahan di pasar. Menu yang
-            dinonaktifkan tidak akan muncul di katalog pembeli.
-          </p>
+          <h1 className="judul-halaman">Menu</h1>
+          <p className="teks-redup mt-1">{totalSemua} menu terdaftar</p>
         </div>
+        <Link href="/admin/menu/baru" className="tombol-utama">
+          <IkonTambah className="w-4 h-4" />
+          Tambah menu
+        </Link>
+      </header>
 
-        <span className="text-xs font-bold px-3 py-1.5 rounded-xl bg-krem-tua text-kayu border border-krem-gelap">
-          Total {totalMenu} Menu Terdaftar
-        </span>
-      </div>
+      {tanpaFoto > 0 && status !== "tanpa-foto" && (
+        <Link
+          href="/admin/menu?status=tanpa-foto"
+          className="mt-6 flex items-center justify-between gap-3 rounded-xl border border-kunyit/30 bg-kunyit-lembut px-4 py-3 text-sm text-kunyit-tua hover:border-kunyit/60"
+        >
+          <span className="flex items-center gap-2">
+            <IkonFoto className="w-4 h-4" />
+            <span>
+              <span className="font-semibold">{tanpaFoto} menu aktif belum punya foto.</span> Foto asli paling
+              berpengaruh pada keputusan pembeli.
+            </span>
+          </span>
+          <span className="font-medium shrink-0">Tampilkan →</span>
+        </Link>
+      )}
 
-      {/* Baris Pencarian & Filter Menu */}
-      <form method="get" className="bg-white p-4 rounded-2xl border border-krem-gelap flex flex-wrap items-center justify-between gap-3 shadow-sm">
-        <div className="flex-1 min-w-[240px] flex items-center gap-2">
-          <span className="text-sm">🔍</span>
-          <input
-            type="text"
-            name="q"
-            defaultValue={kataKunci}
-            placeholder="Cari nama menu atau deskripsi bahan..."
-            className="w-full min-h-[44px] px-3 py-1.5 rounded-xl border border-krem-gelap bg-krem/30 text-xs font-medium text-kayu placeholder:text-kayu-sedang/60 focus:outline-none focus:border-bata"
-          />
-        </div>
-
-        <div className="flex items-center gap-2">
-          <select
-            name="kategori"
-            defaultValue={filterKategori}
-            className="min-h-[44px] px-3 py-1.5 rounded-xl border border-krem-gelap bg-krem/30 text-xs font-medium text-kayu focus:outline-none focus:border-bata"
-          >
-            <option value="">Semua Kategori</option>
-            {URUTAN_KATEGORI.map((k) => (
-              <option key={k} value={k}>
-                {LABEL_KATEGORI[k]}
-              </option>
-            ))}
-          </select>
-
-          <button
-            type="submit"
-            className="min-h-[44px] px-4 py-2 rounded-xl font-bold text-xs bg-kayu text-white hover:bg-kayu-sedang transition-colors cursor-pointer"
-          >
-            Filter
-          </button>
-
-          {(kataKunci || filterKategori) && (
-            <Link
-              href="/admin/menu"
-              className="min-h-[44px] px-3 py-2 rounded-xl text-xs font-semibold text-bahaya bg-bahaya-lembut hover:bg-bahaya hover:text-white transition-colors inline-flex items-center"
-            >
-              Reset
-            </Link>
-          )}
-        </div>
+      <form method="get" className="mt-6 flex flex-wrap gap-2">
+        <label htmlFor="q" className="sr-only">Cari menu</label>
+        <input id="q" type="search" name="q" defaultValue={kataKunci} maxLength={60} placeholder="Cari menu" className="isian flex-1 min-w-[200px] sm:max-w-xs" />
+        <label htmlFor="kategori" className="sr-only">Kategori</label>
+        <select id="kategori" name="kategori" defaultValue={kategori ?? ""} className="isian w-auto">
+          <option value="">Semua kategori</option>
+          {URUTAN_KATEGORI.map((k) => (
+            <option key={k} value={k}>{LABEL_KATEGORI[k]}</option>
+          ))}
+        </select>
+        <label htmlFor="status" className="sr-only">Status</label>
+        <select id="status" name="status" defaultValue={status ?? ""} className="isian w-auto">
+          <option value="">Semua status</option>
+          <option value="aktif">Tampil</option>
+          <option value="nonaktif">Disembunyikan</option>
+          <option value="tanpa-foto">Tanpa foto</option>
+        </select>
+        <button type="submit" className="tombol-kedua">Terapkan</button>
+        {adaSaringan && <Link href="/admin/menu" className="tombol-hantu">Reset</Link>}
       </form>
 
-      {/* Tabel / Daftar Menu per Kategori */}
-      <div className="space-y-6">
-        {URUTAN_KATEGORI.map((kat) => {
-          const menuKategori = daftarMenu.filter((m) => m.kategori === kat);
-          if (menuKategori.length === 0) return null;
-
-          return (
-            <div
-              key={kat}
-              className="bg-white rounded-3xl border border-krem-gelap overflow-hidden shadow-sm space-y-3"
-            >
-              <div className="p-4 bg-krem-tua/60 border-b border-krem-gelap flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <h2 className="font-extrabold text-sm text-kayu">
-                    {LABEL_KATEGORI[kat]}
-                  </h2>
-                  <span className="text-xs font-semibold text-kayu-sedang">
-                    ({menuKategori.length} varian)
-                  </span>
-                </div>
-              </div>
-
-              <div className="divide-y divide-krem-gelap/60">
-                {menuKategori.map((item) => (
-                  <div key={item.id} className="p-4 space-y-3">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <h3 className="font-bold text-sm text-kayu">
-                          {item.nama}
-                        </h3>
-                        {item.foto.length === 0 && (
-                          <span className="text-[10px] font-semibold text-kunyit-tua bg-kunyit-lembut px-2 py-0.5 rounded">
-                            Belum ada foto
-                          </span>
-                        )}
-                        {item.preorderHari > 0 ? (
-                          <span className="text-[10px] font-semibold text-kunyit-tua bg-kunyit-lembut px-2 py-0.5 rounded">
-                            Preorder {item.preorderHari} hari
-                          </span>
+      {daftar.length === 0 ? (
+        <p className="kartu kartu-isi mt-6 text-center teks-redup">
+          {adaSaringan ? "Tidak ada menu yang cocok." : "Belum ada menu. Tambahkan menu pertama."}
+        </p>
+      ) : (
+        <div className="kartu mt-6 overflow-x-auto">
+          <table className="tabel min-w-[680px]">
+            <thead>
+              <tr>
+                <th scope="col">Menu</th>
+                <th scope="col">Kategori</th>
+                <th scope="col" className="text-right">Harga</th>
+                <th scope="col">Aturan</th>
+                <th scope="col">Di katalog</th>
+                <th scope="col"><span className="sr-only">Aksi</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              {daftar.map((m) => (
+                <tr key={m.id}>
+                  <td>
+                    <div className="flex items-center gap-3">
+                      <div className="relative w-11 h-11 shrink-0 rounded-lg overflow-hidden bg-krem-tua border border-krem-gelap flex items-center justify-center">
+                        {m.foto[0] ? (
+                          <Image src={m.foto[0].url} alt="" fill sizes="44px" className="object-cover" />
                         ) : (
-                          <span className="text-[10px] font-semibold text-daun-tua bg-daun-lembut px-2 py-0.5 rounded">
-                            Bisa hari ini
-                          </span>
+                          <IkonFoto className="w-4 h-4 text-kayu-sedang/50" />
                         )}
                       </div>
-
-                      <p className="text-xs text-kayu-sedang line-clamp-1">
-                        {item.deskripsi}
-                      </p>
-
-                      <div className="flex items-center gap-3 text-xs text-kayu-sedang">
-                        <span>
-                          Harga: <strong className="text-bata">{rupiah(item.harga)}</strong> / {item.satuan}
-                        </span>
-                        <span>&bull;</span>
-                        <span>Min. Pesan: {item.minPesan}</span>
-                        {item.kapasitasHarian && (
-                          <>
-                            <span>&bull;</span>
-                            <span>Kapasitas: {item.kapasitasHarian}/hari</span>
-                          </>
-                        )}
+                      <div className="min-w-0">
+                        <Link href={`/admin/menu/${m.id}`} className="font-medium text-kayu hover:text-bata">
+                          {m.nama}
+                        </Link>
+                        <p className="text-xs text-kayu-sedang">{m._count.foto} foto</p>
                       </div>
                     </div>
-
-                    <div className="flex items-center gap-3 self-end sm:self-center">
-                      <TombolToggleMenu id={item.id} aktif={item.aktif} />
-                    </div>
-                    </div>
-
-                    <KelolaFotoMenu
-                      menuId={item.id}
-                      namaMenu={item.nama}
-                      foto={item.foto.map((f) => ({
-                        id: f.id,
-                        url: f.url,
-                        urutan: f.urutan,
-                      }))}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+                  </td>
+                  <td className="text-kayu-sedang whitespace-nowrap">{LABEL_KATEGORI[m.kategori]}</td>
+                  <td className="text-right angka-tabel whitespace-nowrap">
+                    {rupiah(m.harga)}
+                    <span className="text-kayu-sedang text-xs"> /{m.satuan}</span>
+                  </td>
+                  <td className="text-xs text-kayu-sedang whitespace-nowrap">
+                    Min. {m.minPesan}
+                    {m.preorderHari > 0 && ` · H-${m.preorderHari}`}
+                    {m.kapasitasHarian && ` · ${m.kapasitasHarian}/hari`}
+                  </td>
+                  <td>
+                    <TombolToggleMenu id={m.id} aktif={m.aktif} nama={m.nama} />
+                  </td>
+                  <td className="text-right">
+                    <Link href={`/admin/menu/${m.id}`} className="tombol-hantu tombol-kecil">Ubah</Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <KomponenPaginasi
-        halamanAktif={halamanAktif}
+        halamanAktif={halaman}
         totalHalaman={totalHalaman}
         basePath="/admin/menu"
-        queryLain={{ q: kataKunci || undefined, kategori: filterKategoriEnum }}
+        queryLain={{ q: kataKunci || undefined, kategori, status }}
       />
     </div>
   );
 }
-

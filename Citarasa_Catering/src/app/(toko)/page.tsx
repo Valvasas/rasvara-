@@ -1,321 +1,236 @@
+import Image from "next/image";
 import Link from "next/link";
-import { rupiah } from "@/lib/format";
+import { linkWhatsapp, rupiah } from "@/lib/format";
 import { ambilPengaturan } from "@/lib/pengaturan";
-import { ambilMenuAktif } from "@/lib/menu";
-import { LencanaKategori } from "@/components/Lencana";
-import { PanelFotoMenu } from "@/components/toko/PanelFotoMenu";
-import { PanelSorotan } from "@/components/toko/PanelSorotan";
+import { ambilMenuFavorit, ambilRingkasanKategori } from "@/lib/menu";
+import { LABEL_KATEGORI, URUTAN_KATEGORI } from "@/lib/pesanan";
+import { KartuMenu } from "@/components/toko/KartuMenu";
 import {
-  IkonCabai,
-  IkonDaun,
-  IkonHp,
-  IkonJam,
   IkonKotakNasi,
   IkonNasiGoreng,
+  IkonPanahKanan,
   IkonSnack,
   IkonTumpeng,
+  IkonWhatsapp,
 } from "@/components/ikon/Ikon";
-import type { MenuDenganFoto } from "@/lib/menu";
+import type { KategoriMenu } from "@/generated/prisma/client";
+
+const IKON_KATEGORI: Record<KategoriMenu, typeof IkonKotakNasi> = {
+  NASI_KOTAK: IkonKotakNasi,
+  SNACK: IkonSnack,
+  TUMPENG: IkonTumpeng,
+  NASI_GORENG: IkonNasiGoreng,
+};
+
+const LANGKAH = [
+  { judul: "Pilih menu & jumlah", isi: "Campur beberapa menu dalam satu pesanan." },
+  { judul: "Tentukan jadwal", isi: "Tanggal, jam acara, dan diantar atau diambil." },
+  { judul: "Bayar & pantau", isi: "Transfer atau tunai. Status masakan bisa dilacak." },
+];
 
 export default async function BerandaToko() {
-  const [menus] = await Promise.all([
-    ambilMenuAktif(),
+  const [favorit, ringkasan, pengaturan] = await Promise.all([
+    ambilMenuFavorit(6),
+    ambilRingkasanKategori(),
     ambilPengaturan(),
   ]);
-  const menuUnggulan: MenuDenganFoto[] = menus.slice(0, 6);
 
-  const kategoriUtama = [
-    {
-      kategori: "NASI_KOTAK",
-      judul: "Nasi Kotak",
-      deskripsi: "Pilihan komplit lauk ayam bakar, rendang, dan lalapan segar.",
-      Ikon: IkonKotakNasi,
-      tautan: "/menu?kategori=NASI_KOTAK",
-    },
-    {
-      kategori: "SNACK",
-      judul: "Snack Box",
-      deskripsi: "Kue basah tradisional & gurih untuk rapat, arisan, & seminar.",
-      Ikon: IkonSnack,
-      tautan: "/menu?kategori=SNACK",
-    },
-    {
-      kategori: "TUMPENG",
-      judul: "Tumpeng Acara",
-      deskripsi: "Tumpeng kuning hiasan daun pisang komplit untuk syukuran spesial.",
-      Ikon: IkonTumpeng,
-      tautan: "/menu?kategori=TUMPENG",
-    },
-    {
-      kategori: "NASI_GORENG",
-      judul: "Nasi Goreng",
-      deskripsi: "Nasi goreng spesial porsi prasmanan atau satuan bumbu dapur asli.",
-      Ikon: IkonNasiGoreng,
-      tautan: "/menu?kategori=NASI_GORENG",
-    },
-  ];
+  const kategoriAda = URUTAN_KATEGORI.map((k) => ringkasan.find((r) => r.kategori === k)).filter(
+    (r): r is NonNullable<typeof r> => Boolean(r && r.jumlah > 0)
+  );
+  const hargaTermurah = kategoriAda.length
+    ? Math.min(...kategoriAda.map((k) => k.hargaTermurah))
+    : null;
 
-  const fotoSorotan = menus
+  const fotoHero = favorit.daftar
     .filter((m) => m.foto.length > 0)
     .slice(0, 3)
-    .map((m) => ({ id: m.id, fotoUrl: m.foto[0].url, nama: m.nama }));
+    .map((m) => ({ url: m.foto[0].url, nama: m.nama, slug: m.slug }));
+
+  const waUrl = pengaturan.whatsapp
+    ? linkWhatsapp(
+        pengaturan.whatsapp,
+        `Halo ${pengaturan.namaUsaha}, saya mau konsultasi menu untuk acara dengan jumlah tamu ...`
+      )
+    : null;
 
   return (
-    <div className="space-y-16">
-      {/* 1. Hero Section yang Hangat */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-krem-tua via-krem to-krem border-b border-krem-gelap/60 py-16 md:py-24 px-4">
-        <div className="container mx-auto max-w-5xl text-center space-y-6">
-          <div className="anim-masuk inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-bata-lembut border border-bata/30 text-bata-tua text-xs font-bold tracking-wide uppercase">
-            <IkonCabai className="w-4 h-4" strokeWidth={2} />
-            <span>Resep Asli Rumahan</span>
-            <span>&bull;</span>
-            <span>Tanpa Pengawet</span>
-          </div>
+    <>
+      {/* Hero */}
+      <section className="mx-auto max-w-6xl px-4 sm:px-6 pt-10 pb-14 sm:pt-16 sm:pb-20">
+        <div
+          className={`grid gap-10 items-center ${fotoHero.length ? "lg:grid-cols-[1.05fr_1fr]" : ""}`}
+        >
+          <div className={`anim-masuk ${fotoHero.length ? "" : "max-w-2xl"}`}>
+            <p className="text-sm font-medium text-bata">Catering rumahan · pesan online</p>
+            <h1 className="font-tampil mt-3 text-4xl sm:text-5xl font-bold text-kayu leading-[1.1]">
+              Nasi kotak, tumpeng &amp; snack box untuk acaramu
+            </h1>
+            <p className="mt-5 text-lg text-kayu-sedang leading-relaxed max-w-xl">
+              Dimasak di hari yang sama, siap tepat di jam acara. Pilih menu, atur jadwal, lalu
+              pantau masakanmu dari ponsel.
+            </p>
 
-          <h1 className="font-tampil anim-masuk jeda-1 text-3xl md:text-5xl lg:text-6xl font-bold text-kayu tracking-tight leading-tight md:leading-tight">
-            Masakan Hangat,{" "}
-            <span className="text-bata block sm:inline">Siap Tepat Waktu.</span>
-          </h1>
-
-          <p className="anim-masuk jeda-2 max-w-2xl mx-auto text-base md:text-lg text-kayu-sedang leading-relaxed">
-            Spesialis katering nasi kotak, snack box, dan tumpeng untuk acara
-            keluarga, syukuran kantor, dan pengajian. Dimasak langsung sebelum diantar
-            agar cita rasa tetap prima.
-          </p>
-
-          <div className="anim-masuk jeda-3 pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link
-              href="/menu"
-              className="min-h-[48px] w-full sm:w-auto px-8 py-3.5 rounded-xl font-bold text-white bg-bata hover:bg-bata-tua transition-all shadow-md hover:shadow-lg inline-flex items-center justify-center gap-2"
-            >
-              <span>Lihat Semua Menu</span>
-              <span aria-hidden="true">&rarr;</span>
-            </Link>
-
-            <Link
-              href="/pesan"
-              className="min-h-[48px] w-full sm:w-auto px-8 py-3.5 rounded-xl font-bold text-kayu bg-krem-tua hover:bg-krem-gelap border border-krem-gelap transition-colors inline-flex items-center justify-center"
-            >
-              Pesan Langsung
-            </Link>
-          </div>
-        </div>
-
-        {fotoSorotan.length > 0 ? (
-          <div className="anim-masuk jeda-4 mt-12 max-w-3xl mx-auto">
-            <PanelSorotan foto={fotoSorotan} />
-          </div>
-        ) : (
-          <img
-            src="/ilustrasi/sambutan-beranda.png"
-            alt="Ilustrasi juru masak menyambut pelanggan dengan salam hangat"
-            width={206}
-            height={248}
-            className="anim-masuk jeda-4 mt-10 h-40 md:h-48 w-auto mx-auto"
-          />
-        )}
-      </section>
-
-      {/* 2. Empat Kategori Pilihan */}
-      <section className="container mx-auto px-4 max-w-6xl">
-        <div className="text-center max-w-2xl mx-auto mb-10">
-          <h2 className="font-tampil text-2xl md:text-3xl font-bold text-kayu">
-            Pilihan Menu untuk Setiap Momen
-          </h2>
-          <p className="text-sm text-kayu-sedang mt-2">
-            Dari rapat singkat hingga perayaan besar, kami siapkan hidangan terbaik
-            untuk tamu Anda.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {kategoriUtama.map((kat, idx) => (
-            <Link
-              key={kat.kategori}
-              href={kat.tautan}
-              className={`anim-masuk jeda-${idx + 1} group p-6 bg-white rounded-2xl border border-krem-gelap/80 hover:border-bata/40 hover:shadow-lg hover:-translate-y-1 transition-all flex flex-col justify-between`}
-            >
-              <div>
-                <span className="w-12 h-12 rounded-xl bg-krem-tua text-bata flex items-center justify-center mb-3 transition-transform group-hover:scale-110 group-hover:-rotate-3">
-                  <kat.Ikon className="w-6 h-6" />
-                </span>
-                <h3 className="text-lg font-bold text-kayu group-hover:text-bata transition-colors">
-                  {kat.judul}
-                </h3>
-                <p className="text-xs text-kayu-sedang mt-2 leading-relaxed">
-                  {kat.deskripsi}
-                </p>
-              </div>
-              <div className="mt-4 pt-3 border-t border-krem-gelap/50 flex items-center text-xs font-semibold text-bata group-hover:translate-x-1 transition-transform">
-                <span>Pilih {kat.judul}</span>
-                <span className="ml-1">&rarr;</span>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
-
-      {/* 3. Menu Unggulan Dapur */}
-      {menuUnggulan.length > 0 && (
-        <section className="container mx-auto px-4 max-w-6xl">
-          <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 mb-8">
-            <div>
-              <h2 className="font-tampil text-2xl md:text-3xl font-bold text-kayu">
-                Menu Favorit Pelanggan
-              </h2>
-              <p className="text-sm text-kayu-sedang mt-1">
-                Paling sering dipesan untuk acara hajatan dan rapat mingguan.
-              </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link href="/menu" className="tombol-utama tombol-besar">
+                Lihat menu
+                <IkonPanahKanan className="w-4 h-4" />
+              </Link>
+              <Link href="/lacak" className="tombol-kedua tombol-besar">
+                Lacak pesanan
+              </Link>
             </div>
-            <Link
-              href="/menu"
-              className="text-sm font-bold text-bata hover:underline inline-flex items-center gap-1"
-            >
-              <span>Semua Menu ({menuUnggulan.length}+)</span>
-              <span>&rarr;</span>
-            </Link>
+
+            <dl className="mt-10 grid grid-cols-3 gap-4 max-w-md text-sm border-t border-krem-gelap pt-6">
+              {hargaTermurah !== null && (
+                <div>
+                  <dt className="text-kayu-sedang">Mulai</dt>
+                  <dd className="mt-0.5 font-semibold text-kayu angka-tabel">{rupiah(hargaTermurah)}</dd>
+                </div>
+              )}
+              <div>
+                <dt className="text-kayu-sedang">Pengambilan</dt>
+                <dd className="mt-0.5 font-semibold text-kayu">Antar / ambil</dd>
+              </div>
+              <div>
+                <dt className="text-kayu-sedang">Bayar</dt>
+                <dd className="mt-0.5 font-semibold text-kayu">Transfer / tunai</dd>
+              </div>
+            </dl>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {menuUnggulan.map((menu, idx) => (
-              <div
-                key={menu.id}
-                className={`anim-masuk jeda-${Math.min(idx + 1, 6)} bg-white rounded-2xl border border-krem-gelap overflow-hidden flex flex-col justify-between hover:shadow-lg hover:-translate-y-1 hover:border-bata/30 transition-all`}
-              >
-                <Link href={`/menu/${menu.slug}`} className="flex-1 flex flex-col">
-                  <PanelFotoMenu
-                    foto={menu.foto}
-                    kategori={menu.kategori}
-                    nama={menu.nama}
-                    className="aspect-[4/3]"
+          {fotoHero.length > 0 && (
+            <div className="grid grid-cols-2 grid-rows-2 gap-3 aspect-[5/4] anim-masuk">
+              {fotoHero.map((f, i) => (
+                <Link
+                  key={f.slug}
+                  href={`/menu/${f.slug}`}
+                  className={`relative overflow-hidden rounded-2xl bg-krem-tua ${
+                    i === 0 ? "row-span-2" : ""
+                  } ${fotoHero.length === 1 ? "col-span-2" : ""} ${
+                    fotoHero.length === 2 && i === 1 ? "row-span-2" : ""
+                  }`}
+                >
+                  <Image
+                    src={f.url}
+                    alt={f.nama}
+                    fill
+                    priority={i === 0}
+                    sizes="(min-width: 1024px) 300px, 50vw"
+                    className="object-cover transition-transform duration-500 hover:scale-[1.03]"
                   />
-
-                  {/* Header kartu menu */}
-                  <div className="p-6 flex-1 flex flex-col justify-between">
-                    <div>
-                      <div className="flex items-center justify-between gap-2 mb-2">
-                        <LencanaKategori kategori={menu.kategori} />
-                        {menu.preorderHari > 0 ? (
-                          <span className="text-[11px] font-semibold text-kunyit-tua bg-kunyit-lembut px-2 py-0.5 rounded">
-                            Preorder {menu.preorderHari} hari
-                          </span>
-                        ) : (
-                          <span className="text-[11px] font-semibold text-daun-tua bg-daun-lembut px-2 py-0.5 rounded">
-                            Bisa Hari Ini
-                          </span>
-                        )}
-                      </div>
-
-                      <h3 className="text-lg font-bold text-kayu mt-1">{menu.nama}</h3>
-                      <p className="text-xs text-kayu-sedang mt-2 line-clamp-3 leading-relaxed">
-                        {menu.deskripsi}
-                      </p>
-                    </div>
-
-                    <div className="mt-6 pt-4 border-t border-krem-gelap/60 flex items-center justify-between">
-                      <div>
-                        <span className="text-xs text-kayu-sedang block">
-                          Harga per {menu.satuan}
-                        </span>
-                        <span className="text-lg font-extrabold text-bata">
-                          {rupiah(menu.harga)}
-                        </span>
-                      </div>
-
-                      <span className="text-xs text-kayu-sedang/90 bg-krem px-2 py-1 rounded-md border border-krem-gelap">
-                        Min. {menu.minPesan} {menu.satuan}
-                      </span>
-                    </div>
-                  </div>
                 </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
 
-                {/* Tombol aksi */}
-                <div className="px-6 pb-6 pt-0">
-                  <Link
-                    href={`/pesan?menu=${menu.slug}`}
-                    className="min-h-[48px] w-full py-2.5 rounded-xl font-semibold text-sm text-center text-bata bg-bata-lembut hover:bg-bata hover:text-white transition-colors inline-flex items-center justify-center gap-1"
-                  >
-                    Pesan Menu Ini
-                  </Link>
-                </div>
-              </div>
-            ))}
+      {/* Kategori */}
+      {kategoriAda.length > 0 && (
+        <section aria-labelledby="judul-kategori" className="bg-krem-tua/60 border-y border-krem-gelap/70">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6 py-12">
+            <h2 id="judul-kategori" className="judul-bagian">
+              Mau pesan apa?
+            </h2>
+            <ul className="mt-5 grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {kategoriAda.map((k) => {
+                const Ikon = IKON_KATEGORI[k.kategori];
+                return (
+                  <li key={k.kategori}>
+                    <Link
+                      href={`/menu?kategori=${k.kategori}`}
+                      className="flex h-full items-center gap-4 rounded-2xl bg-white border border-krem-gelap p-4 transition-colors hover:border-bata/40"
+                    >
+                      <span className="w-11 h-11 shrink-0 rounded-xl bg-bata-lembut text-bata-tua flex items-center justify-center">
+                        <Ikon className="w-6 h-6" />
+                      </span>
+                      <span className="min-w-0">
+                        <span className="block font-semibold text-kayu">
+                          {LABEL_KATEGORI[k.kategori]}
+                        </span>
+                        <span className="block text-xs text-kayu-sedang mt-0.5">
+                          {k.jumlah} menu · mulai {rupiah(k.hargaTermurah)}
+                        </span>
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
           </div>
         </section>
       )}
 
-      {/* 4. Kenapa Memilih Citarasa Catering */}
-      <section className="bg-krem-tua/60 border-y border-krem-gelap/60 py-16 px-4">
-        <div className="container mx-auto max-w-5xl">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <h2 className="font-tampil text-2xl md:text-3xl font-bold text-kayu">
-              Komitmen Dapur Kami
+      {/* Favorit */}
+      <section aria-labelledby="judul-favorit" className="mx-auto max-w-6xl px-4 sm:px-6 py-14">
+        <div className="flex items-end justify-between gap-4">
+          <div>
+            <h2 id="judul-favorit" className="font-tampil text-2xl sm:text-3xl font-bold text-kayu">
+              {favorit.dariPesanan ? "Paling sering dipesan" : "Pilihan dari dapur kami"}
             </h2>
-            <p className="text-sm text-kayu-sedang mt-2">
-              Ketenangan acara Anda berawal dari hidangan yang tiba tepat waktu
-              dan rasa yang memuaskan seluruh tamu.
-            </p>
+            {favorit.dariPesanan && (
+              <p className="teks-redup mt-1">Berdasarkan pesanan 3 bulan terakhir.</p>
+            )}
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="group anim-masuk bg-white p-6 rounded-2xl border border-krem-gelap text-center space-y-3 hover:shadow-md hover:-translate-y-1 transition-all">
-              <div className="w-12 h-12 rounded-2xl bg-daun-lembut text-daun-tua mx-auto flex items-center justify-center transition-transform group-hover:scale-110">
-                <IkonJam className="w-6 h-6" />
-              </div>
-              <h3 className="font-bold text-base text-kayu">Tepat Jam Acara</h3>
-              <p className="text-xs text-kayu-sedang leading-relaxed">
-                Jadwal produksi dapur kami susun ketat agar pesanan tiba dalam keadaan
-                segar tepat sebelum acara Anda dimulai.
-              </p>
-            </div>
-
-            <div className="group anim-masuk jeda-2 bg-white p-6 rounded-2xl border border-krem-gelap text-center space-y-3 hover:shadow-md hover:-translate-y-1 transition-all">
-              <div className="w-12 h-12 rounded-2xl bg-kunyit-lembut text-kunyit-tua mx-auto flex items-center justify-center transition-transform group-hover:scale-110">
-                <IkonDaun className="w-6 h-6" />
-              </div>
-              <h3 className="font-bold text-base text-kayu">Bumbu Asli & Halal</h3>
-              <p className="text-xs text-kayu-sedang leading-relaxed">
-                Menggunakan bahan baku segar dari pasar tradisional dan rempah alami,
-                bebas pengawet buatan dan dijamin 100% halal.
-              </p>
-            </div>
-
-            <div className="group anim-masuk jeda-3 bg-white p-6 rounded-2xl border border-krem-gelap text-center space-y-3 hover:shadow-md hover:-translate-y-1 transition-all">
-              <div className="w-12 h-12 rounded-2xl bg-bata-lembut text-bata-tua mx-auto flex items-center justify-center transition-transform group-hover:scale-110">
-                <IkonHp className="w-6 h-6" />
-              </div>
-              <h3 className="font-bold text-base text-kayu">Lacak Status Real-time</h3>
-              <p className="text-xs text-kayu-sedang leading-relaxed">
-                Pantau progres masakan Anda langsung dari HP: dari diterima,
-                sedang dimasak, hingga siap diantar.
-              </p>
-            </div>
-          </div>
+          <Link
+            href="/menu"
+            className="hidden sm:inline-flex items-center gap-1.5 text-sm font-semibold text-bata hover:text-bata-tua"
+          >
+            Semua menu <IkonPanahKanan className="w-4 h-4" />
+          </Link>
         </div>
-      </section>
 
-      {/* 5. Banner Konsultasi WA */}
-      <section className="container mx-auto px-4 max-w-4xl">
-        <div className="bg-kayu text-krem rounded-3xl p-8 md:p-12 text-center space-y-6 shadow-xl">
-          <h2 className="font-tampil text-2xl md:text-3xl font-bold text-white">
-            Butuh Rekomendasi Menu untuk Budget Acara Anda?
-          </h2>
-          <p className="max-w-xl mx-auto text-sm md:text-base text-krem/80 leading-relaxed">
-            Diskusikan kebutuhan porsi, jadwal, dan susunan lauk langsung dengan
-            pengelola dapur kami.
+        {favorit.daftar.length > 0 ? (
+          <div className="mt-6 grid gap-3 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {favorit.daftar.map((menu, i) => (
+              <KartuMenu key={menu.id} menu={menu} prioritas={i < 3 && fotoHero.length === 0} />
+            ))}
+          </div>
+        ) : (
+          <p className="mt-6 kartu kartu-isi text-center teks-redup">
+            Menu sedang disiapkan. Silakan kembali sebentar lagi.
           </p>
+        )}
 
-          <div className="pt-2">
-            <Link
-              href="/pesan"
-              className="min-h-[48px] px-8 py-3.5 rounded-xl font-bold text-kayu bg-kunyit hover:bg-kunyit-lembut transition-colors inline-flex items-center justify-center gap-2 shadow"
-            >
-              Mulai Buat Pesanan
-            </Link>
-          </div>
+        <Link href="/menu" className="sm:hidden mt-6 tombol-kedua w-full">
+          Lihat semua menu
+        </Link>
+      </section>
+
+      {/* Cara pesan */}
+      <section aria-labelledby="judul-cara" className="mx-auto max-w-6xl px-4 sm:px-6 pb-16">
+        <div className="kartu p-6 sm:p-8">
+          <h2 id="judul-cara" className="judul-bagian">
+            Cara pesan
+          </h2>
+          <ol className="mt-6 grid gap-6 sm:grid-cols-3">
+            {LANGKAH.map((l, i) => (
+              <li key={l.judul} className="flex gap-4">
+                <span className="w-8 h-8 shrink-0 rounded-full bg-kayu text-white text-sm font-semibold flex items-center justify-center">
+                  {i + 1}
+                </span>
+                <div>
+                  <p className="font-semibold text-kayu">{l.judul}</p>
+                  <p className="text-sm text-kayu-sedang mt-1">{l.isi}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+
+          {waUrl && (
+            <div className="mt-8 pt-6 border-t border-krem-gelap flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <p className="text-sm text-kayu-sedang">
+                Acara besar atau butuh menu khusus? Tanya langsung ke dapur.
+              </p>
+              <a href={waUrl} target="_blank" rel="noopener noreferrer" className="tombol-kedua">
+                <IkonWhatsapp className="w-4 h-4 text-daun" />
+                Chat WhatsApp
+              </a>
+            </div>
+          )}
         </div>
       </section>
-    </div>
+    </>
   );
 }
-

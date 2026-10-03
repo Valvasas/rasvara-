@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState, useTransition } from "react";
+import { useActionState, useEffect, useRef, useState, useTransition, type FormEvent } from "react";
 import { rupiah, tanggalPendek } from "@/lib/format";
 import {
   aksiBuatVoucher,
@@ -9,10 +9,8 @@ import {
 } from "@/app/aksi/voucher";
 import type { HasilKelolaVoucher } from "@/lib/voucher-tipe";
 
-const GAYA_LABEL =
-  "block text-xs font-bold uppercase tracking-wider text-kayu-sedang mb-1.5";
-const GAYA_ISIAN =
-  "w-full min-h-[48px] px-4 py-2.5 rounded-xl border border-krem-gelap bg-krem/40 text-kayu text-sm focus:outline-none focus:border-bata focus:ring-1 focus:ring-bata";
+const GAYA_LABEL = "label";
+const GAYA_ISIAN = "isian";
 
 export interface VoucherRingkas {
   id: string;
@@ -36,7 +34,25 @@ export function KelolaVoucher({ daftar }: { daftar: VoucherRingkas[] }) {
   >(aksiBuatVoucher, null);
 
   const [sedangUbah, mulaiUbah] = useTransition();
+  const [, mulaiKirim] = useTransition();
   const [pesanUbah, setPesanUbah] = useState<string | null>(null);
+  const [akanDihapus, setAkanDihapus] = useState<string | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Dikirim lewat onSubmit, bukan atribut `action`, supaya React tidak
+  // mengosongkan isian otomatis saat server menolak (mis. kode sudah dipakai).
+  // Formulir hanya dikosongkan setelah voucher benar-benar tersimpan.
+  const kirim = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    mulaiKirim(() => formAction(data));
+  };
+  useEffect(() => {
+    if (state?.sukses) {
+      formRef.current?.reset();
+      setJenis("NOMINAL");
+    }
+  }, [state]);
 
   function toggle(id: string, aktifBaru: boolean) {
     mulaiUbah(async () => {
@@ -45,13 +61,13 @@ export function KelolaVoucher({ daftar }: { daftar: VoucherRingkas[] }) {
     });
   }
 
+  // Konfirmasi dua langkah di tempat, menggantikan window.confirm().
   function hapus(v: VoucherRingkas) {
-    const pesan =
-      v.terpakai > 0
-        ? `Voucher ${v.kode} sudah dipakai ${v.terpakai} kali. Voucher akan dinonaktifkan (tidak dihapus) supaya nota lama tetap utuh. Lanjutkan?`
-        : `Hapus voucher ${v.kode}?`;
-    if (!window.confirm(pesan)) return;
-
+    if (akanDihapus !== v.id) {
+      setAkanDihapus(v.id);
+      return;
+    }
+    setAkanDihapus(null);
     mulaiUbah(async () => {
       const hasil = await aksiHapusVoucher(v.id);
       setPesanUbah(hasil.pesan);
@@ -61,12 +77,9 @@ export function KelolaVoucher({ daftar }: { daftar: VoucherRingkas[] }) {
   return (
     <div className="space-y-6">
       {/* Formulir voucher baru */}
-      <form
-        action={formAction}
-        className="bg-white rounded-3xl border border-krem-gelap shadow-sm overflow-hidden"
-      >
-        <div className="p-4 bg-krem-tua/60 border-b border-krem-gelap">
-          <h2 className="font-extrabold text-sm text-kayu">Buat Voucher Baru</h2>
+      <form ref={formRef} onSubmit={kirim} noValidate className="kartu overflow-hidden">
+        <div className="px-5 py-4 border-b border-krem-gelap">
+          <h2 className="judul-bagian">Buat voucher</h2>
         </div>
 
         <div className="p-5 space-y-4">
@@ -84,7 +97,7 @@ export function KelolaVoucher({ daftar }: { daftar: VoucherRingkas[] }) {
                 autoComplete="off"
                 className={`${GAYA_ISIAN} uppercase`}
               />
-              <p className="text-[11px] text-kayu-sedang mt-1">
+              <p className="petunjuk">
                 Huruf, angka, dan tanda hubung. Otomatis jadi huruf besar.
               </p>
             </div>
@@ -149,7 +162,7 @@ export function KelolaVoucher({ daftar }: { daftar: VoucherRingkas[] }) {
                   placeholder="25000"
                   className={GAYA_ISIAN}
                 />
-                <p className="text-[11px] text-kayu-sedang mt-1">
+                <p className="petunjuk">
                   Kosongkan bila tanpa batas.
                 </p>
               </div>
@@ -197,7 +210,7 @@ export function KelolaVoucher({ daftar }: { daftar: VoucherRingkas[] }) {
                 type="date"
                 className={GAYA_ISIAN}
               />
-              <p className="text-[11px] text-kayu-sedang mt-1">
+              <p className="petunjuk">
                 Berlaku sampai akhir hari itu.
               </p>
             </div>
@@ -206,11 +219,7 @@ export function KelolaVoucher({ daftar }: { daftar: VoucherRingkas[] }) {
           {state && (
             <p
               role="status"
-              className={`text-xs font-semibold rounded-xl px-3 py-2 border ${
-                state.sukses
-                  ? "text-daun-tua bg-daun-lembut border-daun/20"
-                  : "text-bahaya bg-bahaya-lembut border-bahaya/20"
-              }`}
+              className={state.sukses ? "kotak-sukses" : "kotak-galat"}
             >
               {state.pesan}
             </p>
@@ -219,9 +228,9 @@ export function KelolaVoucher({ daftar }: { daftar: VoucherRingkas[] }) {
           <button
             type="submit"
             disabled={sedangSimpan}
-            className="min-h-[48px] px-6 py-2.5 rounded-xl font-bold text-sm text-white bg-kayu hover:bg-kayu-sedang disabled:opacity-50 transition-colors cursor-pointer"
+            className="tombol-utama"
           >
-            {sedangSimpan ? "Menyimpan..." : "Simpan Voucher"}
+            {sedangSimpan ? "Menyimpan..." : "Simpan voucher"}
           </button>
         </div>
       </form>
@@ -229,27 +238,27 @@ export function KelolaVoucher({ daftar }: { daftar: VoucherRingkas[] }) {
       {pesanUbah && (
         <p
           role="status"
-          className="text-xs font-semibold text-daun-tua bg-daun-lembut border border-daun/20 rounded-xl px-4 py-3"
+          className="kotak-sukses"
         >
           {pesanUbah}
         </p>
       )}
 
       {/* Daftar voucher */}
-      <div className="bg-white rounded-3xl border border-krem-gelap shadow-sm overflow-hidden">
-        <div className="p-4 bg-krem-tua/60 border-b border-krem-gelap flex items-center justify-between">
-          <h2 className="font-extrabold text-sm text-kayu">Daftar Voucher</h2>
-          <span className="text-xs font-semibold text-kayu-sedang">
+      <div className="kartu overflow-hidden">
+        <div className="px-5 py-4 border-b border-krem-gelap flex items-center justify-between">
+          <h2 className="judul-bagian">Daftar voucher</h2>
+          <span className="text-sm text-kayu-sedang">
             {daftar.length} voucher
           </span>
         </div>
 
         {daftar.length === 0 ? (
-          <p className="p-6 text-sm text-kayu-sedang italic">
+          <p className="p-6 teks-redup">
             Belum ada voucher. Buat satu di formulir atas.
           </p>
         ) : (
-          <ul className="divide-y divide-krem-gelap/60">
+          <ul className="divide-y divide-krem-gelap">
             {daftar.map((v) => {
               const habis = v.kuota !== null && v.terpakai >= v.kuota;
               const kedaluwarsa = v.berakhirPada
@@ -259,31 +268,31 @@ export function KelolaVoucher({ daftar }: { daftar: VoucherRingkas[] }) {
               return (
                 <li
                   key={v.id}
-                  className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                  className="px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                 >
                   <div className="min-w-0 space-y-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-mono font-extrabold text-sm text-kayu">
+                      <span className="font-mono font-semibold text-kayu">
                         {v.kode}
                       </span>
 
                       {!v.aktif && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-krem-gelap text-kayu-sedang">
+                        <span className="lencana bg-krem-tua text-kayu-sedang border-krem-gelap">
                           Nonaktif
                         </span>
                       )}
                       {v.aktif && kedaluwarsa && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-bahaya-lembut text-bahaya">
+                        <span className="lencana bg-bahaya-lembut text-bahaya border-bahaya/20">
                           Kedaluwarsa
                         </span>
                       )}
                       {v.aktif && !kedaluwarsa && habis && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-kunyit-lembut text-kunyit-tua">
+                        <span className="lencana bg-kunyit-lembut text-kunyit-tua border-kunyit/30">
                           Kuota habis
                         </span>
                       )}
                       {v.aktif && !kedaluwarsa && !habis && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-daun-lembut text-daun-tua">
+                        <span className="lencana bg-daun-lembut text-daun-tua border-daun/20">
                           Berjalan
                         </span>
                       )}
@@ -310,11 +319,7 @@ export function KelolaVoucher({ daftar }: { daftar: VoucherRingkas[] }) {
                       type="button"
                       onClick={() => toggle(v.id, !v.aktif)}
                       disabled={sedangUbah}
-                      className={`min-h-[44px] px-4 py-2 rounded-xl text-xs font-bold transition-colors disabled:opacity-50 cursor-pointer ${
-                        v.aktif
-                          ? "bg-krem-tua text-kayu hover:bg-krem-gelap"
-                          : "bg-daun text-white hover:bg-daun-tua"
-                      }`}
+                      className="tombol-kedua tombol-kecil"
                     >
                       {v.aktif ? "Nonaktifkan" : "Aktifkan"}
                     </button>
@@ -324,9 +329,9 @@ export function KelolaVoucher({ daftar }: { daftar: VoucherRingkas[] }) {
                       onClick={() => hapus(v)}
                       disabled={sedangUbah}
                       aria-label={`Hapus voucher ${v.kode}`}
-                      className="min-h-[44px] px-3 py-2 rounded-xl text-xs font-bold text-bahaya bg-bahaya-lembut hover:bg-bahaya hover:text-white disabled:opacity-50 transition-colors cursor-pointer"
+                      className={`tombol tombol-kecil ${akanDihapus === v.id ? "bg-bahaya text-white" : "text-bahaya hover:bg-bahaya-lembut"}`}
                     >
-                      Hapus
+                      {akanDihapus === v.id ? (v.terpakai > 0 ? "Nonaktifkan permanen?" : "Yakin hapus?") : "Hapus"}
                     </button>
                   </div>
                 </li>

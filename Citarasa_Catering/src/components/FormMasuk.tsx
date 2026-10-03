@@ -1,69 +1,64 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import Link from "next/link";
 import { aksiMasuk } from "@/app/aksi/auth";
 import { InputSandi } from "@/components/InputSandi";
 
 export function FormMasuk() {
   const [state, action, isPending] = useActionState(aksiMasuk, null);
+  // Terkendali supaya nomor HP tidak ikut terhapus saat sandi salah.
+  const [telepon, setTelepon] = useState("");
 
   return (
-    <form action={action} className="space-y-4">
+    <form action={action} className="space-y-5" noValidate>
       {state?.pesan && (
-        <div className="p-3 bg-bahaya-lembut border border-bahaya/30 text-bahaya rounded-xl text-xs font-medium text-center">
+        <div role="alert" className="kotak-galat">
           {state.pesan}
         </div>
       )}
 
       <div>
-        <label
-          htmlFor="telepon"
-          className="block text-xs font-bold uppercase tracking-wider text-kayu-sedang mb-1.5"
-        >
-          Nomor Telepon
+        <label htmlFor="telepon" className="label">
+          Nomor HP
         </label>
         <input
           type="tel"
           id="telepon"
           name="telepon"
           inputMode="tel"
+          autoComplete="tel"
           required
-          placeholder="081234567890"
-          className="w-full min-h-[48px] px-4 py-2.5 rounded-xl border border-krem-gelap bg-krem/40 text-kayu text-sm placeholder:text-kayu-sedang/50 focus:outline-none focus:border-bata focus:ring-1 focus:ring-bata"
+          maxLength={20}
+          value={telepon}
+          onChange={(e) => setTelepon(e.target.value)}
+          placeholder="08xxxxxxxxxx"
+          aria-invalid={state?.kesalahan?.telepon ? true : undefined}
+          className={`isian ${state?.kesalahan?.telepon ? "isian-galat" : ""}`}
         />
         {state?.kesalahan?.telepon && (
-          <p className="text-xs text-bahaya mt-1">
-            {state.kesalahan.telepon[0]}
-          </p>
+          <p className="pesan-galat">{state.kesalahan.telepon[0]}</p>
         )}
       </div>
 
       <InputSandi
         id="sandi"
         name="sandi"
-        label="Kata Sandi"
-        placeholder="••••••••"
+        label="Kata sandi"
         required
         error={state?.kesalahan?.sandi?.[0]}
       />
 
-      <button
-        type="submit"
-        disabled={isPending}
-        className="w-full min-h-[48px] px-6 py-3 rounded-xl font-bold text-white bg-bata hover:bg-bata-tua disabled:opacity-60 transition-colors shadow-sm inline-flex items-center justify-center gap-2 cursor-pointer mt-2"
-      >
-        <span>{isPending ? "Memeriksa..." : "Masuk"}</span>
-        {!isPending && <span aria-hidden="true">&rarr;</span>}
+      <button type="submit" disabled={isPending} className="tombol-utama w-full">
+        {isPending ? "Memeriksa..." : "Masuk"}
       </button>
 
-      <div className="pt-2 text-center text-xs text-kayu-sedang">
-        <span>Belum punya akun? </span>
-        <Link href="/daftar" className="font-bold text-bata hover:underline">
-          Daftar akun baru
+      <p className="text-center text-sm text-kayu-sedang">
+        Belum punya akun?{" "}
+        <Link href="/daftar" className="font-semibold text-bata hover:underline">
+          Daftar
         </Link>
-      </div>
+      </p>
     </form>
   );
 }
-

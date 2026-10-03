@@ -73,6 +73,10 @@ model Pengguna {
   sandiHash    String
   peran        Peran    @default(PELANGGAN)
   alamat       String?
+  /// Token sesi yang terbit sebelum waktu ini ditolak (untuk peran istimewa).
+  /// Diperbarui saat sandi diganti, supaya perangkat lain yang mungkin dipegang
+  /// orang lain langsung keluar.
+  sesiSejak    DateTime @default(now())
   dibuatPada   DateTime @default(now())
   diubahPada   DateTime @updatedAt
 

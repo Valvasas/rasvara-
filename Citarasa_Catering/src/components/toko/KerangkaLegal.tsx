@@ -20,7 +20,7 @@ export function KerangkaLegal({
   children,
 }: KerangkaLegalProps) {
   return (
-    <div className="container mx-auto px-4 py-10 max-w-3xl space-y-8">
+    <div className="mx-auto max-w-2xl px-4 sm:px-6 py-10 sm:py-14 space-y-8">
       <div className="space-y-3">
         <div className="text-xs text-kayu-sedang flex items-center gap-1.5">
           <Link href="/" className="hover:text-bata font-medium">
@@ -30,7 +30,7 @@ export function KerangkaLegal({
           <span className="text-kayu font-semibold">{judul}</span>
         </div>
 
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-kayu font-display">
+        <h1 className="text-3xl sm:text-4xl font-bold text-kayu font-tampil">
           {judul}
         </h1>
 
@@ -39,9 +39,9 @@ export function KerangkaLegal({
         </p>
       </div>
 
-      <div className="p-5 rounded-2xl bg-kunyit-lembut border border-kunyit/30">
+      <div className="p-5 rounded-2xl bg-krem-tua border border-krem-gelap">
         <p className="text-sm text-kayu leading-relaxed">
-          <strong className="font-extrabold">Ringkasnya:</strong> {ringkasan}
+          <strong className="font-semibold">Ringkasnya:</strong> {ringkasan}
         </p>
       </div>
 
@@ -50,7 +50,7 @@ export function KerangkaLegal({
       <div className="pt-6 border-t border-krem-gelap flex flex-wrap gap-3 text-sm">
         <Link
           href="/kebijakan-privasi"
-          className="font-bold text-bata hover:underline"
+          className="font-medium text-bata hover:underline"
         >
           Kebijakan Privasi
         </Link>
@@ -59,7 +59,7 @@ export function KerangkaLegal({
         </span>
         <Link
           href="/syarat-ketentuan"
-          className="font-bold text-bata hover:underline"
+          className="font-medium text-bata hover:underline"
         >
           Syarat &amp; Ketentuan
         </Link>
@@ -77,7 +77,7 @@ export function SeksiLegal({
 }) {
   return (
     <section className="space-y-3">
-      <h2 className="text-xl font-extrabold text-kayu font-display">{judul}</h2>
+      <h2 className="text-xl font-semibold text-kayu">{judul}</h2>
       <div className="space-y-3 text-[15px] text-kayu-sedang leading-relaxed">
         {children}
       </div>

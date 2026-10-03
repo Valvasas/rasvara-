@@ -1,355 +1,329 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { bacaSesi } from "@/lib/auth";
+import { rentangHari } from "@/lib/laporan";
+import { ambilPengaturan, kekuranganPengaturan } from "@/lib/pengaturan";
 import {
+  dariInputTanggal,
+  hariIniWib,
   jamTampil,
+  kunciHari,
   linkWhatsapp,
   rupiah,
   tanggalPendek,
   teleponTampil,
 } from "@/lib/format";
-import {
-  INFO_STATUS,
-  KOLOM_PAPAN,
-  LABEL_AMBIL,
-  LABEL_BAYAR,
-} from "@/lib/pesanan";
+import { INFO_STATUS, KOLOM_PAPAN } from "@/lib/pesanan";
 import { LencanaBayar } from "@/components/Lencana";
-import { TombolAksiStatus } from "@/components/admin/TombolAksiStatus";
-import { TombolAksiLunas } from "@/components/admin/TombolAksiLunas";
-import { TombolCetakPesanan } from "@/components/admin/TombolCetakPesanan";
-import type { CaraAmbil, ItemPesanan, Pesanan, StatusPesanan } from "@/generated/prisma/client";
+import { AksiPesanan } from "@/components/admin/AksiPesanan";
+import { IkonCari, IkonLampiran, IkonLokasi, IkonPeringatan, IkonTruk, IkonWhatsapp } from "@/components/ikon/Ikon";
+import type { Prisma, StatusPesanan } from "@/generated/prisma/client";
 
-type PesananWithItem = Pesanan & { item: ItemPesanan[] };
+export const metadata: Metadata = { title: "Papan pesanan" };
 
-interface HalamanPapanDapurProps {
-  searchParams: Promise<{ q?: string; caraAmbil?: string }>;
+/**
+ * Kartu per kolom yang dirender. Hitungan di kepala kolom tetap jumlah
+ * sebenarnya; sisanya bisa dibuka di halaman Semua pesanan. Tanpa batas ini,
+ * seribu pesanan aktif berarti seribu kartu dalam satu halaman.
+ */
+const BATAS_KOLOM = 12;
+
+const RENTANG = [
+  { kunci: "semua", label: "Semua" },
+  { kunci: "hari-ini", label: "Hari ini" },
+  { kunci: "besok", label: "Besok" },
+  { kunci: "7-hari", label: "7 hari" },
+] as const;
+type KunciRentang = (typeof RENTANG)[number]["kunci"];
+
+const WARNA_TITIK: Record<StatusPesanan, string> = {
+  BARU: "bg-kunyit",
+  DIKONFIRMASI: "bg-kayu-sedang",
+  DIPROSES: "bg-bata",
+  SIAP: "bg-daun",
+  SELESAI: "bg-daun",
+  DIBATALKAN: "bg-bahaya",
+};
+
+function rentangTanggal(kunci: KunciRentang): { gte: Date; lt: Date } | undefined {
+  const hariIni = hariIniWib();
+  if (kunci === "hari-ini") return rentangHari(hariIni);
+  const geser = (hari: number) => kunciHari(new Date(dariInputTanggal(hariIni).getTime() + hari * 86_400_000));
+  if (kunci === "besok") return rentangHari(geser(1));
+  if (kunci === "7-hari") return { gte: rentangHari(hariIni).gte, lt: rentangHari(geser(7)).gte };
+  return undefined;
 }
 
-export default async function HalamanPapanDapur({
-  searchParams,
-}: HalamanPapanDapurProps) {
-  const [params, sesi] = await Promise.all([
-    searchParams,
-    bacaSesi(),
+interface HalamanPapanDapurProps {
+  searchParams: Promise<{ q?: string; ambil?: string; rentang?: string; bayar?: string }>;
+}
+
+export default async function HalamanPapanDapur({ searchParams }: HalamanPapanDapurProps) {
+  const [params, sesi, pengaturan] = await Promise.all([searchParams, bacaSesi(), ambilPengaturan()]);
+  const adalahPemilik = sesi?.peran === "PEMILIK";
+
+  const kataKunci = (params.q ?? "").trim().slice(0, 60);
+  const ambil = params.ambil === "AMBIL_SENDIRI" || params.ambil === "DIANTAR" ? params.ambil : undefined;
+  const rentang: KunciRentang = RENTANG.some((r) => r.kunci === params.rentang)
+    ? (params.rentang as KunciRentang)
+    : "semua";
+  const hanyaCekBayar = params.bayar === "cek";
+
+  const saringan: Prisma.PesananWhereInput = {
+    ...(ambil ? { caraAmbil: ambil } : {}),
+    ...(rentangTanggal(rentang) ? { tanggalAcara: rentangTanggal(rentang) } : {}),
+    ...(hanyaCekBayar ? { statusBayar: "MENUNGGU_VERIFIKASI" } : {}),
+    ...(kataKunci
+      ? {
+          OR: [
+            { namaPemesan: { contains: kataKunci, mode: "insensitive" } },
+            { kode: { contains: kataKunci, mode: "insensitive" } },
+            { teleponPemesan: { contains: kataKunci.replace(/\D/g, "").replace(/^0/, "") || kataKunci } },
+          ],
+        }
+      : {}),
+  };
+
+  const [perKolom, hitungan, perluCek] = await Promise.all([
+    Promise.all(
+      KOLOM_PAPAN.map((status) =>
+        db.pesanan.findMany({
+          where: { ...saringan, status },
+          include: { item: { select: { id: true, namaMenu: true, jumlah: true } } },
+          orderBy: [{ tanggalAcara: "asc" }, { jamAcara: "asc" }],
+          take: BATAS_KOLOM,
+        })
+      )
+    ),
+    db.pesanan.groupBy({ by: ["status"], where: { ...saringan, status: { in: KOLOM_PAPAN } }, _count: { _all: true } }),
+    adalahPemilik
+      ? db.pesanan.count({ where: { statusBayar: "MENUNGGU_VERIFIKASI", status: { not: "DIBATALKAN" } } })
+      : Promise.resolve(0),
   ]);
-  const adalahStaf = sesi?.peran === "STAF_DAPUR";
-  const kataKunci = params.q?.trim() || "";
-  const filterAmbil = params.caraAmbil || "";
 
-  const filterCaraAmbil =
-    filterAmbil === "AMBIL_SENDIRI" || filterAmbil === "DIANTAR"
-      ? (filterAmbil as CaraAmbil)
-      : undefined;
+  const jumlahStatus = (s: StatusPesanan) => hitungan.find((h) => h.status === s)?._count._all ?? 0;
+  const totalAktif = KOLOM_PAPAN.reduce((n, s) => n + jumlahStatus(s), 0);
+  const kurang = adalahPemilik ? kekuranganPengaturan(pengaturan) : [];
+  const adaSaringan = Boolean(kataKunci || ambil || hanyaCekBayar);
 
-  const kondisiPencarian = kataKunci
-    ? [
-        { namaPemesan: { contains: kataKunci, mode: "insensitive" as const } },
-        { kode: { contains: kataKunci, mode: "insensitive" as const } },
-        { teleponPemesan: { contains: kataKunci } },
-      ]
-    : undefined;
-
-  let daftarPesanan: PesananWithItem[] = [];
-  let hitunganSelesai = 0;
-  let hitunganBatal = 0;
-
-  try {
-    const [pesanan, selesai, batal] = await Promise.all([
-      db.pesanan.findMany({
-        where: {
-          status: { in: KOLOM_PAPAN },
-          ...(filterCaraAmbil ? { caraAmbil: filterCaraAmbil } : {}),
-          ...(kondisiPencarian ? { OR: kondisiPencarian } : {}),
-        },
-        include: { item: true },
-        orderBy: [{ tanggalAcara: "asc" }, { jamAcara: "asc" }],
-        // Papan dapur hanya berguna untuk pesanan yang sedang dikerjakan. Tanpa
-        // batas, pesanan lama yang tidak pernah ditutup menumpuk terus dan satu
-        // pembukaan halaman menarik semuanya sekaligus.
-        take: 300,
-      }),
-      db.pesanan.count({ where: { status: "SELESAI" } }),
-      db.pesanan.count({ where: { status: "DIBATALKAN" } }),
-    ]);
-
-    daftarPesanan = pesanan;
-    hitunganSelesai = selesai;
-    hitunganBatal = batal;
-  } catch {
-    // Fallback jika DB belum running saat build/typecheck
-  }
-
-  // Kelompokkan per status papan
-  const papan = KOLOM_PAPAN.reduce(
-    (acc, status) => {
-      acc[status] = daftarPesanan.filter((p) => p.status === status);
-      return acc;
-    },
-    {} as Record<StatusPesanan, typeof daftarPesanan>
-  );
+  const hrefDengan = (ubah: Record<string, string | undefined>) => {
+    const q = new URLSearchParams();
+    const gabung = { q: kataKunci || undefined, ambil, rentang: rentang === "semua" ? undefined : rentang, bayar: hanyaCekBayar ? "cek" : undefined, ...ubah };
+    for (const [k, v] of Object.entries(gabung)) if (v) q.set(k, v);
+    const s = q.toString();
+    return s ? `/admin?${s}` : "/admin";
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Header Papan Dapur & Ringkasan */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-krem-gelap shadow-sm">
+    <div>
+      <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-kayu">
-            Papan Pesanan Dapur
-          </h1>
-          <p className="text-xs text-kayu-sedang mt-0.5">
-            Pantau dan majukan status masakan secara berurutan sesuai alur kerja dapur.
+          <h1 className="judul-halaman">Papan pesanan</h1>
+          <p className="teks-redup mt-1">
+            {totalAktif} pesanan aktif{rentang !== "semua" ? ` · ${RENTANG.find((r) => r.kunci === rentang)?.label.toLowerCase()}` : ""}
           </p>
         </div>
+        <form method="get" action="/admin" role="search" className="flex flex-wrap gap-2 w-full sm:w-auto">
+          {rentang !== "semua" && <input type="hidden" name="rentang" value={rentang} />}
+          {hanyaCekBayar && <input type="hidden" name="bayar" value="cek" />}
+          <div className="relative w-full sm:w-64">
+            <label htmlFor="cari-pesanan" className="sr-only">Cari pesanan</label>
+            <IkonCari className="w-4 h-4 text-kayu-sedang absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              id="cari-pesanan"
+              type="search"
+              name="q"
+              defaultValue={kataKunci}
+              maxLength={60}
+              placeholder="Nama, kode, atau nomor HP"
+              className="isian pl-9"
+            />
+          </div>
+          <label htmlFor="saring-ambil" className="sr-only">Cara ambil</label>
+          <select id="saring-ambil" name="ambil" defaultValue={ambil ?? ""} className="isian flex-1 sm:flex-none sm:w-auto">
+            <option value="">Semua cara ambil</option>
+            <option value="AMBIL_SENDIRI">Ambil sendiri</option>
+            <option value="DIANTAR">Diantar</option>
+          </select>
+          <button type="submit" className="tombol-kedua">Terapkan</button>
+        </form>
+      </header>
 
-        <div className="flex items-center gap-3 text-xs font-semibold">
-          <span className="px-3 py-1.5 rounded-xl bg-daun-lembut text-daun-tua border border-daun/30">
-            ✓ {hitunganSelesai} Pesanan Selesai
-          </span>
-          {hitunganBatal > 0 && (
-            <span className="px-3 py-1.5 rounded-xl bg-bahaya-lembut text-bahaya border border-bahaya/30">
-              ✕ {hitunganBatal} Dibatalkan
+      {kurang.length > 0 && (
+        <div className="kotak-peringatan mt-6 flex flex-wrap items-center justify-between gap-3">
+          <p className="flex items-start gap-2">
+            <IkonPeringatan className="w-4 h-4 mt-0.5 shrink-0" />
+            <span>
+              Belum diisi: <span className="font-semibold">{kurang.join(", ")}</span>. Pembeli tidak bisa membayar
+              transfer atau menghubungi dapur sampai data ini lengkap.
             </span>
-          )}
+          </p>
+          <Link href="/admin/pengaturan" className="tombol-kedua tombol-kecil">Lengkapi</Link>
         </div>
+      )}
+
+      {perluCek > 0 && !hanyaCekBayar && (
+        <Link
+          href={hrefDengan({ bayar: "cek" })}
+          className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-kunyit/30 bg-kunyit-lembut px-4 py-3 text-sm text-kunyit-tua hover:border-kunyit/60"
+        >
+          <span>
+            <span className="font-semibold">{perluCek} pembayaran</span> menunggu dicek
+          </span>
+          <span className="font-medium">Tampilkan →</span>
+        </Link>
+      )}
+
+      <div className="mt-6 flex flex-wrap items-center gap-2">
+        {RENTANG.map((r) => (
+          <Link
+            key={r.kunci}
+            href={hrefDengan({ rentang: r.kunci === "semua" ? undefined : r.kunci })}
+            aria-current={rentang === r.kunci ? "page" : undefined}
+            className={`pil ${rentang === r.kunci ? "pil-aktif" : ""}`}
+          >
+            {r.label}
+          </Link>
+        ))}
+        {adaSaringan && (
+          <Link href={hrefDengan({ q: undefined, ambil: undefined, bayar: undefined })} className="tombol-hantu tombol-kecil">
+            Hapus saringan{hanyaCekBayar ? " (cek bayar)" : ""}
+          </Link>
+        )}
       </div>
 
-      {/* Baris Pencarian & Filter Pesanan */}
-      <form method="get" className="bg-white p-4 rounded-2xl border border-krem-gelap flex flex-wrap items-center justify-between gap-3 shadow-sm">
-        <div className="flex-1 min-w-[240px] flex items-center gap-2">
-          <span className="text-sm">🔍</span>
-          <input
-            type="text"
-            name="q"
-            defaultValue={kataKunci}
-            placeholder="Cari nama pemesan, kode pesanan, atau nomor HP..."
-            className="w-full min-h-[44px] px-3 py-1.5 rounded-xl border border-krem-gelap bg-krem/30 text-xs font-medium text-kayu placeholder:text-kayu-sedang/60 focus:outline-none focus:border-bata"
-          />
-        </div>
-
-        <div className="flex items-center gap-2">
-          <select
-            name="caraAmbil"
-            defaultValue={filterAmbil}
-            className="min-h-[44px] px-3 py-1.5 rounded-xl border border-krem-gelap bg-krem/30 text-xs font-medium text-kayu focus:outline-none focus:border-bata"
-          >
-            <option value="">Semua Cara Ambil</option>
-            <option value="AMBIL_SENDIRI">Ambil Sendiri</option>
-            <option value="DIANTAR">Diantar Kurir</option>
-          </select>
-
-          <button
-            type="submit"
-            className="min-h-[44px] px-4 py-2 rounded-xl font-bold text-xs bg-kayu text-white hover:bg-kayu-sedang transition-colors cursor-pointer"
-          >
-            Filter
-          </button>
-
-          {(kataKunci || filterAmbil) && (
-            <Link
-              href="/admin"
-              className="min-h-[44px] px-3 py-2 rounded-xl text-xs font-semibold text-bahaya bg-bahaya-lembut hover:bg-bahaya hover:text-white transition-colors inline-flex items-center"
-            >
-              Reset
-            </Link>
-          )}
-        </div>
-      </form>
-
-      {/* Grid 4 Kolom Kanban Alur Dapur */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 items-start">
-        {KOLOM_PAPAN.map((status) => {
-          const info = INFO_STATUS[status];
-          const daftar = papan[status] || [];
-
+      <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-4 items-start">
+        {KOLOM_PAPAN.map((status, i) => {
+          const daftar = perKolom[i];
+          const jumlah = jumlahStatus(status);
           return (
-            <div
-              key={status}
-              className="bg-krem-tua/50 rounded-3xl border border-krem-gelap/80 p-4 space-y-4 flex flex-col"
-            >
-              {/* Header Kolom */}
-              <div className="flex items-center justify-between px-1">
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`w-3 h-3 rounded-full ${
-                      status === "BARU"
-                        ? "bg-kunyit"
-                        : status === "DIKONFIRMASI"
-                        ? "bg-kayu-sedang"
-                        : status === "DIPROSES"
-                        ? "bg-bata animate-pulse"
-                        : "bg-daun"
-                    }`}
-                  />
-                  <h2 className="font-bold text-sm text-kayu">{info.label}</h2>
-                </div>
-                <span className="text-xs font-extrabold px-2.5 py-0.5 rounded-full bg-white text-kayu border border-krem-gelap">
-                  {daftar.length}
-                </span>
-              </div>
+            <section key={status} aria-labelledby={`kolom-${status}`} className="min-w-0">
+              <h2 id={`kolom-${status}`} className="flex items-center gap-2 px-1 text-sm font-semibold text-kayu">
+                <span aria-hidden="true" className={`w-2 h-2 rounded-full ${WARNA_TITIK[status]}`} />
+                {INFO_STATUS[status].label}
+                <span className="ml-auto text-kayu-sedang font-normal angka-tabel">{jumlah}</span>
+              </h2>
 
-              {/* Daftar Kartu Pesanan */}
-              <div className="space-y-3">
+              {/* Di layar lebar tiap kolom bergulir sendiri, jadi keempat tahap
+                  tetap terlihat sejajar dan halaman tidak memanjang ribuan piksel. */}
+              <div className="mt-3 space-y-3 xl:max-h-[calc(100vh-260px)] xl:overflow-y-auto gulir-tipis xl:pr-1 xl:-mr-1">
                 {daftar.length === 0 ? (
-                  <div className="p-8 text-center bg-white/60 rounded-2xl border border-dashed border-krem-gelap text-xs text-kayu-sedang/80">
-                    Tidak ada antrean
-                  </div>
+                  <p className="rounded-2xl border border-dashed border-krem-gelap px-4 py-8 text-center text-sm text-kayu-sedang">
+                    Kosong
+                  </p>
                 ) : (
-                  daftar.map((pesanan) => {
-                    const waUrl = linkWhatsapp(
-                      pesanan.teleponPemesan,
-                      `Halo ${pesanan.namaPemesan}, mengenai pesanan ${pesanan.kode}...`
-                    );
-
+                  daftar.map((p) => {
+                    const itemTampil = p.item.slice(0, 3);
+                    const sisa = p.item.length - itemTampil.length;
                     return (
-                      <div
-                        key={pesanan.id}
-                        className="bg-white rounded-2xl border border-krem-gelap p-4 shadow-sm hover:shadow-md transition-all space-y-3"
-                      >
-                        {/* Waktu Jam Acara yang Sangat Jelas */}
-                        <div className="flex items-center justify-between border-b border-krem-gelap/60 pb-2.5">
-                          <div className="bg-kayu text-krem px-2.5 py-1 rounded-lg text-xs font-mono font-bold">
-                            🕒 {jamTampil(pesanan.jamAcara)} WIB
-                          </div>
-                          <span className="text-[11px] font-semibold text-kayu-sedang">
-                            {tanggalPendek(pesanan.tanggalAcara)}
-                          </span>
-                        </div>
-
-                        {/* Nama Pemesan & Kode */}
-                        <div>
-                          <div className="flex items-center justify-between">
-                            <h3 className="font-extrabold text-sm text-kayu">
-                              {pesanan.namaPemesan}
-                            </h3>
-                            <span className="font-mono text-[11px] text-kayu-sedang">
-                              {pesanan.kode}
-                            </span>
-                          </div>
-
-                          <div className="flex items-center gap-2 mt-1 text-xs">
-                            <span className="text-kayu-sedang">
-                              {teleponTampil(pesanan.teleponPemesan)}
-                            </span>
-                            <a
-                              href={waUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-daun font-bold hover:underline"
-                            >
-                              WA
-                            </a>
-                          </div>
-                        </div>
-
-                        {/* Pengambilan */}
-                        <div className="text-[11px] text-kayu-sedang">
-                          <span className="font-semibold text-kayu">
-                            {LABEL_AMBIL[pesanan.caraAmbil as keyof typeof LABEL_AMBIL]}
-                          </span>
-                          {pesanan.alamatAntar && (
-                            <p className="line-clamp-1 mt-0.5 italic">
-                              {pesanan.alamatAntar}
+                      <article key={p.id} className="kartu p-4">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="text-xs text-kayu-sedang">
+                              {tanggalPendek(p.tanggalAcara)} ·{" "}
+                              <span className="font-semibold text-kayu">{jamTampil(p.jamAcara)}</span>
                             </p>
-                          )}
-                          {pesanan.latitude != null && pesanan.longitude != null && (
-                            // Tautan koordinat: pengantar membukanya dengan
-                            // aplikasi peta di ponselnya sendiri, jadi navigasi
-                            // penuh tetap didapat tanpa biaya API peta.
-                            <a
-                              href={`https://www.google.com/maps/search/?api=1&query=${pesanan.latitude},${pesanan.longitude}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="mt-1 inline-flex items-center gap-1 font-bold text-bata hover:underline"
-                            >
-                              <span aria-hidden="true">📍</span>
-                              <span>Buka titik antar di peta</span>
-                            </a>
-                          )}
+                            <h3 className="mt-1 font-semibold text-kayu truncate">{p.namaPemesan}</h3>
+                          </div>
+                          <Link
+                            href={`/pesanan/${p.kode}`}
+                            className="font-mono text-[11px] text-kayu-sedang hover:text-bata shrink-0 mt-0.5"
+                          >
+                            {p.kode.slice(-6)}
+                          </Link>
                         </div>
 
-                        {/* Daftar Masakan */}
-                        <div className="p-2.5 bg-krem/40 rounded-xl text-xs space-y-1 border border-krem-gelap/60">
-                          {pesanan.item.map((it) => (
-                            <div
-                              key={it.id}
-                              className="flex justify-between font-medium text-kayu"
-                            >
-                              <span>{it.namaMenu}</span>
-                              <span className="font-bold text-bata">
-                                &times; {it.jumlah}
-                              </span>
-                            </div>
+                        <ul className="mt-3 space-y-1 text-sm">
+                          {itemTampil.map((it) => (
+                            <li key={it.id} className="flex justify-between gap-2">
+                              <span className="text-kayu truncate">{it.namaMenu}</span>
+                              <span className="font-semibold text-kayu angka-tabel">×{it.jumlah}</span>
+                            </li>
                           ))}
-                        </div>
+                          {sisa > 0 && <li className="text-xs text-kayu-sedang">+{sisa} menu lain</li>}
+                        </ul>
 
-                        {/* Catatan Dapur */}
-                        {pesanan.catatan && (
-                          <div className="p-2 bg-kunyit-lembut/70 text-kunyit-tua rounded-xl text-[11px] font-medium border border-kunyit/30">
-                            <strong>Catatan:</strong> {pesanan.catatan}
-                          </div>
+                        {p.catatan && (
+                          <p className="mt-3 rounded-lg bg-kunyit-lembut px-2.5 py-2 text-xs text-kunyit-tua line-clamp-3">
+                            {p.catatan}
+                          </p>
                         )}
 
-                        {/* Status Pembayaran & Nominal */}
-                        <div className="flex items-center justify-between pt-1 text-xs">
-                          {!adalahStaf ? (
-                            <span className="font-extrabold text-kayu">
-                              {rupiah(pesanan.total)}
-                            </span>
-                          ) : (
-                            <span className="text-[11px] font-semibold text-kayu-sedang">
-                              {LABEL_BAYAR[pesanan.caraBayar as keyof typeof LABEL_BAYAR]}
+                        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-kayu-sedang">
+                          {p.caraAmbil === "DIANTAR" && (
+                            <span className="inline-flex items-center gap-1" title={p.alamatAntar ?? undefined}>
+                              <IkonTruk className="w-3.5 h-3.5" /> Antar
                             </span>
                           )}
-                          <LencanaBayar statusBayar={pesanan.statusBayar} />
-                        </div>
-
-                        {/* Tautan Bukti Transfer dari Pembeli (Khusus Pemilik) */}
-                        {!adalahStaf && pesanan.buktiBayarUrl && (
-                          <div className="p-2 bg-krem-tua/60 rounded-xl border border-krem-gelap flex items-center justify-between text-xs">
-                            <span className="font-semibold text-kayu flex items-center gap-1.5">
-                              <span>📎</span> Bukti Transfer
-                            </span>
+                          {p.latitude != null && p.longitude != null && (
+                            // Tautan koordinat dibuka aplikasi peta di ponsel pengantar.
                             <a
-                              href={pesanan.buktiBayarUrl}
+                              href={`https://www.google.com/maps/search/?api=1&query=${p.latitude},${p.longitude}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-[11px] font-bold text-bata hover:underline inline-flex items-center gap-1"
+                              className="inline-flex items-center gap-1 text-bata hover:underline"
                             >
-                              Buka Foto &rarr;
+                              <IkonLokasi className="w-3.5 h-3.5" /> Peta
                             </a>
-                          </div>
-                        )}
-
-                        {/* Tombol Aksi Dapur & Cetak */}
-                        <div className="space-y-2 pt-2 border-t border-krem-gelap/60">
-                          {info.aksiLanjut && info.statusLanjut && (
-                            <TombolAksiStatus
-                              kode={pesanan.kode}
-                              statusBaru={info.statusLanjut}
-                              label={info.aksiLanjut}
-                              warna={status === "DIPROSES" ? "daun" : "bata"}
-                            />
                           )}
-
-                          {/* Tombol Cetak Lembar Dapur / Nota */}
-                          <TombolCetakPesanan kode={pesanan.kode} />
-
-                          {/* Verifikasi Pelunasan Kas (Eksklusif Pemilik - Invarian #3) */}
-                          {!adalahStaf && pesanan.statusBayar !== "LUNAS" && (
-                            <TombolAksiLunas kode={pesanan.kode} />
+                          <a
+                            href={linkWhatsapp(p.teleponPemesan, `Halo ${p.namaPemesan}, soal pesanan ${p.kode}...`)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 hover:text-kayu"
+                            title={teleponTampil(p.teleponPemesan)}
+                          >
+                            <IkonWhatsapp className="w-3.5 h-3.5 text-daun" /> WA
+                          </a>
+                          {adalahPemilik && p.buktiBayarUrl && (
+                            <a
+                              href={p.buktiBayarUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-bata hover:underline"
+                            >
+                              <IkonLampiran className="w-3.5 h-3.5" /> Bukti
+                            </a>
                           )}
                         </div>
-                      </div>
+
+                        <div className="mt-3 flex items-center justify-between gap-2">
+                          {adalahPemilik ? (
+                            <span className="font-semibold text-kayu angka-tabel">{rupiah(p.total)}</span>
+                          ) : (
+                            <span className="text-xs text-kayu-sedang">{p.caraBayar === "TUNAI" ? "Tunai" : "Transfer"}</span>
+                          )}
+                          <LencanaBayar statusBayar={p.statusBayar} />
+                        </div>
+
+                        <div className="mt-3 pt-3 border-t border-krem-gelap">
+                          <AksiPesanan
+                            kode={p.kode}
+                            status={p.status}
+                            statusBayar={p.statusBayar}
+                            total={p.total}
+                            adalahPemilik={adalahPemilik}
+                          />
+                        </div>
+                      </article>
                     );
                   })
                 )}
+
+                {jumlah > daftar.length && (
+                  <Link
+                    href={`/admin/pesanan?status=${status}${kataKunci ? `&q=${encodeURIComponent(kataKunci)}` : ""}`}
+                    className="block rounded-xl px-4 py-3 text-center text-sm font-medium text-bata hover:bg-bata-lembut"
+                  >
+                    Lihat semua {jumlah} pesanan →
+                  </Link>
+                )}
               </div>
-            </div>
+            </section>
           );
         })}
       </div>
     </div>
   );
 }
-

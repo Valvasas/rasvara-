@@ -28,7 +28,7 @@ interface KelolaFotoMenuProps {
 }
 
 export function KelolaFotoMenu({ menuId, namaMenu, foto }: KelolaFotoMenuProps) {
-  const [terbuka, setTerbuka] = useState(false);
+  const [akanDihapus, setAkanDihapus] = useState<string | null>(null);
   const [pratinjau, setPratinjau] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const formRef = useRef<HTMLFormElement>(null);
@@ -68,12 +68,14 @@ export function KelolaFotoMenu({ menuId, namaMenu, foto }: KelolaFotoMenuProps) 
     });
   }
 
+  // Dua langkah (klik "Hapus", lalu "Yakin") menggantikan confirm() bawaan
+  // peramban yang memblokir seluruh halaman.
   function hapus(id: string) {
-    const yakin = window.confirm(
-      "Hapus foto ini? Foto yang sudah dihapus tidak bisa dikembalikan."
-    );
-    if (!yakin) return;
-
+    if (akanDihapus !== id) {
+      setAkanDihapus(id);
+      return;
+    }
+    setAkanDihapus(null);
     mulaiTransisi(async () => {
       const hasil = await aksiHapusFotoMenu(id);
       setPesanUbah(hasil.pesan ?? null);
@@ -89,35 +91,9 @@ export function KelolaFotoMenu({ menuId, namaMenu, foto }: KelolaFotoMenuProps) 
 
   return (
     <div className="w-full">
-      <button
-        type="button"
-        onClick={() => setTerbuka((v) => !v)}
-        aria-expanded={terbuka}
-        className="min-h-[44px] px-3 py-2 rounded-xl text-xs font-bold border border-krem-gelap bg-krem/40 text-kayu hover:bg-krem-tua transition-colors inline-flex items-center gap-2 cursor-pointer"
-      >
-        <svg
-          className="w-4 h-4"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
-          aria-hidden="true"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-          />
-        </svg>
-        <span>
-          Foto ({foto.length}/{MAKS_FOTO_PER_MENU})
-        </span>
-        <span aria-hidden="true">{terbuka ? "▲" : "▼"}</span>
-      </button>
-
-      {terbuka && (
-        <div className="mt-3 p-4 rounded-2xl border border-krem-gelap bg-krem/30 space-y-4">
-          <p className="text-[11px] text-kayu-sedang">
+      {
+        <div className="space-y-4">
+          <p className="teks-redup">
             Foto pertama dipakai sebagai sampul di katalog. Tambahkan foto isi
             box, porsi, dan penyajian supaya pembeli tahu persis yang akan
             datang.
@@ -138,7 +114,7 @@ export function KelolaFotoMenu({ menuId, namaMenu, foto }: KelolaFotoMenuProps) 
                       className="w-full h-full object-cover"
                     />
                     {index === 0 && (
-                      <span className="absolute top-1.5 left-1.5 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-daun text-white shadow">
+                      <span className="absolute top-1.5 left-1.5 lencana bg-white/95 text-kayu border-transparent">
                         Sampul
                       </span>
                     )}
@@ -150,9 +126,9 @@ export function KelolaFotoMenu({ menuId, namaMenu, foto }: KelolaFotoMenuProps) 
                         type="button"
                         onClick={() => jadikanSampul(f.id)}
                         disabled={sedangUbah}
-                        className="flex-1 min-h-[36px] px-1.5 py-1 rounded-lg text-[10px] font-bold text-daun-tua bg-daun-lembut hover:bg-daun hover:text-white disabled:opacity-50 transition-colors cursor-pointer"
+                        className="tombol-hantu tombol-kecil flex-1 px-1"
                       >
-                        Jadikan Sampul
+                        Jadikan sampul
                       </button>
                     )}
                     <button
@@ -160,16 +136,16 @@ export function KelolaFotoMenu({ menuId, namaMenu, foto }: KelolaFotoMenuProps) 
                       onClick={() => hapus(f.id)}
                       disabled={sedangUbah}
                       aria-label={`Hapus foto ${index + 1} dari ${namaMenu}`}
-                      className="min-h-[36px] px-2 py-1 rounded-lg text-[10px] font-bold text-bahaya bg-bahaya-lembut hover:bg-bahaya hover:text-white disabled:opacity-50 transition-colors cursor-pointer"
+                      className={`tombol tombol-kecil px-2 ${akanDihapus === f.id ? "bg-bahaya text-white" : "text-bahaya hover:bg-bahaya-lembut"}`}
                     >
-                      Hapus
+                      {akanDihapus === f.id ? "Yakin?" : "Hapus"}
                     </button>
                   </div>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-xs text-kayu-sedang italic">
+            <p className="teks-redup">
               Belum ada foto. Menu tanpa foto tampil sebagai ikon kategori di
               katalog.
             </p>
@@ -178,7 +154,7 @@ export function KelolaFotoMenu({ menuId, namaMenu, foto }: KelolaFotoMenuProps) 
           {pesanUbah && (
             <p
               role="status"
-              className="text-xs font-semibold text-daun-tua bg-daun-lembut border border-daun/20 rounded-xl px-3 py-2"
+              className="kotak-sukses"
             >
               {pesanUbah}
             </p>
@@ -187,18 +163,14 @@ export function KelolaFotoMenu({ menuId, namaMenu, foto }: KelolaFotoMenuProps) 
           {state && (
             <p
               role="status"
-              className={`text-xs font-semibold rounded-xl px-3 py-2 border ${
-                state.sukses
-                  ? "text-daun-tua bg-daun-lembut border-daun/20"
-                  : "text-bahaya bg-bahaya-lembut border-bahaya/20"
-              }`}
+              className={state.sukses ? "kotak-sukses" : "kotak-galat"}
             >
               {state.pesan}
             </p>
           )}
 
           {penuh ? (
-            <p className="text-xs font-semibold text-kunyit-tua bg-kunyit-lembut border border-kunyit/20 rounded-xl px-3 py-2">
+            <p className="kotak-peringatan">
               Sudah mencapai batas {MAKS_FOTO_PER_MENU} foto. Hapus satu foto
               dulu kalau mau menambah yang baru.
             </p>
@@ -216,13 +188,13 @@ export function KelolaFotoMenu({ menuId, namaMenu, foto }: KelolaFotoMenuProps) 
                 id={`foto-menu-${menuId}`}
                 accept="image/jpeg,image/png,image/webp"
                 onChange={pilihGambar}
-                className="hidden"
+                className="sr-only"
                 disabled={sedangUnggah}
               />
 
               <label
                 htmlFor={`foto-menu-${menuId}`}
-                className="min-h-[48px] px-4 py-2.5 rounded-xl border-2 border-dashed border-bata/40 bg-bata-lembut/30 hover:bg-bata-lembut/50 text-bata font-bold text-xs flex items-center justify-center gap-2 cursor-pointer transition-colors"
+                className="tombol-kedua border-dashed has-[:focus-visible]:ring-2"
               >
                 {pratinjau ? "Ganti foto pilihan" : "Pilih foto menu"}
               </label>
@@ -238,21 +210,21 @@ export function KelolaFotoMenu({ menuId, namaMenu, foto }: KelolaFotoMenuProps) 
                     <button
                       type="submit"
                       disabled={sedangUnggah}
-                      className="min-h-[48px] px-5 py-2.5 rounded-xl font-bold text-xs text-white bg-daun hover:bg-daun-tua disabled:opacity-50 transition-colors cursor-pointer"
+                      className="tombol-utama"
                     >
-                      {sedangUnggah ? "Mengunggah..." : "Unggah Foto"}
+                      {sedangUnggah ? "Mengunggah..." : "Unggah foto"}
                     </button>
                   </div>
                 </>
               )}
 
-              <p className="text-[11px] text-kayu-sedang sm:ml-auto">
+              <p className="text-xs text-kayu-sedang sm:ml-auto">
                 JPG, PNG, atau WebP. Maksimal 5 MB.
               </p>
             </form>
           )}
         </div>
-      )}
+      }
     </div>
   );
 }

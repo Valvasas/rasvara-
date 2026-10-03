@@ -172,7 +172,7 @@ export function PetaLokasiAntar({
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <span className="block text-xs font-bold uppercase tracking-wider text-kayu-sedang">
+        <span className="label mb-0">
           Titik Antar di Peta (opsional)
         </span>
 

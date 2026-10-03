@@ -1,207 +1,114 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useTransition, type FormEvent } from "react";
 import { aksiSimpanPengaturan } from "@/app/aksi/pengaturan";
 import type { Pengaturan } from "@/generated/prisma/client";
 
+/** 6281234567890 -> 081234567890, bentuk yang biasa diketik pemilik. */
+const keLokal = (nomor: string) => (nomor.startsWith("62") ? `0${nomor.slice(2)}` : nomor);
+
 export function FormPengaturan({ awal }: { awal: Pengaturan }) {
   const [state, action, isPending] = useActionState(aksiSimpanPengaturan, null);
+  const [, mulai] = useTransition();
+  const g = state?.kesalahan ?? {};
+
+  // Lewat onSubmit supaya isian yang baru diketik tidak dikembalikan ke nilai
+  // lama oleh React saat server menolak salah satu isian.
+  const kirim = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    mulai(() => action(data));
+  };
+
+  const kelas = (k: string) => `isian ${g[k] ? "isian-galat" : ""}`;
+  const Galat = ({ k }: { k: string }) => (g[k] ? <p className="pesan-galat">{g[k][0]}</p> : null);
 
   return (
-    <form action={action} className="bg-white p-6 sm:p-8 rounded-3xl border border-krem-gelap shadow-sm space-y-6">
-      {state?.pesan && (
-        <div
-          className={`p-3.5 rounded-xl text-xs font-semibold text-center ${
-            state.sukses
-              ? "bg-daun-lembut text-daun-tua border border-daun/30"
-              : "bg-bahaya-lembut text-bahaya border border-bahaya/30"
-          }`}
-        >
-          {state.pesan}
-        </div>
-      )}
-
-      {/* Bagian 1: Identitas Usaha */}
-      <div className="space-y-4">
-        <h2 className="text-base font-extrabold text-kayu border-b border-krem-gelap pb-2">
-          1. Profil Usaha
-        </h2>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <form onSubmit={kirim} noValidate className="space-y-6">
+      <section aria-labelledby="judul-profil" className="kartu kartu-isi">
+        <h2 id="judul-profil" className="judul-bagian">Profil usaha</h2>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-kayu-sedang mb-1">
-              Nama Usaha Catering
-            </label>
-            <input
-              type="text"
-              name="namaUsaha"
-              required
-              defaultValue={awal.namaUsaha}
-              className="w-full min-h-[48px] px-3.5 py-2 rounded-xl border border-krem-gelap bg-krem/30 text-kayu text-sm focus:outline-none focus:border-bata"
-            />
+            <label htmlFor="namaUsaha" className="label">Nama usaha</label>
+            <input id="namaUsaha" name="namaUsaha" type="text" maxLength={80} required defaultValue={awal.namaUsaha} className={kelas("namaUsaha")} />
+            <Galat k="namaUsaha" />
           </div>
-
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-kayu-sedang mb-1">
-              Nomor WhatsApp Dapur
-            </label>
-            <input
-              type="tel"
-              name="whatsapp"
-              defaultValue={awal.whatsapp}
-              placeholder="Contoh: 081234567890"
-              className="w-full min-h-[48px] px-3.5 py-2 rounded-xl border border-krem-gelap bg-krem/30 text-kayu text-sm focus:outline-none focus:border-bata"
-            />
+            <label htmlFor="whatsapp" className="label">WhatsApp dapur</label>
+            <input id="whatsapp" name="whatsapp" type="tel" inputMode="tel" maxLength={20} defaultValue={keLokal(awal.whatsapp)} placeholder="08xxxxxxxxxx" className={kelas("whatsapp")} />
+            {g.whatsapp ? <Galat k="whatsapp" /> : <p className="petunjuk">Tombol chat di toko mengarah ke nomor ini.</p>}
+          </div>
+          <div className="sm:col-span-2">
+            <label htmlFor="tagline" className="label">Tagline</label>
+            <input id="tagline" name="tagline" type="text" maxLength={160} defaultValue={awal.tagline} className={kelas("tagline")} />
+            <Galat k="tagline" />
+          </div>
+          <div className="sm:col-span-2">
+            <label htmlFor="alamat" className="label">Alamat dapur</label>
+            <textarea id="alamat" name="alamat" rows={2} maxLength={300} defaultValue={awal.alamat} className={`${kelas("alamat")} py-2.5`} />
+            {g.alamat ? <Galat k="alamat" /> : <p className="petunjuk">Ditampilkan untuk pembeli yang ambil sendiri.</p>}
           </div>
         </div>
+      </section>
 
-        <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-kayu-sedang mb-1">
-            Tagline / Slogan
-          </label>
-          <input
-            type="text"
-            name="tagline"
-            defaultValue={awal.tagline}
-            placeholder="Contoh: Masakan hangat, siap tepat waktu."
-            className="w-full min-h-[48px] px-3.5 py-2 rounded-xl border border-krem-gelap bg-krem/30 text-kayu text-sm focus:outline-none focus:border-bata"
-          />
+      <section aria-labelledby="judul-operasional" className="kartu kartu-isi">
+        <h2 id="judul-operasional" className="judul-bagian">Jam & ongkir</h2>
+        <div className="mt-4 grid gap-4 grid-cols-2 lg:grid-cols-4">
+          <div>
+            <label htmlFor="jamBuka" className="label">Dapur buka</label>
+            <input id="jamBuka" name="jamBuka" type="time" required defaultValue={awal.jamBuka} className={kelas("jamBuka")} />
+            <Galat k="jamBuka" />
+          </div>
+          <div>
+            <label htmlFor="jamTutup" className="label">Dapur tutup</label>
+            <input id="jamTutup" name="jamTutup" type="time" required defaultValue={awal.jamTutup} className={kelas("jamTutup")} />
+            <Galat k="jamTutup" />
+          </div>
+          <div>
+            <label htmlFor="ongkirDefault" className="label">Ongkir (Rp)</label>
+            <input id="ongkirDefault" name="ongkirDefault" type="number" inputMode="numeric" min={0} defaultValue={awal.ongkirDefault} className={kelas("ongkirDefault")} />
+            <Galat k="ongkirDefault" />
+          </div>
+          <div>
+            <label htmlFor="minOrderAntar" className="label">Gratis ongkir mulai</label>
+            <input id="minOrderAntar" name="minOrderAntar" type="number" inputMode="numeric" min={0} defaultValue={awal.minOrderAntar} className={kelas("minOrderAntar")} />
+            {g.minOrderAntar ? <Galat k="minOrderAntar" /> : <p className="petunjuk">0 = tidak ada</p>}
+          </div>
         </div>
+      </section>
 
-        <div>
-          <label className="block text-xs font-bold uppercase tracking-wider text-kayu-sedang mb-1">
-            Alamat Dapur / Lokasi Pengambilan
-          </label>
-          <textarea
-            name="alamat"
-            rows={2}
-            defaultValue={awal.alamat}
-            placeholder="Alamat lengkap lokasi dapur..."
-            className="w-full p-3 rounded-xl border border-krem-gelap bg-krem/30 text-kayu text-sm focus:outline-none focus:border-bata"
-          />
+      <section aria-labelledby="judul-rekening" className="kartu kartu-isi">
+        <h2 id="judul-rekening" className="judul-bagian">Rekening transfer</h2>
+        <p className="teks-redup mt-1">Bila belum lengkap, pembeli hanya bisa memilih bayar tunai.</p>
+        <div className="mt-4 grid gap-4 sm:grid-cols-3">
+          <div>
+            <label htmlFor="namaBank" className="label">Bank</label>
+            <input id="namaBank" name="namaBank" type="text" maxLength={40} defaultValue={awal.namaBank} placeholder="BCA" className={kelas("namaBank")} />
+            <Galat k="namaBank" />
+          </div>
+          <div>
+            <label htmlFor="nomorRekening" className="label">Nomor rekening</label>
+            <input id="nomorRekening" name="nomorRekening" type="text" inputMode="numeric" maxLength={30} defaultValue={awal.nomorRekening} className={`${kelas("nomorRekening")} font-mono`} />
+            <Galat k="nomorRekening" />
+          </div>
+          <div>
+            <label htmlFor="namaRekening" className="label">Atas nama</label>
+            <input id="namaRekening" name="namaRekening" type="text" maxLength={80} defaultValue={awal.namaRekening} className={kelas("namaRekening")} />
+            <Galat k="namaRekening" />
+          </div>
         </div>
+      </section>
+
+      <div className="flex flex-wrap items-center gap-4">
+        <button type="submit" disabled={isPending} className="tombol-utama">
+          {isPending ? "Menyimpan..." : "Simpan pengaturan"}
+        </button>
+        {state?.pesan && (
+          <p role={state.sukses ? "status" : "alert"} className={`text-sm ${state.sukses ? "text-daun-tua" : "text-bahaya"}`}>
+            {state.pesan}
+          </p>
+        )}
       </div>
-
-      {/* Bagian 2: Jam Operasional & Pengantaran */}
-      <div className="space-y-4">
-        <h2 className="text-base font-extrabold text-kayu border-b border-krem-gelap pb-2">
-          2. Jam Dapur & Biaya Antar
-        </h2>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-kayu-sedang mb-1">
-              Jam Buka Dapur (WIB)
-            </label>
-            <input
-              type="time"
-              name="jamBuka"
-              required
-              defaultValue={awal.jamBuka}
-              className="w-full min-h-[48px] px-3.5 py-2 rounded-xl border border-krem-gelap bg-krem/30 text-kayu text-sm focus:outline-none focus:border-bata"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-kayu-sedang mb-1">
-              Jam Tutup Dapur (WIB)
-            </label>
-            <input
-              type="time"
-              name="jamTutup"
-              required
-              defaultValue={awal.jamTutup}
-              className="w-full min-h-[48px] px-3.5 py-2 rounded-xl border border-krem-gelap bg-krem/30 text-kayu text-sm focus:outline-none focus:border-bata"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-kayu-sedang mb-1">
-              Ongkir Default (Rp)
-            </label>
-            <input
-              type="number"
-              name="ongkirDefault"
-              step="1000"
-              defaultValue={awal.ongkirDefault}
-              className="w-full min-h-[48px] px-3.5 py-2 rounded-xl border border-krem-gelap bg-krem/30 text-kayu text-sm focus:outline-none focus:border-bata"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-kayu-sedang mb-1">
-              Min. Order Gratis Ongkir (Rp)
-            </label>
-            <input
-              type="number"
-              name="minOrderAntar"
-              step="10000"
-              defaultValue={awal.minOrderAntar}
-              placeholder="0 jika tidak ada promo gratis ongkir"
-              className="w-full min-h-[48px] px-3.5 py-2 rounded-xl border border-krem-gelap bg-krem/30 text-kayu text-sm focus:outline-none focus:border-bata"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Bagian 3: Rekening Bank */}
-      <div className="space-y-4">
-        <h2 className="text-base font-extrabold text-kayu border-b border-krem-gelap pb-2">
-          3. Rekening Penerimaan Pembayaran
-        </h2>
-
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-kayu-sedang mb-1">
-              Nama Bank
-            </label>
-            <input
-              type="text"
-              name="namaBank"
-              defaultValue={awal.namaBank}
-              placeholder="BCA / BRI / Mandiri"
-              className="w-full min-h-[48px] px-3.5 py-2 rounded-xl border border-krem-gelap bg-krem/30 text-kayu text-sm focus:outline-none focus:border-bata"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-kayu-sedang mb-1">
-              Nomor Rekening
-            </label>
-            <input
-              type="text"
-              name="nomorRekening"
-              defaultValue={awal.nomorRekening}
-              placeholder="1234567890"
-              className="w-full min-h-[48px] px-3.5 py-2 rounded-xl border border-krem-gelap bg-krem/30 text-kayu text-sm font-mono focus:outline-none focus:border-bata"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-kayu-sedang mb-1">
-              Atas Nama Rekening
-            </label>
-            <input
-              type="text"
-              name="namaRekening"
-              defaultValue={awal.namaRekening}
-              placeholder="Nama Pemilik Rekening"
-              className="w-full min-h-[48px] px-3.5 py-2 rounded-xl border border-krem-gelap bg-krem/30 text-kayu text-sm focus:outline-none focus:border-bata"
-            />
-          </div>
-        </div>
-      </div>
-
-      <button
-        type="submit"
-        disabled={isPending}
-        className="w-full min-h-[50px] px-6 py-3 rounded-2xl font-bold text-sm text-white bg-bata hover:bg-bata-tua disabled:opacity-50 transition-colors shadow-sm inline-flex items-center justify-center gap-2 cursor-pointer"
-      >
-        {isPending ? "Menyimpan..." : "Simpan Pengaturan Usaha"}
-      </button>
     </form>
   );
 }
-

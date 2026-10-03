@@ -28,65 +28,37 @@ export function TampilanCetakPesanan({
   };
 
   return (
-    <div className="min-h-screen bg-krem-tua/40 py-6 px-4 print:bg-white print:p-0 print:m-0">
-      {/* Kontrol di Layar (Disembunyikan saat dicetak / print) */}
-      <div className="max-w-2xl mx-auto mb-6 bg-white p-4 rounded-2xl border border-krem-gelap shadow-sm space-y-4 print:hidden">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <Link
-            href="/admin"
-            className="min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-bold text-kayu bg-krem hover:bg-krem-gelap transition-colors inline-flex items-center gap-1.5"
-          >
-            <span>&larr;</span> Kembali ke Papan Pesanan
-          </Link>
-
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={jalankanCetak}
-              className="min-h-[44px] px-5 py-2 rounded-xl text-xs font-extrabold bg-bata text-white hover:bg-bata-tua shadow-md transition-all inline-flex items-center gap-2 cursor-pointer"
-            >
-              <span>🖨️</span>
-              <span>Cetak Dokumen (Ctrl+P)</span>
-            </button>
+    <div className="min-h-screen py-6 px-4 print:bg-white print:p-0 print:m-0">
+      {/* Kontrol di layar, disembunyikan saat dicetak */}
+      <div className="max-w-xl mx-auto mb-6 flex flex-wrap items-center justify-between gap-3 print:hidden">
+        <Link href="/admin" className="tombol-hantu -ml-3">
+          &larr; Papan pesanan
+        </Link>
+        <div className="flex items-center gap-2">
+          <div role="tablist" aria-label="Jenis dokumen" className="flex gap-1 rounded-xl bg-white border border-krem-gelap p-1">
+            {(["dapur", "nota"] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                role="tab"
+                aria-selected={modeCetak === m}
+                onClick={() => setModeCetak(m)}
+                className={`min-h-[36px] px-3 rounded-lg text-sm font-medium cursor-pointer ${
+                  modeCetak === m ? "bg-kayu text-white" : "text-kayu-sedang hover:text-kayu"
+                }`}
+              >
+                {m === "dapur" ? "Lembar dapur" : "Nota pembeli"}
+              </button>
+            ))}
           </div>
+          <button type="button" onClick={jalankanCetak} className="tombol-utama">
+            Cetak
+          </button>
         </div>
-
-        {/* Tab Pilihan Dokumen */}
-        <div className="flex items-center gap-2 pt-2 border-t border-krem-gelap">
-          <span className="text-xs font-bold text-kayu-sedang shrink-0">Format:</span>
-          <div className="flex items-center gap-1.5">
-            <button
-              type="button"
-              onClick={() => setModeCetak("dapur")}
-              className={`min-h-[40px] px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
-                modeCetak === "dapur"
-                  ? "bg-kayu text-white shadow-sm"
-                  : "bg-krem text-kayu hover:bg-krem-gelap"
-              }`}
-            >
-              👨‍🍳 Lembar Dapur (KOT / Tempel Box)
-            </button>
-            <button
-              type="button"
-              onClick={() => setModeCetak("nota")}
-              className={`min-h-[40px] px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors cursor-pointer ${
-                modeCetak === "nota"
-                  ? "bg-kayu text-white shadow-sm"
-                  : "bg-krem text-kayu hover:bg-krem-gelap"
-              }`}
-            >
-              🧾 Struk / Nota Pembelian
-            </button>
-          </div>
-        </div>
-
-        <p className="text-[11px] text-kayu-sedang italic">
-          💡 Format ini otomatis menyesuaikan ukuran printer thermal (80mm) maupun kertas A4 standar tanpa memotong informasi penting.
-        </p>
       </div>
 
       {/* DOKUMEN CETAK UTAMA */}
-      <div className="max-w-xl mx-auto bg-white p-6 sm:p-8 rounded-3xl border border-krem-gelap shadow-md print:shadow-none print:border-none print:p-2 print:m-0 print:max-w-none text-black font-sans">
+      <div className="max-w-xl mx-auto bg-white p-6 sm:p-8 rounded-2xl border border-krem-gelap print:shadow-none print:border-none print:p-2 print:m-0 print:max-w-none text-black font-sans">
         {modeCetak === "dapur" ? (
           /* ================= MODE LEMBAR KERJA DAPUR (KOT) ================= */
           <div className="space-y-4 text-xs">
@@ -109,10 +81,10 @@ export function TampilanCetakPesanan({
                 WAKTU SIAP / PENGIRIMAN
               </div>
               <div className="text-xl sm:text-2xl font-black text-black font-mono">
-                🕒 {jamTampil(pesanan.jamAcara)} WIB
+                {jamTampil(pesanan.jamAcara)} WIB
               </div>
               <div className="text-xs font-bold text-black">
-                📅 {tanggalPanjang(pesanan.tanggalAcara)}
+                {tanggalPanjang(pesanan.tanggalAcara)}
               </div>
             </div>
 
@@ -141,7 +113,7 @@ export function TampilanCetakPesanan({
               <div className="pt-1 border-t border-dashed border-gray-400 flex justify-between items-center">
                 <span className="font-bold text-gray-700">Status Bayar:</span>
                 <span className="font-mono font-bold uppercase">
-                  {pesanan.statusBayar === "LUNAS" ? "✅ SUDAH LUNAS" : `⚠️ TAGIH TUNAI (${rupiah(pesanan.total)})`}
+                  {pesanan.statusBayar === "LUNAS" ? "SUDAH LUNAS" : `TAGIH TUNAI (${rupiah(pesanan.total)})`}
                 </span>
               </div>
             </div>
@@ -193,7 +165,7 @@ export function TampilanCetakPesanan({
             {pesanan.catatan && (
               <div className="p-3 border-2 border-black bg-gray-50 print:bg-transparent rounded-lg space-y-1">
                 <span className="font-black uppercase tracking-wider block text-xs">
-                  ⚠️ CATATAN KHUSUS DARI PEMESAN:
+                  CATATAN KHUSUS DARI PEMESAN:
                 </span>
                 <p className="text-xs font-semibold whitespace-pre-line">
                   {pesanan.catatan}
@@ -320,7 +292,7 @@ export function TampilanCetakPesanan({
             {/* Status Bayar & Rekening */}
             <div className="text-center py-2 bg-gray-50 print:bg-transparent rounded border border-dashed border-black space-y-1">
               <div className="font-extrabold text-sm uppercase">
-                {pesanan.statusBayar === "LUNAS" ? "✅ LUNAS" : "⚠️ BELUM LUNAS / TAGIH SAAT TERIMA"}
+                {pesanan.statusBayar === "LUNAS" ? "LUNAS" : "BELUM LUNAS / TAGIH SAAT TERIMA"}
               </div>
               {pesanan.statusBayar !== "LUNAS" && pengaturan.nomorRekening && (
                 <div className="text-[11px]">

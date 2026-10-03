@@ -67,3 +67,21 @@ export async function ambilPengaturan(): Promise<Pengaturan> {
 
   return sedangMuat;
 }
+
+/** Transfer hanya bisa ditawarkan bila ketiga data rekening terisi. */
+export function rekeningLengkap(p: Pick<Pengaturan, "namaBank" | "nomorRekening" | "namaRekening">): boolean {
+  return Boolean(p.namaBank.trim() && p.nomorRekening.trim() && p.namaRekening.trim());
+}
+
+/**
+ * Data usaha yang wajib ada sebelum toko benar-benar dibuka. Dipakai dashboard
+ * untuk menagih pemilik — pengaturan kosong tidak membuat aplikasi galat,
+ * tetapi membuat pembeli tidak bisa membayar atau menghubungi dapur.
+ */
+export function kekuranganPengaturan(p: Pengaturan): string[] {
+  const kurang: string[] = [];
+  if (!p.whatsapp.trim()) kurang.push("Nomor WhatsApp dapur");
+  if (!p.alamat.trim()) kurang.push("Alamat dapur");
+  if (!rekeningLengkap(p)) kurang.push("Rekening bank untuk transfer");
+  return kurang;
+}

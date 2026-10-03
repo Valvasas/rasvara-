@@ -54,15 +54,32 @@ Buka `http://localhost:3000` untuk halaman pelanggan dan
 | -------------- | ------------- |
 | `081234567890` | `citarasa123` |
 
-**Ganti kata sandi ini sebelum website dipakai sungguhan**, lewat
-`/admin/pengaturan`. Untuk memakai sandi lain sejak awal, jalankan
-`SEED_SANDI_PEMILIK="sandi-anda" npm run db:seed`.
+Sandi bawaan ini hanya untuk komputer pengembang. Di produksi
+(`NODE_ENV=production`) seed **menolak berjalan** tanpa `SEED_SANDI_PEMILIK`:
 
-Untuk mencoba tampilan dengan data contoh (3 pesanan dan catatan kas):
+```bash
+SEED_TELEPON_PEMILIK="62812xxxxxxx" SEED_SANDI_PEMILIK="sandi-kuat" npm run db:seed
+```
+
+Sandi bisa diganti kapan saja di `/admin/pengaturan`; perangkat lain yang
+sedang masuk ke dashboard otomatis keluar.
+
+Seed produksi sengaja **tidak** mengisi alamat & rekening contoh dan **tidak**
+membuat akun staf. Dashboard akan menagih pemilik melengkapi WhatsApp, alamat,
+dan rekening; selama rekening kosong, pembeli hanya bisa memilih bayar tunai.
+
+Untuk mencoba tampilan dengan data contoh (pesanan, catatan kas, alamat &
+rekening contoh, akun staf `081234567891` / `dapur123`):
 
 ```bash
 SEED_DEMO=1 npm run db:seed
 ```
+
+### Uji menyeluruh sebelum rilis
+
+`scripts/uji-e2e/` berisi data stres (150 menu, 1.200 pesanan, 1.600 catatan
+kas) dan skrip Playwright yang menekan semua tombol penting lalu mencocokkan
+hasilnya ke database. Lihat `scripts/uji-e2e/README.md`.
 
 ## Perintah yang tersedia
 

@@ -30,9 +30,9 @@ export function GrafikKunjungan({ data }: GrafikKunjunganProps) {
   const jarakLabel = data.length > 20 ? 5 : data.length > 10 ? 2 : 1;
 
   return (
-    <div className="bg-white rounded-3xl border border-krem-gelap shadow-sm overflow-hidden">
+    <div className="kartu overflow-hidden">
       <div className="p-4 bg-krem-tua/60 border-b border-krem-gelap flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-extrabold text-sm text-kayu">
+        <h2 className="judul-bagian">
           Kunjungan Harian
         </h2>
 
@@ -112,7 +112,7 @@ export function GrafikKunjungan({ data }: GrafikKunjunganProps) {
                     role="tooltip"
                     className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-10 w-max max-w-[180px] px-3 py-2 rounded-xl bg-kayu text-krem shadow-lg text-[11px] leading-relaxed pointer-events-none"
                   >
-                    <p className="font-extrabold mb-0.5">{d.label}</p>
+                    <p className="font-semibold mb-0.5">{d.label}</p>
                     <p>{angka(d.pengunjung)} pengunjung unik</p>
                     <p>{angka(d.tampilan)} halaman dibuka</p>
                   </div>
