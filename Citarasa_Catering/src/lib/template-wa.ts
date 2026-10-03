@@ -149,3 +149,11 @@ export function usahaUntukWa(p: { namaUsaha: string; namaBank: string; nomorReke
     namaRekening: p.namaRekening,
   };
 }
+
+/** Pesan untuk pelanggan yang baru sekali pesan: pesanan kedua ditentukan kesan pertama. */
+export function pesanTanyaKesan(nama: string, namaUsaha: string): string {
+  return (
+    `Halo ${namaPanggilan(nama)}, terima kasih sudah memesan di ${namaUsaha}. ` +
+    `Bagaimana rasanya kemarin? Masukan sekecil apa pun sangat berarti buat dapur kami.\n\nTerima kasih!`
+  );
+}

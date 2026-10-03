@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { STATUS_PIUTANG } from "@/lib/insight-server";
 import { rentangHari } from "@/lib/laporan";
 import { dariInputTanggal, hariIniWib, kunciHari } from "@/lib/format";
 import { KOLOM_PAPAN } from "@/lib/pesanan";
@@ -36,7 +37,7 @@ export async function ambilRingkasanHariIni(denganUang: boolean): Promise<Ringka
     db.pesanan.count({ where: { statusBayar: "MENUNGGU_VERIFIKASI", status: { not: "DIBATALKAN" } } }),
     denganUang
       ? db.pesanan.aggregate({
-          where: { tanggalAcara: { lt: rHari.gte }, status: { not: "DIBATALKAN" }, statusBayar: { not: "LUNAS" } },
+          where: { tanggalAcara: { lt: rHari.gte }, status: { in: STATUS_PIUTANG }, statusBayar: { not: "LUNAS" } },
           _sum: { total: true, dibayar: true },
           _count: { _all: true },
         })

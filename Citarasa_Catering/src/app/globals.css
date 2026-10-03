@@ -205,6 +205,16 @@ body {
   }
 }
 
+/* Area geser horizontal menjadi containing block. Tanpa ini, elemen `sr-only`
+   (position: absolute) di dalam tabel yang digeser "lolos" ke viewport dan
+   melebarkan halaman di ponsel. Di layer base supaya utilitas `absolute`/
+   `sticky` tetap menang bila dipakai sengaja. */
+@layer base {
+  :where(.overflow-x-auto, .overflow-x-scroll, .overflow-auto) {
+    position: relative;
+  }
+}
+
 /* Scrollbar tipis untuk area geser horizontal */
 .gulir-tipis {
   scrollbar-width: thin;
