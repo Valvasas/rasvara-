@@ -15,6 +15,7 @@ import {
   LABEL_BAYAR,
 } from "@/lib/pesanan";
 import { LencanaBayar, LencanaStatus } from "@/components/Lencana";
+import { sisaTagihan } from "@/lib/pembayaran";
 import { FormUnggahBukti } from "@/components/toko/FormUnggahBukti";
 import { TombolCetakPesanan } from "@/components/admin/TombolCetakPesanan";
 import { TombolSalin } from "@/components/TombolSalin";
@@ -74,6 +75,8 @@ export default async function HalamanDetailPesanan({
   const indeksAktif = tahapan.findIndex((t) => t.kunci === pesanan.status);
   const dibatalkan = pesanan.status === "DIBATALKAN";
   const perluBayar = !dibatalkan && pesanan.statusBayar !== "LUNAS";
+  const sisa = sisaTagihan(pesanan.total, pesanan.dibayar);
+  const kekuranganDp = Math.max(0, pesanan.minimalDp - pesanan.dibayar);
   const rekeningAda = Boolean(pengaturan.namaBank && pengaturan.nomorRekening);
 
   return (
@@ -172,13 +175,30 @@ export default async function HalamanDetailPesanan({
                   </div>
                   <TombolSalin teks={pengaturan.nomorRekening} label="Salin nomor" />
                 </div>
-                <div className="mt-3 flex items-center justify-between text-sm">
-                  <span className="text-kayu-sedang">Jumlah transfer</span>
-                  <span className="flex items-center gap-2">
-                    <span className="font-semibold text-kayu angka-tabel">{rupiah(pesanan.total)}</span>
-                    <TombolSalin teks={String(pesanan.total)} label="Salin" ringkas />
-                  </span>
-                </div>
+                <dl className="mt-3 space-y-2 text-sm">
+                  {pesanan.dibayar > 0 && (
+                    <div className="flex items-center justify-between">
+                      <dt className="text-kayu-sedang">Sudah diterima</dt>
+                      <dd className="text-daun-tua angka-tabel">{rupiah(pesanan.dibayar)}</dd>
+                    </div>
+                  )}
+                  {kekuranganDp > 0 && (
+                    <div className="flex items-center justify-between">
+                      <dt className="text-kayu-sedang">DP minimal</dt>
+                      <dd className="flex items-center gap-2">
+                        <span className="font-semibold text-kayu angka-tabel">{rupiah(kekuranganDp)}</span>
+                        <TombolSalin teks={String(kekuranganDp)} label="Salin" ringkas />
+                      </dd>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <dt className="text-kayu-sedang">{pesanan.dibayar > 0 ? "Sisa pelunasan" : kekuranganDp > 0 ? "Atau langsung lunas" : "Jumlah transfer"}</dt>
+                    <dd className="flex items-center gap-2">
+                      <span className="font-semibold text-kayu angka-tabel">{rupiah(sisa)}</span>
+                      <TombolSalin teks={String(sisa)} label="Salin" ringkas />
+                    </dd>
+                  </div>
+                </dl>
                 <div className="mt-5 pt-5 border-t border-krem-gelap">
                   <FormUnggahBukti
                     kode={pesanan.kode}
@@ -194,7 +214,7 @@ export default async function HalamanDetailPesanan({
             )
           ) : (
             <p className="mt-3 teks-redup">
-              Siapkan {rupiah(pesanan.total)} saat pesanan{" "}
+              Siapkan {rupiah(sisa)} saat pesanan{" "}
               {pesanan.caraAmbil === "DIANTAR" ? "tiba di lokasimu" : "diambil di dapur"}.
             </p>
           )}
@@ -265,6 +285,12 @@ export default async function HalamanDetailPesanan({
             <dt className="font-semibold text-kayu">Total · {LABEL_BAYAR[pesanan.caraBayar]}</dt>
             <dd className="text-lg font-bold text-kayu angka-tabel">{rupiah(pesanan.total)}</dd>
           </div>
+          {pesanan.dibayar > 0 && !dibatalkan && (
+            <div className="flex justify-between text-kayu-sedang">
+              <dt>Sudah dibayar</dt>
+              <dd className="angka-tabel">{rupiah(pesanan.dibayar)}</dd>
+            </div>
+          )}
         </dl>
       </section>
 

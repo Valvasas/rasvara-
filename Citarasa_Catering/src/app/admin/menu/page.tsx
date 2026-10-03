@@ -28,14 +28,16 @@ export default async function HalamanAdminMenu({ searchParams }: HalamanAdminMen
   const kategori = URUTAN_KATEGORI.includes(params.kategori as KategoriMenu)
     ? (params.kategori as KategoriMenu)
     : undefined;
-  const status = params.status === "aktif" || params.status === "nonaktif" || params.status === "tanpa-foto"
-    ? params.status
-    : undefined;
+  const status =
+    params.status === "aktif" || params.status === "nonaktif" || params.status === "tanpa-foto" || params.status === "tanpa-resep"
+      ? params.status
+      : undefined;
 
   const where: Prisma.MenuWhereInput = {
     ...(kategori ? { kategori } : {}),
     ...(status === "aktif" ? { aktif: true } : status === "nonaktif" ? { aktif: false } : {}),
     ...(status === "tanpa-foto" ? { foto: { none: {} } } : {}),
+    ...(status === "tanpa-resep" ? { aktif: true, resep: { none: {} } } : {}),
     ...(kataKunci
       ? {
           OR: [
@@ -57,7 +59,7 @@ export default async function HalamanAdminMenu({ searchParams }: HalamanAdminMen
   const daftar = await db.menu.findMany({
     where,
     orderBy: [{ kategori: "asc" }, { urutan: "asc" }, { nama: "asc" }],
-    include: { foto: { orderBy: { urutan: "asc" }, take: 1 }, _count: { select: { foto: true } } },
+    include: { foto: { orderBy: { urutan: "asc" }, take: 1 }, _count: { select: { foto: true, resep: true } } },
     skip: (halaman - 1) * UKURAN_HALAMAN,
     take: UKURAN_HALAMAN,
   });
@@ -109,6 +111,7 @@ export default async function HalamanAdminMenu({ searchParams }: HalamanAdminMen
           <option value="aktif">Tampil</option>
           <option value="nonaktif">Disembunyikan</option>
           <option value="tanpa-foto">Tanpa foto</option>
+          <option value="tanpa-resep">Tanpa resep</option>
         </select>
         <button type="submit" className="tombol-kedua">Terapkan</button>
         {adaSaringan && <Link href="/admin/menu" className="tombol-hantu">Reset</Link>}
@@ -147,7 +150,9 @@ export default async function HalamanAdminMenu({ searchParams }: HalamanAdminMen
                         <Link href={`/admin/menu/${m.id}`} className="font-medium text-kayu hover:text-bata">
                           {m.nama}
                         </Link>
-                        <p className="text-xs text-kayu-sedang">{m._count.foto} foto</p>
+                        <p className="text-xs text-kayu-sedang">
+                          {m._count.foto} foto · {m._count.resep ? `${m._count.resep} bahan` : "tanpa resep"}
+                        </p>
                       </div>
                     </div>
                   </td>

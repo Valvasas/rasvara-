@@ -9,15 +9,18 @@ import {
   hariIniWib,
   jamTampil,
   kunciHari,
-  linkWhatsapp,
   rupiah,
   tanggalPendek,
-  teleponTampil,
 } from "@/lib/format";
 import { INFO_STATUS, KOLOM_PAPAN } from "@/lib/pesanan";
 import { LencanaBayar } from "@/components/Lencana";
 import { AksiPesanan } from "@/components/admin/AksiPesanan";
-import { IkonCari, IkonLampiran, IkonLokasi, IkonPeringatan, IkonTruk, IkonWhatsapp } from "@/components/ikon/Ikon";
+import { MenuWa } from "@/components/admin/MenuWa";
+import { PemantauPapan } from "@/components/admin/PemantauPapan";
+import { ambilRingkasanHariIni } from "@/lib/ringkasan";
+import { bacaDenyut } from "@/lib/denyut";
+import { usahaUntukWa } from "@/lib/template-wa";
+import { IkonCari, IkonLampiran, IkonLokasi, IkonPeringatan, IkonTambah, IkonTruk } from "@/components/ikon/Ikon";
 import type { Prisma, StatusPesanan } from "@/generated/prisma/client";
 
 export const metadata: Metadata = { title: "Papan pesanan" };
@@ -85,22 +88,26 @@ export default async function HalamanPapanDapur({ searchParams }: HalamanPapanDa
       : {}),
   };
 
-  const [perKolom, hitungan, perluCek] = await Promise.all([
+  const [perKolom, hitungan, ringkas, denyut] = await Promise.all([
     Promise.all(
       KOLOM_PAPAN.map((status) =>
         db.pesanan.findMany({
           where: { ...saringan, status },
-          include: { item: { select: { id: true, namaMenu: true, jumlah: true } } },
+          include: { item: { select: { id: true, namaMenu: true, jumlah: true, satuan: true } } },
           orderBy: [{ tanggalAcara: "asc" }, { jamAcara: "asc" }],
           take: BATAS_KOLOM,
         })
       )
     ),
     db.pesanan.groupBy({ by: ["status"], where: { ...saringan, status: { in: KOLOM_PAPAN } }, _count: { _all: true } }),
-    adalahPemilik
-      ? db.pesanan.count({ where: { statusBayar: "MENUNGGU_VERIFIKASI", status: { not: "DIBATALKAN" } } })
-      : Promise.resolve(0),
+    ambilRingkasanHariIni(adalahPemilik),
+    bacaDenyut(),
   ]);
+  const usaha = usahaUntukWa(pengaturan);
+  const tugasMacet =
+    adalahPemilik &&
+    ((pengaturan.batasBayarJam > 0 && !pengaturan.tugasTerakhir) ||
+      (pengaturan.tugasTerakhir !== null && Date.now() - pengaturan.tugasTerakhir.getTime() > 2 * 60 * 60 * 1000));
 
   const jumlahStatus = (s: StatusPesanan) => hitungan.find((h) => h.status === s)?._count._all ?? 0;
   const totalAktif = KOLOM_PAPAN.reduce((n, s) => n + jumlahStatus(s), 0);
@@ -117,41 +124,74 @@ export default async function HalamanPapanDapur({ searchParams }: HalamanPapanDa
 
   return (
     <div>
-      <header className="flex flex-wrap items-end justify-between gap-4">
+      <header className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="judul-halaman">Papan pesanan</h1>
           <p className="teks-redup mt-1">
             {totalAktif} pesanan aktif{rentang !== "semua" ? ` · ${RENTANG.find((r) => r.kunci === rentang)?.label.toLowerCase()}` : ""}
           </p>
-        </div>
-        <form method="get" action="/admin" role="search" className="flex flex-wrap gap-2 w-full sm:w-auto">
-          {rentang !== "semua" && <input type="hidden" name="rentang" value={rentang} />}
-          {hanyaCekBayar && <input type="hidden" name="bayar" value="cek" />}
-          <div className="relative w-full sm:w-64">
-            <label htmlFor="cari-pesanan" className="sr-only">Cari pesanan</label>
-            <IkonCari className="w-4 h-4 text-kayu-sedang absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input
-              id="cari-pesanan"
-              type="search"
-              name="q"
-              defaultValue={kataKunci}
-              maxLength={60}
-              placeholder="Nama, kode, atau nomor HP"
-              className="isian pl-9"
-            />
+          <div className="mt-2">
+            <PemantauPapan versiAwal={denyut.versi} baruAwal={denyut.baru} />
           </div>
-          <label htmlFor="saring-ambil" className="sr-only">Cara ambil</label>
-          <select id="saring-ambil" name="ambil" defaultValue={ambil ?? ""} className="isian flex-1 sm:flex-none sm:w-auto">
-            <option value="">Semua cara ambil</option>
-            <option value="AMBIL_SENDIRI">Ambil sendiri</option>
-            <option value="DIANTAR">Diantar</option>
-          </select>
-          <button type="submit" className="tombol-kedua">Terapkan</button>
-        </form>
+        </div>
+        <Link href="/admin/pesanan/baru" className="tombol-utama">
+          <IkonTambah className="w-4 h-4" /> Catat pesanan
+        </Link>
       </header>
 
+      {/* Ringkasan hari ini: tiap kartu adalah jalan pintas ke tindakannya. */}
+      <ul className={`mt-6 grid gap-3 grid-cols-2 ${adalahPemilik ? "lg:grid-cols-4" : ""}`}>
+        <li>
+          <Link href={hrefDengan({ rentang: "hari-ini" })} className="kartu block p-4 h-full hover:border-bata/40">
+            <p className="teks-redup">Hari ini</p>
+            <p className="mt-1 text-xl font-semibold angka-tabel">{ringkas.hariIni.jumlah} <span className="text-sm font-normal text-kayu-sedang">pesanan</span></p>
+            <p className="text-xs text-kayu-sedang mt-0.5">
+              {ringkas.hariIni.jamPertama ? `Paling awal ${jamTampil(ringkas.hariIni.jamPertama)}` : "Tidak ada yang harus siap"}
+            </p>
+          </Link>
+        </li>
+        <li>
+          <Link href={`/admin/produksi?tanggal=${ringkas.besok.tanggal}`} className="kartu block p-4 h-full hover:border-bata/40">
+            <p className="teks-redup">Besok</p>
+            <p className="mt-1 text-xl font-semibold angka-tabel">{ringkas.besok.jumlah} <span className="text-sm font-normal text-kayu-sedang">pesanan</span></p>
+            <p className="text-xs text-bata mt-0.5">Lihat rekap produksi →</p>
+          </Link>
+        </li>
+        {adalahPemilik && (
+          <li>
+            <Link
+              href={hrefDengan({ bayar: hanyaCekBayar ? undefined : "cek" })}
+              aria-current={hanyaCekBayar ? "page" : undefined}
+              className={`kartu block p-4 h-full hover:border-bata/40 ${ringkas.perluCek ? "border-kunyit/50 bg-kunyit-lembut/40" : ""} ${hanyaCekBayar ? "ring-2 ring-kunyit/40" : ""}`}
+            >
+              <p className="teks-redup">Cek pembayaran</p>
+              <p className="mt-1 text-xl font-semibold angka-tabel">{ringkas.perluCek}</p>
+              <p className="text-xs text-kayu-sedang mt-0.5">{hanyaCekBayar ? "Ketuk untuk tampilkan semua" : "bukti transfer menunggu"}</p>
+            </Link>
+          </li>
+        )}
+        {adalahPemilik && (
+          <li>
+            <Link href="/admin/laporan?tab=piutang" className={`kartu block p-4 h-full hover:border-bata/40 ${ringkas.piutangLewat.nilai ? "border-bahaya/30" : ""}`}>
+              <p className="teks-redup">Piutang lewat</p>
+              {ringkas.piutangLewat.jumlah ? (
+                <>
+                  <p className="mt-1 text-xl font-semibold angka-tabel text-bahaya">{rupiah(ringkas.piutangLewat.nilai)}</p>
+                  <p className="text-xs text-kayu-sedang mt-0.5">{ringkas.piutangLewat.jumlah} pesanan, acara sudah lewat</p>
+                </>
+              ) : (
+                <>
+                  <p className="mt-1 text-xl font-semibold text-daun-tua">Beres</p>
+                  <p className="text-xs text-kayu-sedang mt-0.5">tidak ada tagihan tertunggak</p>
+                </>
+              )}
+            </Link>
+          </li>
+        )}
+      </ul>
+
       {kurang.length > 0 && (
-        <div className="kotak-peringatan mt-6 flex flex-wrap items-center justify-between gap-3">
+        <div className="kotak-peringatan mt-4 flex flex-wrap items-center justify-between gap-3">
           <p className="flex items-start gap-2">
             <IkonPeringatan className="w-4 h-4 mt-0.5 shrink-0" />
             <span>
@@ -162,20 +202,42 @@ export default async function HalamanPapanDapur({ searchParams }: HalamanPapanDa
           <Link href="/admin/pengaturan" className="tombol-kedua tombol-kecil">Lengkapi</Link>
         </div>
       )}
-
-      {perluCek > 0 && !hanyaCekBayar && (
-        <Link
-          href={hrefDengan({ bayar: "cek" })}
-          className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-kunyit/30 bg-kunyit-lembut px-4 py-3 text-sm text-kunyit-tua hover:border-kunyit/60"
-        >
+      {tugasMacet && (
+        <p className="kotak-peringatan mt-4 flex items-start gap-2">
+          <IkonPeringatan className="w-4 h-4 mt-0.5 shrink-0" />
           <span>
-            <span className="font-semibold">{perluCek} pembayaran</span> menunggu dicek
+            Tugas otomatis (arsip rekap bulanan, batal otomatis) tidak berjalan dalam 2 jam terakhir. Periksa cron di server
+            — lihat DEPLOYMENT.md.
           </span>
-          <span className="font-medium">Tampilkan →</span>
-        </Link>
+        </p>
       )}
 
-      <div className="mt-6 flex flex-wrap items-center gap-2">
+      <form method="get" action="/admin" role="search" className="mt-6 flex flex-wrap gap-2">
+        {rentang !== "semua" && <input type="hidden" name="rentang" value={rentang} />}
+        {hanyaCekBayar && <input type="hidden" name="bayar" value="cek" />}
+        <div className="relative w-full sm:w-72">
+          <label htmlFor="cari-pesanan" className="sr-only">Cari pesanan</label>
+          <IkonCari className="w-4 h-4 text-kayu-sedang absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <input
+            id="cari-pesanan"
+            type="search"
+            name="q"
+            defaultValue={kataKunci}
+            maxLength={60}
+            placeholder="Nama, kode, atau nomor HP"
+            className="isian pl-9"
+          />
+        </div>
+        <label htmlFor="saring-ambil" className="sr-only">Cara ambil</label>
+        <select id="saring-ambil" name="ambil" defaultValue={ambil ?? ""} className="isian flex-1 sm:flex-none sm:w-auto">
+          <option value="">Semua cara ambil</option>
+          <option value="AMBIL_SENDIRI">Ambil sendiri</option>
+          <option value="DIANTAR">Diantar</option>
+        </select>
+        <button type="submit" className="tombol-kedua">Terapkan</button>
+      </form>
+
+      <div className="mt-4 flex flex-wrap items-center gap-2">
         {RENTANG.map((r) => (
           <Link
             key={r.kunci}
@@ -224,10 +286,14 @@ export default async function HalamanPapanDapur({ searchParams }: HalamanPapanDa
                               {tanggalPendek(p.tanggalAcara)} ·{" "}
                               <span className="font-semibold text-kayu">{jamTampil(p.jamAcara)}</span>
                             </p>
-                            <h3 className="mt-1 font-semibold text-kayu truncate">{p.namaPemesan}</h3>
+                            <h3 className="mt-1 font-semibold text-kayu truncate">
+                              <Link href={`/admin/pesanan/${p.kode}`} className="hover:text-bata">
+                                {p.namaPemesan}
+                              </Link>
+                            </h3>
                           </div>
                           <Link
-                            href={`/pesanan/${p.kode}`}
+                            href={`/admin/pesanan/${p.kode}`}
                             className="font-mono text-[11px] text-kayu-sedang hover:text-bata shrink-0 mt-0.5"
                           >
                             {p.kode.slice(-6)}
@@ -267,15 +333,7 @@ export default async function HalamanPapanDapur({ searchParams }: HalamanPapanDa
                               <IkonLokasi className="w-3.5 h-3.5" /> Peta
                             </a>
                           )}
-                          <a
-                            href={linkWhatsapp(p.teleponPemesan, `Halo ${p.namaPemesan}, soal pesanan ${p.kode}...`)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 hover:text-kayu"
-                            title={teleponTampil(p.teleponPemesan)}
-                          >
-                            <IkonWhatsapp className="w-3.5 h-3.5 text-daun" /> WA
-                          </a>
+                          <MenuWa ringkas pesanan={{ ...p, status: p.status }} usaha={usaha} />
                           {adalahPemilik && p.buktiBayarUrl && (
                             <a
                               href={p.buktiBayarUrl}
@@ -290,7 +348,12 @@ export default async function HalamanPapanDapur({ searchParams }: HalamanPapanDa
 
                         <div className="mt-3 flex items-center justify-between gap-2">
                           {adalahPemilik ? (
-                            <span className="font-semibold text-kayu angka-tabel">{rupiah(p.total)}</span>
+                            <span className="angka-tabel">
+                              <span className="font-semibold text-kayu">{rupiah(p.total)}</span>
+                              {p.dibayar > 0 && p.dibayar < p.total && (
+                                <span className="block text-xs text-kayu-sedang">sisa {rupiah(p.total - p.dibayar)}</span>
+                              )}
+                            </span>
                           ) : (
                             <span className="text-xs text-kayu-sedang">{p.caraBayar === "TUNAI" ? "Tunai" : "Transfer"}</span>
                           )}
@@ -303,6 +366,7 @@ export default async function HalamanPapanDapur({ searchParams }: HalamanPapanDa
                             status={p.status}
                             statusBayar={p.statusBayar}
                             total={p.total}
+                            sisa={Math.max(0, p.total - p.dibayar)}
                             adalahPemilik={adalahPemilik}
                           />
                         </div>

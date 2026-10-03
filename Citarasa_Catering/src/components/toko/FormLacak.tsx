@@ -5,14 +5,16 @@ import { aksiLacakPesanan } from "@/app/aksi/pesanan";
 
 interface FormLacakProps {
   pesanAwal?: string;
+  /** Kode dari tautan WA dapur (`/lacak?kode=…`), supaya pembeli cukup mengisi nomor HP. */
+  kodeAwal?: string;
 }
 
-export function FormLacak({ pesanAwal }: FormLacakProps) {
+export function FormLacak({ pesanAwal, kodeAwal }: FormLacakProps) {
   const [state, action, isPending] = useActionState(aksiLacakPesanan, null);
   // Terkendali: React 19 mengosongkan isian tak-terkendali setelah aksi
   // selesai, jadi tanpa ini pembeli yang salah ketik satu huruf harus
   // mengetik ulang kode dan nomornya.
-  const [kode, setKode] = useState("");
+  const [kode, setKode] = useState(kodeAwal ?? "");
   const [telepon, setTelepon] = useState("");
 
   const pesan = state?.pesan || pesanAwal;

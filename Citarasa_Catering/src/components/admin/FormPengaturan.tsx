@@ -77,6 +77,26 @@ export function FormPengaturan({ awal }: { awal: Pengaturan }) {
         </div>
       </section>
 
+      <section aria-labelledby="judul-dp" className="kartu kartu-isi">
+        <h2 id="judul-dp" className="judul-bagian">DP &amp; batas pembayaran</h2>
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <div>
+            <label htmlFor="persenDp" className="label">DP minimal (%)</label>
+            <input id="persenDp" name="persenDp" type="number" inputMode="numeric" min={0} max={100} defaultValue={awal.persenDp} className={kelas("persenDp")} />
+            {g.persenDp ? <Galat k="persenDp" /> : <p className="petunjuk">0 = pembeli transfer wajib lunas. Berlaku untuk pesanan baru.</p>}
+          </div>
+          <div>
+            <label htmlFor="batasBayarJam" className="label">Batalkan otomatis bila belum bayar (jam)</label>
+            <input id="batasBayarJam" name="batasBayarJam" type="number" inputMode="numeric" min={0} max={720} defaultValue={awal.batasBayarJam} className={kelas("batasBayarJam")} />
+            {g.batasBayarJam ? (
+              <Galat k="batasBayarJam" />
+            ) : (
+              <p className="petunjuk">0 = mati. Hanya pesanan transfer dari website yang belum ada pembayaran maupun bukti.</p>
+            )}
+          </div>
+        </div>
+      </section>
+
       <section aria-labelledby="judul-rekening" className="kartu kartu-isi">
         <h2 id="judul-rekening" className="judul-bagian">Rekening transfer</h2>
         <p className="teks-redup mt-1">Bila belum lengkap, pembeli hanya bisa memilih bayar tunai.</p>

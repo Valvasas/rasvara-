@@ -430,3 +430,39 @@ export function IkonWhatsapp(props: SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+
+export function IkonPanci(props: IkonProps) {
+  return (
+    <Bingkai {...props}>
+      <path d="M2 12h20" />
+      <path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-6" />
+      <path d="M8 8c0-1 .5-2 2-2" />
+      <path d="M14 8c0-1 .5-2 2-2" />
+      <path d="M4 12V9a1 1 0 0 1 1-1h14a1 1 0 0 1 1 1v3" />
+    </Bingkai>
+  );
+}
+
+export function IkonKeranjang(props: IkonProps) {
+  return (
+    <Bingkai {...props}>
+      <path d="m15 11-1 9" />
+      <path d="m19 11-4-7" />
+      <path d="M2 11h20" />
+      <path d="m3.5 11 1.6 7.4a2 2 0 0 0 2 1.6h9.8a2 2 0 0 0 2-1.6l1.7-7.4" />
+      <path d="M4.5 15.5h15" />
+      <path d="m5 11 4-7" />
+      <path d="m9 11 1 9" />
+    </Bingkai>
+  );
+}
+
+export function IkonMenuGaris(props: IkonProps) {
+  return (
+    <Bingkai {...props}>
+      <path d="M4 6h16" />
+      <path d="M4 12h16" />
+      <path d="M4 18h16" />
+    </Bingkai>
+  );
+}

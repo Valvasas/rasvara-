@@ -88,6 +88,11 @@ export type OpsiPesanan = {
    */
   abaikanBatas?: boolean;
   catatanRiwayat: string;
+  /**
+   * Dijalankan di transaksi yang sama setelah pesanan dibuat — mis. mencatat
+   * DP dari pesanan manual. Bila gagal, pesanan ikut batal dibuat.
+   */
+  setelahDibuat?: (tx: Prisma.TransactionClient, pesanan: { kode: string }) => Promise<void>;
 };
 
 type MenuDenganResep = Prisma.MenuGetPayload<{ include: { resep: { include: { bahan: true } } } }>;
@@ -256,7 +261,7 @@ export async function buatPesananBaru(isi: IsiPesanan, opsi: OpsiPesanan) {
     if (!kode) throw new GalatBisnis("Gagal membuat kode pesanan unik. Silakan coba lagi.");
 
     const statusAwal = opsi.statusAwal ?? "BARU";
-    return tx.pesanan.create({
+    const pesanan = await tx.pesanan.create({
       data: {
         kode,
         penggunaId: opsi.penggunaId ?? null,
@@ -299,6 +304,40 @@ export async function buatPesananBaru(isi: IsiPesanan, opsi: OpsiPesanan) {
         riwayat: { create: { ke: statusAwal, catatan: opsi.catatanRiwayat, olehId: opsi.olehId ?? null } },
       },
     });
+    if (opsi.setelahDibuat) await opsi.setelahDibuat(tx, pesanan);
+    return pesanan;
+  });
+}
+
+/** Field peta dikirim sebagai teks dari formulir; kosong berarti tidak diisi. */
+function angkaAtauUndefined(nilai: FormDataEntryValue | null): number | undefined {
+  if (typeof nilai !== "string" || nilai.trim() === "") return undefined;
+  const angka = Number(nilai);
+  return Number.isFinite(angka) ? angka : undefined;
+}
+
+/** Membaca isian pesanan dari FormData; dipakai formulir pembeli & dashboard. */
+export function bacaIsiPesanan(formData: FormData) {
+  let items: unknown = [];
+  try {
+    const mentah = formData.get("itemsJson");
+    if (typeof mentah === "string" && mentah.length <= 20_000) items = JSON.parse(mentah);
+  } catch {
+    items = null;
+  }
+  return SkemaIsiPesanan.safeParse({
+    namaPemesan: formData.get("namaPemesan") ?? "",
+    teleponPemesan: formData.get("teleponPemesan") ?? "",
+    tanggalAcara: formData.get("tanggalAcara") ?? "",
+    jamAcara: formData.get("jamAcara") ?? "",
+    caraAmbil: formData.get("caraAmbil"),
+    alamatAntar: formData.get("alamatAntar") || undefined,
+    caraBayar: formData.get("caraBayar"),
+    catatanPesanan: formData.get("catatanPesanan") || undefined,
+    kodeVoucher: formData.get("kodeVoucher") || undefined,
+    latitude: angkaAtauUndefined(formData.get("latitude")),
+    longitude: angkaAtauUndefined(formData.get("longitude")),
+    items,
   });
 }
 

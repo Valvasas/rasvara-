@@ -13,6 +13,8 @@ interface AksiPesananProps {
   status: StatusPesanan;
   statusBayar: StatusBayar;
   total: number;
+  /** Sisa tagihan; setelah DP, "lunas" berarti mencatat sisa ini saja. */
+  sisa: number;
   adalahPemilik: boolean;
 }
 
@@ -25,7 +27,7 @@ type Mode = "normal" | "konfirmasi-lunas" | "batal";
  * bawaan peramban: dialog itu memblokir seluruh halaman, tidak bisa diberi
  * gaya, dan di beberapa peramban ponsel diam-diam ditekan otomatis.
  */
-export function AksiPesanan({ kode, status, statusBayar, total, adalahPemilik }: AksiPesananProps) {
+export function AksiPesanan({ kode, status, statusBayar, total, sisa, adalahPemilik }: AksiPesananProps) {
   const [isPending, startTransition] = useTransition();
   const [mode, setMode] = useState<Mode>("normal");
   const [alasan, setAlasan] = useState("");
@@ -60,7 +62,7 @@ export function AksiPesanan({ kode, status, statusBayar, total, adalahPemilik }:
     return (
       <div className="rounded-xl bg-daun-lembut p-3 space-y-2.5">
         <p className="text-sm text-daun-tua">
-          Tandai lunas? <span className="font-semibold">{rupiah(total)}</span> akan dicatat di Buku Kas.
+          {sisa < total ? "Lunasi sisa" : "Tandai lunas"}? <span className="font-semibold">{rupiah(sisa)}</span> akan dicatat di Buku Kas.
         </p>
         <div className="flex gap-2">
           <button
@@ -125,7 +127,7 @@ export function AksiPesanan({ kode, status, statusBayar, total, adalahPemilik }:
       {perluLunasDulu ? (
         adalahPemilik ? (
           <button type="button" disabled={isPending} onClick={() => setMode("konfirmasi-lunas")} className="tombol-sukses w-full">
-            Tandai lunas
+            {sisa < total ? `Lunasi sisa ${rupiah(sisa)}` : "Tandai lunas"}
           </button>
         ) : (
           <p className="rounded-xl bg-kunyit-lembut px-3 py-2.5 text-sm text-kunyit-tua text-center">

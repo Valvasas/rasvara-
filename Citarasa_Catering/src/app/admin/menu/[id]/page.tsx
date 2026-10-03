@@ -7,6 +7,7 @@ import { FormMenu } from "@/components/admin/FormMenu";
 import { KelolaFotoMenu } from "@/components/admin/KelolaFotoMenu";
 import { TombolToggleMenu } from "@/components/admin/TombolToggleMenu";
 import { IkonPanahKiri } from "@/components/ikon/Ikon";
+import { EditorResep } from "@/components/admin/EditorResep";
 
 export const metadata: Metadata = { title: "Ubah menu" };
 
@@ -20,10 +21,22 @@ export default async function HalamanUbahMenu({ params, searchParams }: HalamanU
   if (sesi?.peran !== "PEMILIK") redirect("/admin");
 
   const [{ id }, { baru }] = await Promise.all([params, searchParams]);
-  const menu = await db.menu.findUnique({
-    where: { id },
-    include: { foto: { orderBy: { urutan: "asc" } }, _count: { select: { item: true } } },
-  });
+  const [menu, bahan] = await Promise.all([
+    db.menu.findUnique({
+      where: { id },
+      include: {
+        foto: { orderBy: { urutan: "asc" } },
+        resep: { select: { bahanId: true, jumlahPerPorsi: true } },
+        _count: { select: { item: true } },
+      },
+    }),
+    db.bahan.findMany({
+      where: { OR: [{ aktif: true }, { resep: { some: { menuId: id } } }] },
+      select: { id: true, nama: true, satuan: true, hargaPerSatuan: true },
+      orderBy: { nama: "asc" },
+      take: 500,
+    }),
+  ]);
   if (!menu) notFound();
 
   return (
@@ -57,6 +70,12 @@ export default async function HalamanUbahMenu({ params, searchParams }: HalamanU
           namaMenu={menu.nama}
           foto={menu.foto.map((f) => ({ id: f.id, url: f.url, urutan: f.urutan }))}
         />
+      </section>
+
+      <section aria-labelledby="judul-resep" className="kartu kartu-isi mt-6">
+        <h2 id="judul-resep" className="judul-bagian">Resep &amp; HPP</h2>
+        <p className="teks-redup mt-1 mb-4">Takaran bahan untuk 1 {menu.satuan}. Dipakai untuk daftar belanja dan laba per menu.</p>
+        <EditorResep menuId={menu.id} hargaMenu={menu.harga} satuanMenu={menu.satuan} bahan={bahan} awal={menu.resep} />
       </section>
 
       <section aria-labelledby="judul-detail" className="kartu kartu-isi mt-6">

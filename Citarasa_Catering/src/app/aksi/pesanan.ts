@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { bacaSesi, wajibPemilik, wajibStafAtauPemilik } from "@/lib/auth";
 import { punyaAksesPesanan, tandaiPesananMilikSaya } from "@/lib/akses-pesanan";
 import { bolehPindahStatus } from "@/lib/pesanan";
-import { SkemaIsiPesanan, buatPesananBaru } from "@/lib/pesanan-server";
+import { bacaIsiPesanan, buatPesananBaru } from "@/lib/pesanan-server";
 import { pesanGalat } from "@/lib/galat";
 import { catatPembayaran } from "@/lib/pembayaran-server";
 import { sisaTagihan } from "@/lib/pembayaran";
@@ -23,44 +23,12 @@ import {
 } from "@/lib/unggah";
 import type { StatusPesanan } from "@/generated/prisma/client";
 
-/** Field peta dikirim sebagai teks dari formulir; kosong berarti tidak diisi. */
-function angkaAtauUndefined(nilai: FormDataEntryValue | null): number | undefined {
-  if (typeof nilai !== "string" || nilai.trim() === "") return undefined;
-  const angka = Number(nilai);
-  return Number.isFinite(angka) ? angka : undefined;
-}
-
 export type HasilAksiPesanan = {
   sukses: boolean;
   pesan?: string;
   kodePesanan?: string;
   kesalahan?: Record<string, string[]>;
 };
-
-/** Membaca isian pesanan dari FormData; dipakai formulir pembeli & dashboard. */
-function bacaIsiPesanan(formData: FormData) {
-  let items: unknown = [];
-  try {
-    const mentah = formData.get("itemsJson");
-    if (typeof mentah === "string" && mentah.length <= 20_000) items = JSON.parse(mentah);
-  } catch {
-    items = null;
-  }
-  return SkemaIsiPesanan.safeParse({
-    namaPemesan: formData.get("namaPemesan") ?? "",
-    teleponPemesan: formData.get("teleponPemesan") ?? "",
-    tanggalAcara: formData.get("tanggalAcara") ?? "",
-    jamAcara: formData.get("jamAcara") ?? "",
-    caraAmbil: formData.get("caraAmbil"),
-    alamatAntar: formData.get("alamatAntar") || undefined,
-    caraBayar: formData.get("caraBayar"),
-    catatanPesanan: formData.get("catatanPesanan") || undefined,
-    kodeVoucher: formData.get("kodeVoucher") || undefined,
-    latitude: angkaAtauUndefined(formData.get("latitude")),
-    longitude: angkaAtauUndefined(formData.get("longitude")),
-    items,
-  });
-}
 
 export async function aksiBuatPesanan(
   _prevState: HasilAksiPesanan | null,

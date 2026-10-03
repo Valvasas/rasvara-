@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { bacaSesi } from "@/lib/auth";
 import { Wordmark } from "@/components/Wordmark";
 import { TombolKeluar } from "@/components/TombolKeluar";
-import { NavAdmin } from "@/components/admin/NavAdmin";
+import { NavAdmin, NavBawahAdmin } from "@/components/admin/NavAdmin";
 
 export const metadata: Metadata = {
   title: { default: "Dapur", template: "%s — Dapur Citarasa" },
@@ -20,14 +20,14 @@ export default async function LayoutAdmin({ children }: { children: React.ReactN
   const labelPeran = sesi.peran === "STAF_DAPUR" ? "Staf dapur" : "Pemilik";
 
   return (
-    <div className="min-h-screen lg:grid lg:grid-cols-[232px_1fr]">
+    <div className="min-h-screen lg:grid lg:grid-cols-[232px_1fr] print:block">
       {/* Sidebar (layar lebar) */}
-      <aside className="hidden lg:flex lg:flex-col sticky top-0 h-screen border-r border-krem-gelap bg-white px-3 py-5">
+      <aside className="hidden lg:flex lg:flex-col sticky top-0 h-screen border-r border-krem-gelap bg-white px-3 py-5 print:!hidden">
         <div className="px-2">
           <Wordmark href="/admin" compact label="Dapur" />
         </div>
-        <div className="mt-8 flex-1 overflow-y-auto gulir-tipis">
-          <NavAdmin peran={sesi.peran} arah="vertikal" />
+        <div className="mt-6 flex-1 overflow-y-auto gulir-tipis">
+          <NavAdmin peran={sesi.peran} />
         </div>
         <div className="mt-4 pt-4 border-t border-krem-gelap px-2 space-y-3">
           <div className="text-sm">
@@ -44,17 +44,16 @@ export default async function LayoutAdmin({ children }: { children: React.ReactN
       </aside>
 
       {/* Bar atas (ponsel & tablet) */}
-      <header className="lg:hidden sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-krem-gelap">
+      <header className="lg:hidden sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-krem-gelap print:hidden">
         <div className="px-4 h-14 flex items-center justify-between">
           <Wordmark href="/admin" compact label="Dapur" />
           <TombolKeluar className="tombol-kecil" />
         </div>
-        <div className="px-3 pb-2 overflow-x-auto tanpa-scrollbar">
-          <NavAdmin peran={sesi.peran} arah="horizontal" />
-        </div>
       </header>
+      <NavBawahAdmin peran={sesi.peran} />
 
-      <main className="min-w-0 px-4 sm:px-6 lg:px-10 py-6 lg:py-8">
+      {/* pb ekstra di ponsel: konten tidak tertutup bilah tab bawah */}
+      <main className="min-w-0 px-4 sm:px-6 lg:px-10 pt-6 pb-28 lg:py-8">
         <div className="mx-auto max-w-[1400px]">{children}</div>
       </main>
     </div>

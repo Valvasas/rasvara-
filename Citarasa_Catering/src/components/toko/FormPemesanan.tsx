@@ -20,17 +20,11 @@ import {
   menitSekarangWib,
   rupiah,
 } from "@/lib/format";
-import { LABEL_KATEGORI, URUTAN_KATEGORI } from "@/lib/pesanan";
-import {
-  IkonCari,
-  IkonKurang,
-  IkonTambah,
-  IkonToko,
-  IkonTruk,
-  IkonTutup,
-} from "@/components/ikon/Ikon";
+import { IkonToko, IkonTruk } from "@/components/ikon/Ikon";
+import { hitungMinimalDp } from "@/lib/pembayaran";
+import { PemilihMenu } from "@/components/pesanan/PemilihMenu";
 import type { MenuUntukPemesanan } from "@/lib/menu";
-import type { KategoriMenu, Pengaturan, Pengguna } from "@/generated/prisma/client";
+import type { Pengaturan, Pengguna } from "@/generated/prisma/client";
 
 // Berkas peta (Leaflet + CSS-nya) baru diunduh saat pembeli memilih diantar,
 // sehingga pembeli yang ambil sendiri tidak ikut menanggung ongkos unduhnya.
@@ -53,84 +47,6 @@ interface FormPemesananProps {
   tanggalLibur: string[];
   pengguna: Pengguna | null;
   rekeningTersedia: boolean;
-}
-
-/**
- * Berapa baris menu yang tampil sebelum tombol "tampilkan lainnya". Katalog
- * bisa ratusan item; menumpuk semuanya membuat bagian jadwal & data pemesan di
- * bawahnya praktis tidak pernah terlihat.
- */
-const TAMPIL_AWAL = 10;
-
-/** Batas atas sama dengan validasi server, supaya input tidak bisa melampauinya. */
-const MAKS_JUMLAH = 5000;
-
-/**
- * Kontrol jumlah: tombol −/+ untuk penyesuaian kecil dan kolom angka untuk
- * pesanan besar. Memesan 150 kotak tidak boleh berarti 140 kali menekan "+".
- */
-function KontrolJumlah({
-  jumlah,
-  min,
-  satuan,
-  nama,
-  onUbah,
-}: {
-  jumlah: number;
-  min: number;
-  satuan: string;
-  nama: string;
-  onUbah: (n: number) => void;
-}) {
-  const [draf, setDraf] = useState(String(jumlah));
-  useEffect(() => setDraf(String(jumlah)), [jumlah]);
-
-  const terapkan = () => {
-    const n = Math.floor(Number(draf));
-    if (!Number.isFinite(n) || n <= 0) {
-      setDraf(String(jumlah));
-      return;
-    }
-    onUbah(Math.min(MAKS_JUMLAH, Math.max(min, n)));
-  };
-
-  return (
-    <div className="flex items-center rounded-xl border border-krem-gelap bg-white">
-      <button
-        type="button"
-        onClick={() => onUbah(jumlah - 1 < min ? 0 : jumlah - 1)}
-        aria-label={jumlah - 1 < min ? `Hapus ${nama}` : `Kurangi ${nama}`}
-        className="w-10 h-10 flex items-center justify-center text-kayu-sedang hover:text-kayu cursor-pointer rounded-l-xl"
-      >
-        {jumlah - 1 < min ? <IkonTutup className="w-4 h-4" /> : <IkonKurang className="w-4 h-4" />}
-      </button>
-      <input
-        type="number"
-        inputMode="numeric"
-        min={min}
-        max={MAKS_JUMLAH}
-        value={draf}
-        onChange={(e) => setDraf(e.target.value)}
-        onBlur={terapkan}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            terapkan();
-          }
-        }}
-        aria-label={`Jumlah ${nama} (${satuan})`}
-        className="w-14 h-10 text-center text-sm font-semibold text-kayu angka-tabel bg-transparent border-x border-krem-gelap focus:outline-none focus:bg-krem [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-      />
-      <button
-        type="button"
-        onClick={() => onUbah(Math.min(MAKS_JUMLAH, jumlah + 1))}
-        aria-label={`Tambah ${nama}`}
-        className="w-10 h-10 flex items-center justify-center text-kayu-sedang hover:text-kayu cursor-pointer rounded-r-xl"
-      >
-        <IkonTambah className="w-4 h-4" />
-      </button>
-    </div>
-  );
 }
 
 function GalatField({ id, pesan }: { id: string; pesan?: string }) {
@@ -162,40 +78,8 @@ export function FormPemesanan({
     return awal;
   });
 
-  // --- Penyaring katalog ---
-  const [cari, setCari] = useState("");
-  const [kategoriAktif, setKategoriAktif] = useState<KategoriMenu | "SEMUA">("SEMUA");
-  const [batasTampil, setBatasTampil] = useState(TAMPIL_AWAL);
-
-  const kategoriTersedia = useMemo(() => {
-    const ada = new Set(daftarMenu.map((m) => m.kategori));
-    return URUTAN_KATEGORI.filter((k) => ada.has(k));
-  }, [daftarMenu]);
-
-  const menuTersaring = useMemo(() => {
-    const kunci = cari.trim().toLowerCase();
-    return daftarMenu.filter((m) => {
-      if (kategoriAktif !== "SEMUA" && m.kategori !== kategoriAktif) return false;
-      if (!kunci) return true;
-      return m.nama.toLowerCase().includes(kunci) || m.deskripsi.toLowerCase().includes(kunci);
-    });
-  }, [daftarMenu, cari, kategoriAktif]);
-
-  useEffect(() => {
-    setBatasTampil(TAMPIL_AWAL);
-  }, [cari, kategoriAktif]);
-
-  // Menu yang dibawa dari tombol "Pesan" disematkan paling atas. Tanpa ini,
-  // menu yang urutannya jauh di katalog (mis. menu ke-140) memang masuk
-  // ringkasan, tetapi barisnya tersembunyi di balik "tampilkan lainnya" dan
-  // jumlahnya tidak bisa diubah.
+  // Menu yang dibawa dari tombol "Pesan" disematkan paling atas daftar.
   const [idSematan] = useState(() => daftarMenu.find((m) => m.slug === menuAwalSlug)?.id ?? null);
-  const menuUrut = useMemo(() => {
-    if (!idSematan) return menuTersaring;
-    const sematan = menuTersaring.find((m) => m.id === idSematan);
-    return sematan ? [sematan, ...menuTersaring.filter((m) => m.id !== idSematan)] : menuTersaring;
-  }, [menuTersaring, idSematan]);
-  const menuTampil = menuUrut.slice(0, batasTampil);
 
   // --- Isian (semua terkendali) ---
   // React 19 mengosongkan isian tak-terkendali setiap kali aksi formulir
@@ -324,6 +208,8 @@ export function FormPemesanan({
   }
 
   const total = Math.max(0, subtotal - potongan) + ongkir;
+  // Sama dengan hitungan server (lib/pembayaran), hanya untuk ditampilkan.
+  const minimalDp = caraBayar === "TRANSFER" ? hitungMinimalDp(total, pengaturan.persenDp) : 0;
 
   const itemsJson = JSON.stringify(itemTerpilih.map((i) => ({ menuId: i.id, jumlah: i.jumlah })));
 
@@ -370,99 +256,13 @@ export function FormPemesanan({
             1. Pilih menu
           </h2>
 
-          <div className="mt-4 relative">
-            <label htmlFor="cari-menu" className="sr-only">
-              Cari menu
-            </label>
-            <IkonCari className="w-4 h-4 text-kayu-sedang absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input
-              id="cari-menu"
-              type="search"
-              value={cari}
-              onChange={(e) => setCari(e.target.value)}
-              placeholder="Cari menu"
-              autoComplete="off"
-              className="isian pl-10"
-            />
-          </div>
-
-          {kategoriTersedia.length > 1 && (
-            <div className="mt-3 -mx-5 px-5 sm:mx-0 sm:px-0 flex gap-2 overflow-x-auto tanpa-scrollbar">
-              {(["SEMUA", ...kategoriTersedia] as const).map((k) => {
-                const aktif = kategoriAktif === k;
-                return (
-                  <button
-                    key={k}
-                    type="button"
-                    onClick={() => setKategoriAktif(k)}
-                    aria-pressed={aktif}
-                    className={`pil cursor-pointer ${aktif ? "pil-aktif" : ""}`}
-                  >
-                    {k === "SEMUA" ? "Semua" : LABEL_KATEGORI[k]}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          <ul className="mt-4 divide-y divide-krem-gelap border-y border-krem-gelap">
-            {menuTampil.map((m) => {
-              const jml = jumlahMenu[m.id] ?? 0;
-              return (
-                <li
-                  key={m.id}
-                  className={`flex items-center gap-4 py-4 ${jml > 0 ? "bg-bata-lembut/30 -mx-5 px-5 sm:-mx-6 sm:px-6" : ""}`}
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-kayu">{m.nama}</p>
-                    <p className="text-sm text-kayu-sedang mt-0.5">
-                      <span className="text-kayu angka-tabel">{rupiah(m.harga)}</span> / {m.satuan}
-                      <span aria-hidden="true"> · </span>
-                      min. {m.minPesan}
-                      {m.preorderHari > 0 && (
-                        <>
-                          <span aria-hidden="true"> · </span>H-{m.preorderHari}
-                        </>
-                      )}
-                    </p>
-                  </div>
-                  {jml > 0 ? (
-                    <KontrolJumlah
-                      jumlah={jml}
-                      min={m.minPesan}
-                      satuan={m.satuan}
-                      nama={m.nama}
-                      onUbah={(n) => ubahJumlah(m.id, n)}
-                    />
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => ubahJumlah(m.id, m.minPesan)}
-                      className="tombol-kedua tombol-kecil"
-                      aria-label={`Tambah ${m.nama}`}
-                    >
-                      <IkonTambah className="w-3.5 h-3.5" />
-                      Tambah
-                    </button>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-
-          {menuTersaring.length === 0 && (
-            <p className="py-6 text-center teks-redup">Tidak ada menu yang cocok.</p>
-          )}
-
-          {menuTersaring.length > menuTampil.length && (
-            <button
-              type="button"
-              onClick={() => setBatasTampil((n) => n + TAMPIL_AWAL * 2)}
-              className="tombol-hantu w-full mt-3"
-            >
-              Tampilkan {menuTersaring.length - menuTampil.length} menu lainnya
-            </button>
-          )}
+          <PemilihMenu
+            daftarMenu={daftarMenu}
+            jumlahMenu={jumlahMenu}
+            onUbah={ubahJumlah}
+            idSematan={idSematan}
+            idCari="cari-menu"
+          />
           <GalatField id="galat-items" pesan={galat.items?.[0]} />
         </section>
 
@@ -673,7 +473,11 @@ export function FormPemesanan({
                 <span>
                   <span className="block font-medium text-kayu">Transfer bank</span>
                   <span className="block text-sm text-kayu-sedang mt-0.5">
-                    {rekeningTersedia ? `${pengaturan.namaBank}, unggah bukti setelah pesan` : "Belum tersedia"}
+                    {rekeningTersedia
+                      ? pengaturan.persenDp > 0
+                        ? `${pengaturan.namaBank} · bisa DP ${pengaturan.persenDp}% dulu`
+                        : `${pengaturan.namaBank}, unggah bukti setelah pesan`
+                      : "Belum tersedia"}
                   </span>
                 </span>
               </label>
@@ -762,6 +566,12 @@ export function FormPemesanan({
             <dt className="font-semibold text-kayu">Total</dt>
             <dd className="text-xl font-bold text-kayu angka-tabel">{rupiah(total)}</dd>
           </div>
+          {minimalDp > 0 && (
+            <div className="flex justify-between text-kayu-sedang">
+              <dt>DP minimal ({pengaturan.persenDp}%)</dt>
+              <dd className="angka-tabel">{rupiah(minimalDp)}</dd>
+            </div>
+          )}
         </dl>
 
         {/* Voucher */}

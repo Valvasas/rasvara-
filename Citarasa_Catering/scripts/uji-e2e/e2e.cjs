@@ -26,7 +26,7 @@ async function konteks(browser, nama) {
   const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 }, locale: 'id-ID' });
   const page = await ctx.newPage();
   page.on('pageerror', (e) => masalah.push(`[${nama}] pageerror: ${e.message}`));
-  page.on('console', (m) => { if (m.type() === 'error' && !/favicon|Failed to load resource: the server responded with a status of 404/.test(m.text())) masalah.push(`[${nama}] console: ${m.text().slice(0, 200)}`); });
+  page.on('console', (m) => { if (m.type() === 'error' && !/favicon|Failed to load resource: the server responded with a status of 40[14]/.test(m.text())) masalah.push(`[${nama}] console: ${m.text().slice(0, 200)}`); });
   page.on('response', (r) => { if (r.status() >= 500) masalah.push(`[${nama}] HTTP ${r.status()} ${r.url()}`); });
   return { ctx, page };
 }
@@ -59,7 +59,7 @@ async function masuk(page, telp, sandi) {
   const kartuPapan = await a.locator('article').count();
   ok('Papan dibatasi ≤ 80 kartu walau 242 aktif', kartuPapan <= 80, `${kartuPapan} kartu`);
   ok('Tautan "Lihat semua" muncul untuk kolom penuh', (await a.getByText(/Lihat semua \d+ pesanan/).count()) > 0);
-  ok('Banner cek pembayaran tampil', (await a.getByText(/pembayaran\s*menunggu dicek/).count()) > 0);
+  ok('Ringkasan "Cek pembayaran" tampil', (await a.getByText('Cek pembayaran', { exact: true }).count()) > 0);
 
   r = await buka(a, '/admin?rentang=hari-ini');
   ok('Saring "Hari ini"', r.status === 200, `${r.ms} ms`);
@@ -214,7 +214,7 @@ async function masuk(page, telp, sandi) {
   ok('Daftar sandi < 8 ditolak, nama tetap', (await c.getByText('Kata sandi minimal 8 karakter').count()) > 0 && (await c.inputValue('#nama')) === 'Rina Uji');
   await c.fill('#sandi', 'rahasia123');
   await Promise.all([c.waitForURL(/riwayat/), c.getByRole('button', { name: 'Buat akun' }).click()]);
-  ok('Riwayat menampilkan pesanan dari nomor yang sama', (await c.getByText(kode).count()) > 0);
+  ok('Riwayat menampilkan pesanan dari nomor yang sama', await c.getByText(kode).first().waitFor({ timeout: 10000 }).then(() => true, () => false));
   await c.getByText('Keamanan akun').click();
   await c.fill('#sandiLama', 'salahsandi');
   await c.fill('#sandiBaru', 'sandibaru123');

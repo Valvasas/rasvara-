@@ -30,6 +30,8 @@ const SkemaPengaturan = z.object({
   namaRekening: teksOpsional(80),
   ongkirDefault: z.number({ message: "Isi angka" }).int().min(0, "Tidak boleh negatif").max(10_000_000),
   minOrderAntar: z.number({ message: "Isi angka" }).int().min(0, "Tidak boleh negatif").max(1_000_000_000),
+  persenDp: z.number({ message: "Isi angka" }).int("Bilangan bulat").min(0, "0–100").max(100, "0–100"),
+  batasBayarJam: z.number({ message: "Isi angka" }).int("Bilangan bulat").min(0, "Tidak boleh negatif").max(720, "Maksimal 720 jam (30 hari)"),
 });
 
 export type HasilPengaturan = {
@@ -56,6 +58,8 @@ export async function aksiSimpanPengaturan(
     namaRekening: formData.get("namaRekening") || undefined,
     ongkirDefault: Number(formData.get("ongkirDefault") || 0),
     minOrderAntar: Number(formData.get("minOrderAntar") || 0),
+    persenDp: Number(formData.get("persenDp") || 0),
+    batasBayarJam: Number(formData.get("batasBayarJam") || 0),
   };
 
   const parsed = SkemaPengaturan.safeParse(raw);
@@ -84,6 +88,8 @@ export async function aksiSimpanPengaturan(
       namaRekening: d.namaRekening?.trim() || "",
       ongkirDefault: d.ongkirDefault,
       minOrderAntar: d.minOrderAntar,
+      persenDp: d.persenDp,
+      batasBayarJam: d.batasBayarJam,
     },
     update: {
       namaUsaha: d.namaUsaha.trim(),
@@ -97,6 +103,8 @@ export async function aksiSimpanPengaturan(
       namaRekening: d.namaRekening?.trim() || "",
       ongkirDefault: d.ongkirDefault,
       minOrderAntar: d.minOrderAntar,
+      persenDp: d.persenDp,
+      batasBayarJam: d.batasBayarJam,
     },
   });
 

@@ -4,7 +4,7 @@ import { FormLacak } from "@/components/toko/FormLacak";
 export const metadata: Metadata = { title: "Lacak pesanan" };
 
 interface HalamanLacakProps {
-  searchParams: Promise<{ pesan?: string }>;
+  searchParams: Promise<{ pesan?: string; kode?: string }>;
 }
 
 export default async function HalamanLacak({ searchParams }: HalamanLacakProps) {
@@ -17,7 +17,10 @@ export default async function HalamanLacak({ searchParams }: HalamanLacakProps) 
         Kode pesanan ada di halaman konfirmasi dan pesan WhatsApp dari dapur.
       </p>
       <div className="kartu kartu-isi mt-6">
-        <FormLacak pesanAwal={params.pesan?.slice(0, 160)} />
+        <FormLacak
+          pesanAwal={params.pesan?.slice(0, 160)}
+          kodeAwal={params.kode?.toUpperCase().replace(/[^A-Z0-9-]/g, "").slice(0, 32)}
+        />
       </div>
     </div>
   );
