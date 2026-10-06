@@ -98,8 +98,8 @@ export default async function HalamanSemuaPesanan({ searchParams }: HalamanSemua
         </p>
       </header>
 
-      <form method="get" className="kartu mt-6 p-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr_1fr_auto] items-end">
-        <div>
+      <form method="get" className="kartu mt-6 p-4 grid grid-cols-2 gap-3 lg:grid-cols-[1.5fr_1fr_1fr_1fr_1fr_auto] items-end">
+        <div className="col-span-2 lg:col-span-1">
           <label htmlFor="q" className="label">Cari</label>
           <input id="q" type="search" name="q" defaultValue={kataKunci} maxLength={60} placeholder="Nama, kode, nomor HP" className="isian" />
         </div>
@@ -129,8 +129,8 @@ export default async function HalamanSemuaPesanan({ searchParams }: HalamanSemua
           <label htmlFor="sampai" className="label">Sampai</label>
           <input id="sampai" type="date" name="sampai" defaultValue={sampai} className="isian" />
         </div>
-        <div className="flex gap-2">
-          <button type="submit" className="tombol-utama">Terapkan</button>
+        <div className="col-span-2 lg:col-span-1 flex gap-2">
+          <button type="submit" className="tombol-utama flex-1 lg:flex-none">Terapkan</button>
           {adaSaringan && <Link href="/admin/pesanan" className="tombol-hantu">Reset</Link>}
         </div>
       </form>
@@ -140,7 +140,38 @@ export default async function HalamanSemuaPesanan({ searchParams }: HalamanSemua
           {adaSaringan ? "Tidak ada pesanan yang cocok dengan saringan ini." : "Belum ada pesanan."}
         </p>
       ) : (
-        <div className="kartu mt-6 overflow-x-auto">
+        <>
+        {/* Ponsel & tablet: kartu ringkas, satu ketukan langsung ke rincian pesanan. */}
+        <ul className="lg:hidden mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
+          {daftar.map((p) => (
+            <li key={p.kode}>
+              <Link href={`/pesanan/${p.kode}`} className="kartu block h-full p-4 transition-colors hover:border-bata/30 active:bg-krem-tua/60">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-medium text-kayu truncate">{p.namaPemesan}</p>
+                    <p className="text-xs text-kayu-sedang">
+                      {tanggalPendek(p.tanggalAcara)} · {jamTampil(p.jamAcara)} ·{" "}
+                      <span className="font-mono">{p.kode}</span>
+                    </p>
+                  </div>
+                  {adalahPemilik && (
+                    <span className="font-semibold text-kayu angka-tabel shrink-0">{rupiah(p.total)}</span>
+                  )}
+                </div>
+                <p className="mt-1.5 text-sm text-kayu-sedang truncate">
+                  {p.item[0] ? `${p.item[0].namaMenu} ×${p.item[0].jumlah}` : "—"}
+                  {p._count.item > 1 && ` +${p._count.item - 1} menu lain`}
+                </p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  <LencanaStatus status={p.status} />
+                  <LencanaBayar statusBayar={p.statusBayar} />
+                </div>
+              </Link>
+            </li>
+          ))}
+        </ul>
+
+        <div className="hidden lg:block kartu mt-6 overflow-x-auto">
           <table className="tabel min-w-[760px]">
             <thead>
               <tr>
@@ -183,6 +214,7 @@ export default async function HalamanSemuaPesanan({ searchParams }: HalamanSemua
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       <KomponenPaginasi

@@ -100,7 +100,7 @@ export default async function HalamanLaporan({ searchParams }: HalamanLaporanPro
         ))}
       </dl>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-2 items-start">
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2 items-start">
         <section aria-labelledby="judul-terlaris" className="kartu kartu-isi">
           <h2 id="judul-terlaris" className="judul-bagian">Menu terlaris</h2>
           {terlaris.length === 0 ? (

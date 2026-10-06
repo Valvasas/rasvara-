@@ -19,6 +19,18 @@ import { FormUnggahBukti } from "@/components/toko/FormUnggahBukti";
 import { TombolCetakPesanan } from "@/components/admin/TombolCetakPesanan";
 import { TombolSalin } from "@/components/TombolSalin";
 import { IkonCek, IkonWhatsapp } from "@/components/ikon/Ikon";
+import { IlustrasiRantang } from "@/components/ilustrasi/Ilustrasi";
+import type { StatusPesanan } from "@/generated/prisma/client";
+
+/** Apa yang sedang terjadi, ditulis dari sudut pandang pembeli. */
+const LANGKAH_PELANGGAN: Record<StatusPesanan, (diantar: boolean) => string> = {
+  BARU: () => "dapur akan mengecek pesananmu dan mengonfirmasi lewat WhatsApp.",
+  DIKONFIRMASI: () => "pesanan sudah diterima dan masuk jadwal masak dapur.",
+  DIPROSES: () => "masakanmu sedang disiapkan di dapur.",
+  SIAP: (diantar) => (diantar ? "pesanan sudah siap dan segera diantar." : "pesanan sudah siap diambil di dapur."),
+  SELESAI: () => "pesanan sudah diterima. Terima kasih, selamat menikmati!",
+  DIBATALKAN: () => "pesanan ini dibatalkan.",
+};
 
 interface HalamanPesananProps {
   params: Promise<{ kode: string }>;
@@ -79,12 +91,21 @@ export default async function HalamanDetailPesanan({
   return (
     <div className="mx-auto max-w-2xl px-4 sm:px-6 py-8 sm:py-12 space-y-5">
       {baru === "1" && (
-        <div role="status" className="kotak-sukses flex items-start gap-3 anim-masuk">
-          <IkonCek className="w-5 h-5 shrink-0 mt-0.5" strokeWidth={2.25} />
-          <div>
-            <p className="font-semibold">Pesanan terkirim</p>
-            <p className="mt-0.5">
-              Simpan kode di bawah. Dapur akan mengonfirmasi lewat WhatsApp.
+        <div
+          role="status"
+          className="relative overflow-hidden rounded-2xl border border-daun/20 bg-daun-lembut latar-kawung px-5 py-5 sm:px-6 flex items-center gap-4 sm:gap-5 anim-masuk"
+        >
+          <div className="relative shrink-0">
+            <IlustrasiRantang className="w-20 sm:w-24" />
+            <span className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-daun text-white flex items-center justify-center ring-4 ring-daun-lembut">
+              <IkonCek className="w-4 h-4" strokeWidth={3} />
+            </span>
+          </div>
+          <div className="text-daun-tua">
+            <p className="font-tampil text-xl font-bold">Pesanan terkirim!</p>
+            <p className="mt-1 text-sm">
+              Simpan kode di bawah. Dapur akan mengonfirmasi lewat WhatsApp
+              {perluBayar && rekeningAda && pesanan.caraBayar === "TRANSFER" ? ", dan kamu bisa langsung mengirim bukti transfer." : "."}
             </p>
           </div>
         </div>
@@ -142,7 +163,7 @@ export default async function HalamanDetailPesanan({
                     {lewat ? <IkonCek className="w-3.5 h-3.5" strokeWidth={3} /> : idx + 1}
                   </span>
                   <span
-                    className={`mt-2 text-xs ${
+                    className={`mt-2 text-[11px] sm:text-xs leading-tight ${
                       sekarang ? "font-semibold text-kayu" : lewat ? "text-kayu" : "text-kayu-sedang"
                     }`}
                   >
@@ -152,6 +173,13 @@ export default async function HalamanDetailPesanan({
               );
             })}
           </ol>
+        )}
+
+        {!dibatalkan && (
+          <p className="mt-5 rounded-xl bg-krem-tua/70 px-4 py-3 text-sm text-kayu">
+            <span className="font-semibold">Sekarang: </span>
+            {LANGKAH_PELANGGAN[pesanan.status](pesanan.caraAmbil === "DIANTAR")}
+          </p>
         )}
       </header>
 

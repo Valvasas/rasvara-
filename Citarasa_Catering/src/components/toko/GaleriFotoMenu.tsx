@@ -55,9 +55,9 @@ export function GaleriFotoMenu({ foto, nama, kategori }: GaleriFotoMenuProps) {
         foto={[]}
         kategori={kategori}
         nama={nama}
-        className="aspect-[4/3] w-full rounded-2xl border border-krem-gelap"
-        ukuranIkon="w-20 h-20"
+        className="group aspect-[4/3] w-full rounded-2xl border border-krem-gelap"
         priority
+        tandaiIlustrasi
       />
     );
   }

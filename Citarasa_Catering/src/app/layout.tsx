@@ -64,7 +64,11 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#FBF7EE",
+  // Tanpa "cover", env(safe-area-inset-bottom) selalu 0 di iPhone, sehingga
+  // bar bawah (navigasi & total pesanan) tertutup garis home indicator.
+  viewportFit: "cover",
+  // Sama dengan --color-krem supaya bilah alamat browser menyatu dengan kepala halaman.
+  themeColor: "#FFFCF7",
 };
 
 export default function RootLayout({

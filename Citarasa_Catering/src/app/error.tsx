@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { Wordmark } from "@/components/Wordmark";
+import { IlustrasiWajan } from "@/components/ilustrasi/Ilustrasi";
 
 export default function TerjadiKesalahan({
   error,
@@ -18,7 +19,8 @@ export default function TerjadiKesalahan({
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-16 text-center">
       <Wordmark href="/" />
-      <h1 className="font-tampil mt-10 text-3xl font-bold text-kayu">Halaman gagal dimuat</h1>
+      <IlustrasiWajan className="w-56 sm:w-64 mx-auto mt-10" />
+      <h1 className="font-tampil mt-4 text-3xl font-bold text-kayu">Halaman gagal dimuat</h1>
       <p className="teks-redup mt-3 max-w-sm">
         Ada gangguan sesaat di server kami. Coba lagi sebentar. Data yang sudah kamu kirim tetap aman.
       </p>

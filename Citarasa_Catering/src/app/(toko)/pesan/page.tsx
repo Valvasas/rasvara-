@@ -6,6 +6,8 @@ import { ambilMenuUntukPemesanan } from "@/lib/menu";
 import { kunciHari, linkWhatsapp } from "@/lib/format";
 import { catatPeristiwa } from "@/lib/analitik";
 import { FormPemesanan } from "@/components/toko/FormPemesanan";
+import { IlustrasiPiringKosong } from "@/components/ilustrasi/Ilustrasi";
+import { IkonDompet, IkonNota, IkonPengguna } from "@/components/ikon/Ikon";
 
 export const metadata: Metadata = {
   title: "Buat pesanan",
@@ -40,8 +42,9 @@ export default async function HalamanPesan({ searchParams }: HalamanPesanProps) 
 
   if (daftarMenu.length === 0) {
     return (
-      <div className="mx-auto max-w-md px-4 py-20 text-center">
-        <h1 className="judul-halaman">Belum bisa menerima pesanan</h1>
+      <div className="mx-auto max-w-md px-4 py-16 text-center">
+        <IlustrasiPiringKosong className="w-48 mx-auto" />
+        <h1 className="judul-halaman mt-4">Belum bisa menerima pesanan</h1>
         <p className="teks-redup mt-3">
           Menu sedang disiapkan dapur. Silakan kembali lagi nanti
           {pengaturan.whatsapp ? " atau tanya langsung lewat WhatsApp" : ""}.
@@ -61,9 +64,24 @@ export default async function HalamanPesan({ searchParams }: HalamanPesanProps) 
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8 sm:py-12">
-      <h1 className="font-tampil text-3xl sm:text-4xl font-bold text-kayu">Buat pesanan</h1>
-      <p className="teks-redup mt-1.5 mb-8">Isi tiga langkah di bawah. Total selalu terlihat di ringkasan.</p>
+    <div className="mx-auto max-w-6xl px-4 sm:px-6 pt-6 pb-10 sm:py-12">
+      <header className="mb-6 sm:mb-8">
+        <h1 className="font-tampil text-3xl sm:text-4xl font-bold text-kayu">Buat pesanan</h1>
+        <p className="teks-redup mt-1.5">Isi tiga langkah di bawah. Total selalu terlihat di ringkasan.</p>
+        {/* Menjawab keraguan yang paling sering menahan pembeli baru. */}
+        <ul className="mt-4 flex flex-wrap gap-2 text-xs sm:text-sm">
+          {[
+            { teks: "Tanpa daftar akun", Ikon: IkonPengguna },
+            { teks: "Bayar setelah pesan", Ikon: IkonDompet },
+            { teks: "Status bisa dilacak", Ikon: IkonNota },
+          ].map(({ teks, Ikon }) => (
+            <li key={teks} className="inline-flex items-center gap-1.5 rounded-full bg-white border border-krem-gelap px-3 py-1.5 text-kayu-sedang">
+              <Ikon className="w-4 h-4 text-bata" />
+              {teks}
+            </li>
+          ))}
+        </ul>
+      </header>
 
       <FormPemesanan
         daftarMenu={daftarMenu}

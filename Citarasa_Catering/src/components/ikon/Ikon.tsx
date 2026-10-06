@@ -217,6 +217,37 @@ export function IkonCek(props: IkonProps) {
 
 /* ---------- Ikon antarmuka umum ---------- */
 
+/** Rumah — tab Beranda di navigasi bawah ponsel */
+export function IkonRumah(props: IkonProps) {
+  return (
+    <Bingkai {...props}>
+      <path d="M3.5 10.5 12 3.5l8.5 7" />
+      <path d="M5.5 9v10.5a1 1 0 0 0 1 1H10v-6h4v6h3.5a1 1 0 0 0 1-1V9" />
+    </Bingkai>
+  );
+}
+
+/** Nota bergerigi — tab Lacak: pesanan dilacak lewat kode di notanya */
+export function IkonNota(props: IkonProps) {
+  return (
+    <Bingkai {...props}>
+      <path d="M5.5 3.5h13v17l-2.2-1.4-2.1 1.4-2.2-1.4-2.2 1.4-2.1-1.4-2.2 1.4z" />
+      <path d="M9 8.5h6M9 12h6M9 15.5h3.5" />
+    </Bingkai>
+  );
+}
+
+/** Keranjang — tombol utama "Pesan" */
+export function IkonKeranjang(props: IkonProps) {
+  return (
+    <Bingkai {...props}>
+      <path d="M3 9.5h18l-1.6 9.1a2 2 0 0 1-2 1.6H6.6a2 2 0 0 1-2-1.6Z" />
+      <path d="m8 9.5 3-6M16 9.5l-3-6" />
+      <path d="M9.5 13.5v3M14.5 13.5v3" />
+    </Bingkai>
+  );
+}
+
 export function IkonPanahKanan(props: IkonProps) {
   return (
     <Bingkai {...props}>

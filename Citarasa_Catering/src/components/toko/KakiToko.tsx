@@ -12,12 +12,24 @@ export async function KakiToko() {
     : null;
 
   return (
-    <footer className="mt-auto border-t border-krem-gelap bg-krem-tua/50">
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-12 grid gap-10 md:grid-cols-[1.4fr_1fr_1fr]">
-        <div className="space-y-4 max-w-sm">
+    <footer className="mt-auto bg-krem-tua/60">
+      <div aria-hidden="true" className="h-1 pita-merek" />
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-10 sm:py-12 grid gap-8 sm:gap-10 grid-cols-2 md:grid-cols-[1.4fr_1fr_1fr]">
+        <div className="col-span-2 md:col-span-1 space-y-4 max-w-sm">
           <Wordmark href="/" tagline />
           {pengaturan.tagline && (
             <p className="text-sm text-kayu-sedang leading-relaxed">{pengaturan.tagline}</p>
+          )}
+          {waUrl && (
+            <a
+              href={waUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="tombol-kedua tombol-kecil min-h-[40px] px-4 text-sm"
+            >
+              <IkonWhatsapp className="w-4 h-4 text-daun" />
+              Tanya dapur via WhatsApp
+            </a>
           )}
         </div>
 
@@ -30,9 +42,9 @@ export async function KakiToko() {
                   href={waUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 hover:text-kayu"
+                  className="inline-flex items-start gap-2 hover:text-kayu"
                 >
-                  <IkonWhatsapp className="w-4 h-4 text-daun" />
+                  <IkonWhatsapp className="w-4 h-4 mt-0.5 shrink-0 text-daun" />
                   {teleponTampil(pengaturan.whatsapp)}
                 </a>
               </li>
@@ -58,6 +70,7 @@ export async function KakiToko() {
             <li><Link href="/menu" className="hover:text-kayu">Lihat menu</Link></li>
             <li><Link href="/pesan" className="hover:text-kayu">Buat pesanan</Link></li>
             <li><Link href="/lacak" className="hover:text-kayu">Lacak pesanan</Link></li>
+            <li><Link href="/riwayat" className="hover:text-kayu">Riwayat pesanan</Link></li>
           </ul>
         </div>
       </div>

@@ -5,6 +5,7 @@ import { LABEL_KATEGORI, URUTAN_KATEGORI } from "@/lib/pesanan";
 import { KartuMenu } from "@/components/toko/KartuMenu";
 import { KomponenPaginasi } from "@/components/KomponenPaginasi";
 import { IkonCari } from "@/components/ikon/Ikon";
+import { IlustrasiPiringKosong } from "@/components/ilustrasi/Ilustrasi";
 import type { KategoriMenu } from "@/generated/prisma/client";
 
 export const metadata: Metadata = {
@@ -56,7 +57,7 @@ export default async function HalamanMenu({ searchParams }: HalamanMenuProps) {
   };
 
   return (
-    <div className="mx-auto max-w-6xl px-4 sm:px-6 py-10 sm:py-14">
+    <div className="mx-auto max-w-6xl px-4 sm:px-6 pt-6 pb-10 sm:py-14">
       <header className="flex flex-col sm:flex-row sm:items-end justify-between gap-5">
         <div>
           <h1 className="font-tampil text-3xl sm:text-4xl font-bold text-kayu">Menu</h1>
@@ -83,7 +84,12 @@ export default async function HalamanMenu({ searchParams }: HalamanMenuProps) {
         </form>
       </header>
 
-      <nav aria-label="Kategori menu" className="mt-6 -mx-4 px-4 sm:mx-0 sm:px-0 overflow-x-auto tanpa-scrollbar">
+      {/* Menempel di bawah kepala halaman saat digulir: pindah kategori tanpa
+          harus kembali ke atas katalog yang panjang. */}
+      <nav
+        aria-label="Kategori menu"
+        className="sticky top-16 z-30 mt-5 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 bg-krem/90 backdrop-blur-md overflow-x-auto tanpa-scrollbar tepi-pudar sm:[mask-image:none] sm:[-webkit-mask-image:none]"
+      >
         <ul className="flex gap-2 w-max">
           <li>
             <Link
@@ -114,7 +120,7 @@ export default async function HalamanMenu({ searchParams }: HalamanMenuProps) {
       </nav>
 
       {cari && (
-        <p className="mt-5 text-sm text-kayu-sedang" aria-live="polite">
+        <p className="mt-2 text-sm text-kayu-sedang" aria-live="polite">
           {total} hasil untuk “<span className="font-medium text-kayu">{cari}</span>”.{" "}
           <Link href={filterKategori ? `/menu?kategori=${filterKategori}` : "/menu"} className="font-medium text-bata hover:underline">
             Hapus pencarian
@@ -123,18 +129,21 @@ export default async function HalamanMenu({ searchParams }: HalamanMenuProps) {
       )}
 
       {daftar.length > 0 ? (
-        <div className="mt-6 grid gap-3 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="mt-3 grid gap-3 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {daftar.map((menu, i) => (
             <KartuMenu key={menu.id} menu={menu} prioritas={i < 4} />
           ))}
         </div>
       ) : (
-        <div className="mt-10 kartu kartu-isi text-center max-w-md mx-auto">
-          <p className="font-semibold text-kayu">
+        <div className="mt-8 kartu kartu-isi text-center max-w-md mx-auto anim-masuk">
+          <IlustrasiPiringKosong className="w-44 mx-auto" />
+          <p className="mt-2 font-semibold text-kayu">
             {cari ? "Menu tidak ditemukan" : "Belum ada menu di sini"}
           </p>
           <p className="teks-redup mt-1">
-            {cari ? "Coba kata lain atau lihat semua kategori." : "Menu sedang disiapkan dapur."}
+            {cari
+              ? "Coba kata yang lebih umum, mis. “ayam” atau “kotak”, atau lihat semua kategori."
+              : "Menu sedang disiapkan dapur."}
           </p>
           <Link href="/menu" className="tombol-kedua mt-5">
             Lihat semua menu

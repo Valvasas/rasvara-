@@ -82,24 +82,25 @@ export default async function HalamanBukuKas({ searchParams }: HalamanBukuKasPro
         </div>
       </header>
 
-      <dl className="mt-6 grid gap-4 sm:grid-cols-3">
-        <div className="kartu p-5">
-          <dt className="teks-redup">Masuk · {labelBulan(bulan)}</dt>
-          <dd className="mt-1 text-2xl font-semibold text-daun-tua angka-tabel">{rupiah(ringkas.masuk)}</dd>
+      <p className="mt-6 text-sm font-medium text-kayu-sedang">{labelBulan(bulan)}</p>
+      <dl className="mt-2 grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-3">
+        <div className="kartu p-4 sm:p-5">
+          <dt className="teks-redup">Masuk</dt>
+          <dd className="mt-1 text-lg sm:text-2xl font-semibold text-daun-tua angka-tabel">{rupiah(ringkas.masuk)}</dd>
         </div>
-        <div className="kartu p-5">
+        <div className="kartu p-4 sm:p-5">
           <dt className="teks-redup">Keluar</dt>
-          <dd className="mt-1 text-2xl font-semibold text-kayu angka-tabel">{rupiah(ringkas.keluar)}</dd>
+          <dd className="mt-1 text-lg sm:text-2xl font-semibold text-kayu angka-tabel">{rupiah(ringkas.keluar)}</dd>
         </div>
-        <div className="kartu p-5">
+        <div className="kartu p-4 sm:p-5 col-span-2 sm:col-span-1">
           <dt className="teks-redup">Selisih</dt>
-          <dd className={`mt-1 text-2xl font-semibold angka-tabel ${ringkas.selisih < 0 ? "text-bahaya" : "text-kayu"}`}>
+          <dd className={`mt-1 text-lg sm:text-2xl font-semibold angka-tabel ${ringkas.selisih < 0 ? "text-bahaya" : "text-kayu"}`}>
             {rupiah(ringkas.selisih)}
           </dd>
         </div>
       </dl>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] items-start">
+      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px] items-start">
         <section aria-labelledby="judul-transaksi" className="kartu overflow-hidden min-w-0">
           <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-krem-gelap">
             <h2 id="judul-transaksi" className="judul-bagian">
@@ -122,7 +123,43 @@ export default async function HalamanBukuKas({ searchParams }: HalamanBukuKasPro
           {daftar.length === 0 ? (
             <p className="px-5 py-12 text-center teks-redup">Belum ada catatan di {labelBulan(bulan)}.</p>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+            {/* Ponsel: satu baris per transaksi, jumlah selalu terlihat di kanan. */}
+            <ul className="md:hidden divide-y divide-krem-gelap">
+              {daftar.map((k) => (
+                <li key={k.id} className="flex items-start gap-3 px-5 py-3.5">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-kayu">{k.keterangan}</p>
+                    <p className="text-xs text-kayu-sedang mt-0.5">
+                      {tanggalPendek(k.tanggal)} · {k.kategori}
+                      {k.pesanan && (
+                        <>
+                          {" · "}
+                          <Link href={`/pesanan/${k.pesanan.kode}`} className="font-mono text-bata hover:underline">
+                            {k.pesanan.kode}
+                          </Link>
+                        </>
+                      )}
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className={`text-sm font-semibold angka-tabel whitespace-nowrap ${k.jenis === "MASUK" ? "text-daun-tua" : "text-kayu"}`}>
+                      {k.jenis === "MASUK" ? "+" : "−"}
+                      {rupiah(k.jumlah)}
+                    </p>
+                    <div className="mt-1">
+                      {k.sumber === "MANUAL" ? (
+                        <TombolHapusKas id={k.id} />
+                      ) : (
+                        <span className="text-[11px] text-kayu-sedang">Otomatis</span>
+                      )}
+                    </div>
+                  </div>
+                </li>
+              ))}
+            </ul>
+
+            <div className="hidden md:block overflow-x-auto">
               <table className="tabel min-w-[560px]">
                 <thead>
                   <tr>
@@ -166,6 +203,7 @@ export default async function HalamanBukuKas({ searchParams }: HalamanBukuKasPro
                 </tbody>
               </table>
             </div>
+            </>
           )}
 
           <div className="px-5 pb-5">

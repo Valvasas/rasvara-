@@ -5,6 +5,7 @@ import { bacaSesi } from "@/lib/auth";
 import { Wordmark } from "@/components/Wordmark";
 import { TombolKeluar } from "@/components/TombolKeluar";
 import { NavAdmin } from "@/components/admin/NavAdmin";
+import { IkonToko } from "@/components/ikon/Ikon";
 
 export const metadata: Metadata = {
   title: { default: "Dapur", template: "%s — Dapur Citarasa" },
@@ -45,11 +46,18 @@ export default async function LayoutAdmin({ children }: { children: React.ReactN
 
       {/* Bar atas (ponsel & tablet) */}
       <header className="lg:hidden sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-krem-gelap">
-        <div className="px-4 h-14 flex items-center justify-between">
+        <div className="px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
           <Wordmark href="/admin" compact label="Dapur" />
-          <TombolKeluar className="tombol-kecil" />
+          <div className="flex items-center gap-1">
+            <Link href="/" target="_blank" aria-label="Lihat toko (tab baru)" className="tombol-hantu tombol-kecil px-2.5">
+              <IkonToko className="w-4 h-4" />
+              <span className="hidden sm:inline">Lihat toko ↗</span>
+            </Link>
+            <TombolKeluar className="tombol-kecil" />
+          </div>
         </div>
-        <div className="px-3 pb-2 overflow-x-auto tanpa-scrollbar">
+        {/* Tepi kanan memudar: tanda masih ada menu lain bila digeser. */}
+        <div className="px-3 sm:px-5 pb-2 overflow-x-auto tanpa-scrollbar tepi-pudar">
           <NavAdmin peran={sesi.peran} arah="horizontal" />
         </div>
       </header>

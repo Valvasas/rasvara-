@@ -136,6 +136,29 @@ Kode ini sengaja memakai istilah domain berbahasa Indonesia untuk model, variabe
   tak-terkendali setiap aksi formulir selesai.
 - Daftar yang bisa tumbuh (menu, pesanan, kas, riwayat) wajib berpaginasi di
   database (`skip`/`take`) memakai `KomponenPaginasi`.
+- **Responsif: uji di 320, 390, 820, dan 1366 px.** Tabel admin di bawah
+  ±1024px diganti daftar kartu (lihat `admin/menu`, `admin/pesanan`,
+  `admin/keuangan`), bukan tabel yang digeser. Grid satu kolom di ponsel tulis
+  `grid-cols-1` secara eksplisit (= `minmax(0,1fr)`); grid tanpa kolom
+  membiarkan isi melebar melampaui layar. Label `sr-only` di dalam wadah
+  `overflow-x-auto` butuh leluhur `relative` (`.tabel` sudah) — kalau tidak,
+  seluruh halaman ikut bisa digeser ke samping.
+- **Navigasi:** ponsel memakai `NavBawahToko` (Beranda · Menu · Pesan · Lacak ·
+  Akun), disembunyikan di `/pesan` karena formulir itu punya bilah total
+  sendiri. Tablet/desktop memakai `NavToko` di kepala halaman. Elemen `fixed`
+  di bawah layar memakai `.aman-bawah` (viewport `viewport-fit=cover`).
+- **Ilustrasi** ada di `src/components/ilustrasi/Ilustrasi.tsx`: SVG inline,
+  bidang datar, garis cokelat `#4A2E1F`, warna merek lewat `var(--color-*)`,
+  tanpa `id`/`<defs>`/gradien (aman dirender berkali-kali), selalu
+  `aria-hidden`. Menu tanpa foto memakai `IlustrasiKategori` lewat
+  `PanelFotoMenu` — begitu pemilik mengunggah foto, foto asli otomatis
+  menggantikannya. Jangan kembali ke maskot/gambar raster.
+- Kelas hias bersama: `latar-kawung` / `latar-kawung-tipis` (motif batik
+  samar), `pita-merek` (pita tiga warna di tepi atas kartu penting),
+  `tepi-pudar` (petunjuk baris yang bisa digeser).
+- `tombol` adalah `@utility` (lapisan utilities) — jangan dipasangkan langsung
+  dengan `tombol-kecil`/`tombol-besar` (lapisan components) karena ukurannya
+  kalah. Pakai `tombol-kedua tombol-kecil` lalu timpa warnanya dengan utilitas.
 
 Yang **sudah** ada (jangan dibangun ulang): test runner bawaan Node + `tsx` (`npm test`),
 CI di `.github/workflows/ci.yml`, `eslint.config.mjs` (flat config), Dockerfile,

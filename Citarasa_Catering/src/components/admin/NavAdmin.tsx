@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { Peran } from "@/generated/prisma/client";
@@ -27,24 +28,35 @@ const SEMUA_TAUTAN = [
 
 /**
  * Navigasi dashboard. Satu daftar tautan dipakai dua kali: sebagai sidebar
- * vertikal di layar lebar dan sebagai baris geser di ponsel.
+ * vertikal di layar lebar dan sebagai baris geser di ponsel/tablet.
+ *
+ * Di baris geser, tautan aktif digulir ke tengah setiap kali halaman berganti.
+ * Tanpa itu, membuka "Pengaturan" dari ponsel membuat tab aktifnya berada di
+ * luar layar dan pemilik tidak tahu sedang di halaman mana.
  */
 export function NavAdmin({ peran, arah }: { peran?: Peran; arah: "vertikal" | "horizontal" }) {
   const pathname = usePathname();
   const tautan = SEMUA_TAUTAN.filter((t) => (peran === "STAF_DAPUR" ? !t.hanyaPemilik : true));
+  const aktifRef = useRef<HTMLAnchorElement>(null);
+
+  useEffect(() => {
+    if (arah !== "horizontal") return;
+    aktifRef.current?.scrollIntoView({ block: "nearest", inline: "center", behavior: "instant" });
+  }, [pathname, arah]);
 
   return (
     <nav aria-label="Navigasi dashboard">
-      <ul className={arah === "vertikal" ? "space-y-0.5" : "flex gap-1 w-max"}>
+      <ul className={arah === "vertikal" ? "space-y-0.5" : "flex gap-1 w-max pr-6"}>
         {tautan.map(({ href, label, Ikon, persis }) => {
           const aktif = persis ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
           return (
             <li key={href}>
               <Link
+                ref={aktif ? aktifRef : undefined}
                 href={href}
                 aria-current={aktif ? "page" : undefined}
                 className={`flex items-center gap-3 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-                  arah === "vertikal" ? "px-3 py-2.5" : "px-3 py-2"
+                  arah === "vertikal" ? "px-3 py-2.5" : "gap-2 px-3 min-h-[40px]"
                 } ${
                   aktif
                     ? "bg-bata-lembut text-bata-tua"

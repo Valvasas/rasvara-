@@ -15,8 +15,8 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
     description: pengaturan.tagline,
     start_url: "/",
     display: "standalone",
-    background_color: "#FBF7EE",
-    theme_color: "#C2410C",
+    background_color: "#FFFCF7", // = --color-krem, supaya layar pembuka tidak berkedip beda warna
+    theme_color: "#C2461C", // = --color-bata
     lang: "id",
     orientation: "portrait",
     icons: [

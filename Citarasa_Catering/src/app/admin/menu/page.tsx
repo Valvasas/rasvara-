@@ -93,18 +93,18 @@ export default async function HalamanAdminMenu({ searchParams }: HalamanAdminMen
         </Link>
       )}
 
-      <form method="get" className="mt-6 flex flex-wrap gap-2">
+      <form method="get" className="mt-6 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
         <label htmlFor="q" className="sr-only">Cari menu</label>
-        <input id="q" type="search" name="q" defaultValue={kataKunci} maxLength={60} placeholder="Cari menu" className="isian flex-1 min-w-[200px] sm:max-w-xs" />
+        <input id="q" type="search" name="q" defaultValue={kataKunci} maxLength={60} placeholder="Cari menu" className="isian col-span-2 sm:flex-1 sm:min-w-[200px] sm:max-w-xs" />
         <label htmlFor="kategori" className="sr-only">Kategori</label>
-        <select id="kategori" name="kategori" defaultValue={kategori ?? ""} className="isian w-auto">
+        <select id="kategori" name="kategori" defaultValue={kategori ?? ""} className="isian sm:w-auto">
           <option value="">Semua kategori</option>
           {URUTAN_KATEGORI.map((k) => (
             <option key={k} value={k}>{LABEL_KATEGORI[k]}</option>
           ))}
         </select>
         <label htmlFor="status" className="sr-only">Status</label>
-        <select id="status" name="status" defaultValue={status ?? ""} className="isian w-auto">
+        <select id="status" name="status" defaultValue={status ?? ""} className="isian sm:w-auto">
           <option value="">Semua status</option>
           <option value="aktif">Tampil</option>
           <option value="nonaktif">Disembunyikan</option>
@@ -119,7 +119,47 @@ export default async function HalamanAdminMenu({ searchParams }: HalamanAdminMen
           {adaSaringan ? "Tidak ada menu yang cocok." : "Belum ada menu. Tambahkan menu pertama."}
         </p>
       ) : (
-        <div className="kartu mt-6 overflow-x-auto">
+        <>
+        {/* Ponsel & tablet: kartu. Tabel 6 kolom di bawah ±1024px memaksa nama
+            menu patah per kata dan harga terpotong di luar layar. */}
+        <ul className="lg:hidden mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
+          {daftar.map((m) => (
+            <li key={m.id} className="kartu flex items-start gap-3 p-4">
+              <Link
+                href={`/admin/menu/${m.id}`}
+                className="relative w-16 h-16 shrink-0 rounded-xl overflow-hidden bg-krem-tua border border-krem-gelap flex items-center justify-center"
+              >
+                {m.foto[0] ? (
+                  <Image src={m.foto[0].url} alt="" fill sizes="64px" className="object-cover" />
+                ) : (
+                  <span className="flex flex-col items-center gap-0.5 text-[10px] text-kayu-sedang">
+                    <IkonFoto className="w-5 h-5 text-kayu-sedang/60" />
+                    Tanpa foto
+                  </span>
+                )}
+              </Link>
+              <div className="min-w-0 flex-1">
+                <Link href={`/admin/menu/${m.id}`} className="font-medium text-kayu hover:text-bata leading-snug">
+                  {m.nama}
+                </Link>
+                <p className="mt-0.5 text-sm text-kayu angka-tabel">
+                  {rupiah(m.harga)}
+                  <span className="text-kayu-sedang text-xs"> /{m.satuan}</span>
+                </p>
+                <p className="text-xs text-kayu-sedang">
+                  {LABEL_KATEGORI[m.kategori]} · Min. {m.minPesan}
+                  {m.preorderHari > 0 && ` · H-${m.preorderHari}`}
+                </p>
+                <div className="mt-2 flex items-center justify-between gap-2">
+                  <TombolToggleMenu id={m.id} aktif={m.aktif} nama={m.nama} />
+                  <Link href={`/admin/menu/${m.id}`} className="tombol-kedua tombol-kecil">Ubah</Link>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+
+        <div className="hidden lg:block kartu mt-6 overflow-x-auto">
           <table className="tabel min-w-[680px]">
             <thead>
               <tr>
@@ -172,6 +212,7 @@ export default async function HalamanAdminMenu({ searchParams }: HalamanAdminMen
             </tbody>
           </table>
         </div>
+        </>
       )}
 
       <KomponenPaginasi
