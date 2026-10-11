@@ -83,7 +83,8 @@ export default async function HalamanBukuKas({ searchParams }: HalamanBukuKasPro
       </header>
 
       <p className="mt-6 text-sm font-medium text-kayu-sedang">{labelBulan(bulan)}</p>
-      <dl className="mt-2 grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-3">
+      {/* Dua kolom mulai 380px; di bawahnya nominal jutaan tidak muat berdampingan. */}
+      <dl className="mt-2 grid grid-cols-1 min-[380px]:grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-3">
         <div className="kartu p-4 sm:p-5">
           <dt className="teks-redup">Masuk</dt>
           <dd className="mt-1 text-lg sm:text-2xl font-semibold text-daun-tua angka-tabel">{rupiah(ringkas.masuk)}</dd>
@@ -92,7 +93,7 @@ export default async function HalamanBukuKas({ searchParams }: HalamanBukuKasPro
           <dt className="teks-redup">Keluar</dt>
           <dd className="mt-1 text-lg sm:text-2xl font-semibold text-kayu angka-tabel">{rupiah(ringkas.keluar)}</dd>
         </div>
-        <div className="kartu p-4 sm:p-5 col-span-2 sm:col-span-1">
+        <div className="kartu p-4 sm:p-5 min-[380px]:col-span-2 sm:col-span-1">
           <dt className="teks-redup">Selisih</dt>
           <dd className={`mt-1 text-lg sm:text-2xl font-semibold angka-tabel ${ringkas.selisih < 0 ? "text-bahaya" : "text-kayu"}`}>
             {rupiah(ringkas.selisih)}
@@ -135,7 +136,7 @@ export default async function HalamanBukuKas({ searchParams }: HalamanBukuKasPro
                       {k.pesanan && (
                         <>
                           {" · "}
-                          <Link href={`/pesanan/${k.pesanan.kode}`} className="font-mono text-bata hover:underline">
+                          <Link href={`/pesanan/${k.pesanan.kode}`} className="font-mono text-bata hover:underline whitespace-nowrap">
                             {k.pesanan.kode}
                           </Link>
                         </>
@@ -180,7 +181,7 @@ export default async function HalamanBukuKas({ searchParams }: HalamanBukuKasPro
                           {k.pesanan && (
                             <>
                               {" · "}
-                              <Link href={`/pesanan/${k.pesanan.kode}`} className="font-mono text-bata hover:underline">
+                              <Link href={`/pesanan/${k.pesanan.kode}`} className="font-mono text-bata hover:underline whitespace-nowrap">
                                 {k.pesanan.kode}
                               </Link>
                             </>

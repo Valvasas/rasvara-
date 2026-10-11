@@ -90,11 +90,12 @@ export default async function HalamanLaporan({ searchParams }: HalamanLaporanPro
         </div>
       </header>
 
-      <dl className="mt-6 grid gap-4 grid-cols-2 lg:grid-cols-4">
+      {/* Dua kolom mulai 380px; di bawahnya nominal jutaan tidak muat berdampingan. */}
+      <dl className="mt-6 grid gap-3 sm:gap-4 grid-cols-1 min-[380px]:grid-cols-2 lg:grid-cols-4">
         {kartu.map((k) => (
-          <div key={k.label} className="kartu p-5">
+          <div key={k.label} className="kartu p-4 sm:p-5">
             <dt className="teks-redup">{k.label}</dt>
-            <dd className={`mt-1 text-xl sm:text-2xl font-semibold angka-tabel ${k.kelas}`}>{k.nilai}</dd>
+            <dd className={`mt-1 text-lg sm:text-2xl font-semibold angka-tabel ${k.kelas}`}>{k.nilai}</dd>
             {k.catatan && <dd className="mt-1 text-xs text-kayu-sedang">{k.catatan}</dd>}
           </div>
         ))}

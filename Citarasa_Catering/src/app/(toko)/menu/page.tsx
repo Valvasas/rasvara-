@@ -85,10 +85,12 @@ export default async function HalamanMenu({ searchParams }: HalamanMenuProps) {
       </header>
 
       {/* Menempel di bawah kepala halaman saat digulir: pindah kategori tanpa
-          harus kembali ke atas katalog yang panjang. */}
+          harus kembali ke atas katalog yang panjang. scroll-px: pil yang
+          difokus keyboard tapi hanya terlihat 2px di tepi ikut digeser masuk. */}
       <nav
         aria-label="Kategori menu"
-        className="sticky top-16 z-30 mt-5 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 bg-krem/90 backdrop-blur-md overflow-x-auto tanpa-scrollbar tepi-pudar sm:[mask-image:none] sm:[-webkit-mask-image:none]"
+        data-kategori-tempel
+        className="sticky top-16 z-30 mt-5 -mx-4 sm:-mx-6 px-4 sm:px-6 py-3 bg-krem/90 backdrop-blur-md overflow-x-auto scroll-px-8 tanpa-scrollbar tepi-pudar sm:[mask-image:none] sm:[-webkit-mask-image:none] [@media(max-height:500px)]:static"
       >
         <ul className="flex gap-2 w-max">
           <li>

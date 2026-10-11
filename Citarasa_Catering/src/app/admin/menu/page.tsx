@@ -125,8 +125,13 @@ export default async function HalamanAdminMenu({ searchParams }: HalamanAdminMen
         <ul className="lg:hidden mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
           {daftar.map((m) => (
             <li key={m.id} className="kartu flex items-start gap-3 p-4">
+              {/* Tujuan sama dengan tautan nama di sebelahnya, jadi gambar ini
+                  dekorasi bagi pembaca layar & keyboard (tanpanya terbaca
+                  "Tanpa foto, tautan" berulang, atau tautan tanpa nama). */}
               <Link
                 href={`/admin/menu/${m.id}`}
+                aria-hidden="true"
+                tabIndex={-1}
                 className="relative w-16 h-16 shrink-0 rounded-xl overflow-hidden bg-krem-tua border border-krem-gelap flex items-center justify-center"
               >
                 {m.foto[0] ? (
@@ -139,7 +144,7 @@ export default async function HalamanAdminMenu({ searchParams }: HalamanAdminMen
                 )}
               </Link>
               <div className="min-w-0 flex-1">
-                <Link href={`/admin/menu/${m.id}`} className="font-medium text-kayu hover:text-bata leading-snug">
+                <Link href={`/admin/menu/${m.id}`} className="font-medium text-kayu hover:text-bata leading-snug break-words">
                   {m.nama}
                 </Link>
                 <p className="mt-0.5 text-sm text-kayu angka-tabel">

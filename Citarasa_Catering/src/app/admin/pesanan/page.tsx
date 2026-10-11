@@ -151,7 +151,7 @@ export default async function HalamanSemuaPesanan({ searchParams }: HalamanSemua
                     <p className="font-medium text-kayu truncate">{p.namaPemesan}</p>
                     <p className="text-xs text-kayu-sedang">
                       {tanggalPendek(p.tanggalAcara)} · {jamTampil(p.jamAcara)} ·{" "}
-                      <span className="font-mono">{p.kode}</span>
+                      <span className="font-mono whitespace-nowrap">{p.kode}</span>
                     </p>
                   </div>
                   {adalahPemilik && (
@@ -188,7 +188,7 @@ export default async function HalamanSemuaPesanan({ searchParams }: HalamanSemua
               {daftar.map((p) => (
                 <tr key={p.kode}>
                   <td>
-                    <Link href={`/pesanan/${p.kode}`} className="font-mono text-xs font-medium text-bata hover:underline">
+                    <Link href={`/pesanan/${p.kode}`} className="font-mono text-xs font-medium text-bata hover:underline whitespace-nowrap">
                       {p.kode}
                     </Link>
                   </td>

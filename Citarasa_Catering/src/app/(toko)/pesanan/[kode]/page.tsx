@@ -76,12 +76,14 @@ export default async function HalamanDetailPesanan({
     ? linkWhatsapp(pengaturan.whatsapp, pesanWa)
     : null;
 
+  // `pendek` dipakai di bawah 640px: di layar 320px kolom tiap tahap hanya
+  // ±49px, sehingga "Dikonfirmasi" menempel dengan label di sebelahnya.
   const tahapan = [
-    { kunci: "BARU", nama: "Dipesan" },
-    { kunci: "DIKONFIRMASI", nama: "Dikonfirmasi" },
-    { kunci: "DIPROSES", nama: "Dimasak" },
-    { kunci: "SIAP", nama: "Siap" },
-    { kunci: "SELESAI", nama: "Selesai" },
+    { kunci: "BARU", nama: "Dipesan", pendek: "Dipesan" },
+    { kunci: "DIKONFIRMASI", nama: "Dikonfirmasi", pendek: "Diterima" },
+    { kunci: "DIPROSES", nama: "Dimasak", pendek: "Dimasak" },
+    { kunci: "SIAP", nama: "Siap", pendek: "Siap" },
+    { kunci: "SELESAI", nama: "Selesai", pendek: "Selesai" },
   ];
   const indeksAktif = tahapan.findIndex((t) => t.kunci === pesanan.status);
   const dibatalkan = pesanan.status === "DIBATALKAN";
@@ -116,8 +118,8 @@ export default async function HalamanDetailPesanan({
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="teks-redup">Kode pesanan</p>
-            <div className="flex items-center gap-2 mt-1">
-              <h1 className="text-2xl font-bold text-kayu font-mono tracking-tight">{pesanan.kode}</h1>
+            <div className="flex flex-wrap items-center gap-2 mt-1">
+              <h1 className="text-xl sm:text-2xl font-bold text-kayu font-mono tracking-tight whitespace-nowrap">{pesanan.kode}</h1>
               <TombolSalin teks={pesanan.kode} label="Salin" ringkas />
             </div>
           </div>
@@ -167,7 +169,8 @@ export default async function HalamanDetailPesanan({
                       sekarang ? "font-semibold text-kayu" : lewat ? "text-kayu" : "text-kayu-sedang"
                     }`}
                   >
-                    {t.nama}
+                    <span className="sm:hidden">{t.pendek}</span>
+                    <span className="hidden sm:inline">{t.nama}</span>
                   </span>
                 </li>
               );

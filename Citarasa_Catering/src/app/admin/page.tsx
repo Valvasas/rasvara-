@@ -237,7 +237,9 @@ export default async function HalamanPapanDapur({ searchParams }: HalamanPapanDa
                   n > 0 ? "bg-white border-krem-gelap active:bg-krem-tua" : "bg-krem-tua/50 border-transparent"
                 }`}
               >
-                <span className={`block text-lg font-bold angka-tabel ${n > 0 ? "text-kayu" : "text-kayu-sedang/60"}`}>{n}</span>
+                {/* Kotak kosong dibedakan lewat latar, bukan teks pudar: angka 0
+                    dengan alpha 60% hanya 2,6:1 (WCAG minta 4,5:1). */}
+                <span className={`block text-lg font-bold angka-tabel ${n > 0 ? "text-kayu" : "text-kayu-sedang"}`}>{n}</span>
                 <span className="flex items-center justify-center gap-1 text-[11px] leading-tight text-kayu-sedang">
                   <span aria-hidden="true" className={`w-1.5 h-1.5 shrink-0 rounded-full ${WARNA_TITIK[s]}`} />
                   {LABEL_PENDEK[s]}
@@ -267,7 +269,7 @@ export default async function HalamanPapanDapur({ searchParams }: HalamanPapanDa
           const daftar = perKolom[i];
           const jumlah = jumlahStatus(status);
           return (
-            <section key={status} id={`kolom-${status}`} aria-labelledby={`judul-kolom-${status}`} className="min-w-0 scroll-mt-32">
+            <section key={status} id={`kolom-${status}`} aria-labelledby={`judul-kolom-${status}`} className="min-w-0">
               <h2 id={`judul-kolom-${status}`} className="flex items-center gap-2 px-1 text-sm font-semibold text-kayu">
                 <span aria-hidden="true" className={`w-2 h-2 rounded-full ${WARNA_TITIK[status]}`} />
                 {INFO_STATUS[status].label}

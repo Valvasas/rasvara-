@@ -87,7 +87,7 @@ export default async function HalamanRiwayat({ searchParams }: HalamanRiwayatPro
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                      <span className="font-mono text-sm font-medium text-kayu">{p.kode}</span>
+                      <span className="font-mono text-sm font-medium text-kayu whitespace-nowrap">{p.kode}</span>
                       <LencanaStatus status={p.status} untukPelanggan />
                     </div>
                     <p className="mt-1 text-sm text-kayu-sedang truncate">

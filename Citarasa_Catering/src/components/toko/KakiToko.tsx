@@ -25,7 +25,7 @@ export async function KakiToko() {
               href={waUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="tombol-kedua tombol-kecil min-h-[40px] px-4 text-sm"
+              className="tombol-kedua tombol-kecil min-h-[44px] px-4 text-sm whitespace-normal text-left max-w-full"
             >
               <IkonWhatsapp className="w-4 h-4 text-daun" />
               Tanya dapur via WhatsApp

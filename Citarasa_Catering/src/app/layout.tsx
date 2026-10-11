@@ -77,7 +77,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="id" className={`${archivo.variable} ${domine.variable}`}>
+    // data-scroll-behavior: sejak Next.js 16, gulir ke atas saat pindah halaman
+    // ikut `scroll-behavior: smooth` dari globals.css kecuali atribut ini ada —
+    // tanpanya setiap navigasi dianimasikan ±650ms dari posisi lama ke atas.
+    <html lang="id" data-scroll-behavior="smooth" className={`${archivo.variable} ${domine.variable}`}>
       <body className="bg-krem text-kayu min-h-screen flex flex-col selection:bg-bata selection:text-white">
         {children}
       </body>

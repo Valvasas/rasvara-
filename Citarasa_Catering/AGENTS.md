@@ -155,7 +155,28 @@ Kode ini sengaja memakai istilah domain berbahasa Indonesia untuk model, variabe
   menggantikannya. Jangan kembali ke maskot/gambar raster.
 - Kelas hias bersama: `latar-kawung` / `latar-kawung-tipis` (motif batik
   samar), `pita-merek` (pita tiga warna di tepi atas kartu penting),
-  `tepi-pudar` (petunjuk baris yang bisa digeser).
+  `tepi-pudar` (petunjuk baris yang bisa digeser), `denyut-singkat`. Kelas
+  CSS buatan sendiri **wajib** di dalam `@layer components`: CSS di luar
+  layer selalu mengalahkan utilitas Tailwind, sehingga varian seperti
+  `sm:[mask-image:none]` diam-diam tidak berlaku.
+- **Bilah menempel & gulir:** `globals.css` memberi `scroll-padding-top`
+  setinggi kepala sticky (toko 5rem; /menu 9rem lewat `[data-kategori-tempel]`;
+  admin <lg 7,5rem lewat `[data-kop-admin]`) dan `scroll-padding-bottom` untuk
+  nav bawah HP. Tanpa itu judul halaman setelah navigasi, lompatan skip link,
+  dan elemen yang difokus keyboard tertutup bilah (WCAG 2.4.11). Bilah
+  menempel baru wajib ikut diperhitungkan di sana, dan diberi
+  `[@media(max-height:500px)]:static` supaya tidak memakan layar HP mendatar /
+  zoom 400%. Jangan menambah `scroll-mt-*` yang menumpuk dengan padding ini.
+  `<html data-scroll-behavior="smooth">` wajib dipertahankan (Next 16).
+- **Teks panjang vs angka:** `body` memakai `overflow-wrap: break-word` supaya
+  nama menu/alamat tanpa spasi tidak melebarkan layar; `.angka-tabel` memakai
+  `nowrap` supaya nominal tidak patah ("Rp15.0 / 00"). Pakai `angka-tabel`
+  untuk semua nominal dan `whitespace-nowrap` untuk kode pesanan; tata letak
+  yang menampungnya harus cukup lebar di 320px (bungkus baris, bukan patah).
+- Logo mangkuk hanya satu sumber: `components/ikon/GlifMangkuk.tsx` (Wordmark,
+  favicon/ikon PWA di `app/icon.tsx`, `apple-icon`, gambar OG). Gambar OG
+  dirender satori yang tidak membaca CSS: ilustrasi dipakai dengan
+  `palet="hex"` dan diserialisasi ke string SVG.
 - `tombol` adalah `@utility` (lapisan utilities) — jangan dipasangkan langsung
   dengan `tombol-kecil`/`tombol-besar` (lapisan components) karena ukurannya
   kalah. Pakai `tombol-kedua tombol-kecil` lalu timpa warnanya dengan utilitas.

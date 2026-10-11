@@ -427,7 +427,7 @@ export function FormPemesanan({
 
       <div className="space-y-6 min-w-0">
         {/* 1. Menu */}
-        <section aria-labelledby="judul-menu" className="kartu kartu-isi scroll-mt-24">
+        <section aria-labelledby="judul-menu" className="kartu kartu-isi scroll-mt-4">
           <JudulLangkah id="judul-menu" nomor={1} judul="Pilih menu" selesai={langkahMenuSelesai} />
 
           <div className="mt-4 relative">
@@ -447,7 +447,7 @@ export function FormPemesanan({
           </div>
 
           {kategoriTersedia.length > 1 && (
-            <div className="mt-3 -mx-5 px-5 sm:mx-0 sm:px-0 flex gap-2 overflow-x-auto tanpa-scrollbar">
+            <div className="mt-3 -mx-5 px-5 sm:mx-0 sm:px-0 flex gap-2 overflow-x-auto scroll-px-8 tanpa-scrollbar">
               {(["SEMUA", ...kategoriTersedia] as const).map((k) => {
                 const aktif = kategoriAktif === k;
                 return (
@@ -535,7 +535,7 @@ export function FormPemesanan({
         </section>
 
         {/* 2. Jadwal */}
-        <section aria-labelledby="judul-jadwal" className="kartu kartu-isi scroll-mt-24">
+        <section aria-labelledby="judul-jadwal" className="kartu kartu-isi scroll-mt-4">
           <JudulLangkah id="judul-jadwal" nomor={2} judul="Jadwal & pengambilan" selesai={langkahJadwalSelesai} />
 
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -672,7 +672,7 @@ export function FormPemesanan({
         </section>
 
         {/* 3. Data pemesan */}
-        <section aria-labelledby="judul-data" className="kartu kartu-isi scroll-mt-24">
+        <section aria-labelledby="judul-data" className="kartu kartu-isi scroll-mt-4">
           <JudulLangkah id="judul-data" nomor={3} judul="Data pemesan & pembayaran" selesai={langkahDataSelesai} />
 
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -781,7 +781,7 @@ export function FormPemesanan({
       <aside
         ref={ringkasanRef}
         aria-labelledby="judul-ringkasan"
-        className="kartu kartu-isi relative overflow-hidden lg:sticky lg:top-24 scroll-mt-24"
+        className="kartu kartu-isi relative overflow-hidden lg:sticky lg:top-24 scroll-mt-4"
       >
         <div aria-hidden="true" className="absolute inset-x-0 top-0 h-1 pita-merek" />
         <h2 id="judul-ringkasan" className="judul-bagian">

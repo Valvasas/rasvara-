@@ -57,6 +57,41 @@ html {
   color: var(--color-kayu);
   background-color: var(--color-krem);
   -webkit-text-size-adjust: 100%;
+  /* Ruang untuk kepala halaman sticky (4rem). Tanpa ini, gulir otomatis
+     Next.js setelah pindah halaman, lompatan skip link, dan fokus keyboard
+     berhenti tepat di BAWAH kepala: judul & elemen terfokus tertutup
+     (WCAG 2.4.11). Nilainya disesuaikan per jenis halaman di bawah. */
+  scroll-padding-top: 5rem;
+}
+/* Katalog /menu: kepala + bilah kategori yang ikut menempel. */
+html:has([data-kategori-tempel]) {
+  scroll-padding-top: 9rem;
+}
+/* Dashboard: kepala admin (bar + baris tab) hanya menempel di bawah lg. */
+html:has([data-kop-admin]) {
+  scroll-padding-top: 7.5rem;
+}
+@media (min-width: 1024px) {
+  html:has([data-kop-admin]) {
+    scroll-padding-top: 1.5rem;
+  }
+}
+/* Ponsel: bilah navigasi bawah (4rem) menutupi tepi bawah layar. */
+@media (max-width: 639.98px) {
+  html {
+    scroll-padding-bottom: calc(5rem + env(safe-area-inset-bottom));
+  }
+}
+/* Layar pendek (HP mendatar, zoom 400%): bilah tidak lagi menempel — lihat
+   varian [@media(max-height:500px)] di kepala, kategori, & nav bawah — jadi
+   ruang gulirnya juga dikembalikan. */
+@media (max-height: 500px) {
+  html,
+  html:has([data-kategori-tempel]),
+  html:has([data-kop-admin]) {
+    scroll-padding-top: 1rem;
+    scroll-padding-bottom: 1rem;
+  }
 }
 
 body {
@@ -66,19 +101,23 @@ body {
   background-color: var(--color-krem);
   color: var(--color-kayu);
   line-height: 1.55;
+  /* Kata yang lebih panjang dari barisnya (nama menu tanpa spasi, alamat atau
+     URL panjang dari pembeli) dipatahkan, bukan didorong keluar layar. Teks
+     biasa tidak terpengaruh karena hanya berlaku saat kata tidak muat. */
+  overflow-wrap: break-word;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* viewport-fit=cover membuat halaman memanjang sampai ke bawah poni iPhone
+     saat mendatar; padding ini mengembalikan isi ke area aman. Di posisi
+     tegak nilainya 0, jadi tidak mengubah apa pun. */
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
 }
 
 /* Judul editorial: serif hanya untuk headline halaman toko */
 .font-tampil {
   font-family: var(--font-display);
   letter-spacing: -0.01em;
-}
-
-/* Angka rata kanan di tabel & nota tidak goyang lebarnya */
-.angka-tabel {
-  font-variant-numeric: tabular-nums;
 }
 
 :focus-visible {
@@ -158,7 +197,7 @@ body {
 
   /* Judul */
   .judul-halaman {
-    @apply text-2xl sm:text-3xl font-bold text-kayu tracking-tight;
+    @apply text-2xl sm:text-3xl font-bold text-kayu tracking-tight break-words;
   }
   .judul-bagian {
     @apply text-lg font-semibold text-kayu;
@@ -209,37 +248,67 @@ body {
   }
 }
 
-/* Motif batik kawung sebagai tekstur latar yang sangat samar. Dibuat sebagai
-   SVG data-URI (diizinkan CSP `img-src data:`) supaya tidak menambah satu pun
-   permintaan jaringan, dan diulang oleh CSS — bukan <pattern> ber-id yang
-   bisa bentrok bila dirender lebih dari sekali. */
-.latar-kawung {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36' viewBox='0 0 36 36'%3E%3Cg fill='none' stroke='%23C2461C' stroke-opacity='.11' stroke-width='1.2'%3E%3Cellipse cx='12' cy='12' rx='3.6' ry='8' transform='rotate(-45 12 12)'/%3E%3Cellipse cx='24' cy='12' rx='3.6' ry='8' transform='rotate(45 24 12)'/%3E%3Cellipse cx='12' cy='24' rx='3.6' ry='8' transform='rotate(45 12 24)'/%3E%3Cellipse cx='24' cy='24' rx='3.6' ry='8' transform='rotate(-45 24 24)'/%3E%3C/g%3E%3Ccircle cx='18' cy='18' r='1.3' fill='%23C2461C' fill-opacity='.14'/%3E%3C/svg%3E");
-  background-size: 36px 36px;
-}
-/* Varian lebih samar untuk di belakang ilustrasi hidangan: tekstur, bukan fokus. */
-.latar-kawung-tipis {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36' viewBox='0 0 36 36'%3E%3Cg fill='none' stroke='%23C2461C' stroke-opacity='.06' stroke-width='1.2'%3E%3Cellipse cx='12' cy='12' rx='3.6' ry='8' transform='rotate(-45 12 12)'/%3E%3Cellipse cx='24' cy='12' rx='3.6' ry='8' transform='rotate(45 24 12)'/%3E%3Cellipse cx='12' cy='24' rx='3.6' ry='8' transform='rotate(45 12 24)'/%3E%3Cellipse cx='24' cy='24' rx='3.6' ry='8' transform='rotate(-45 24 24)'/%3E%3C/g%3E%3C/svg%3E");
-  background-size: 36px 36px;
+/* Kelas hias bersama. Sengaja di dalam @layer components: CSS di luar layer
+   selalu mengalahkan utilitas Tailwind (yang berlayer), sehingga varian
+   seperti sm:[mask-image:none] atau pb-4 pada elemen yang sama diam-diam
+   tidak berlaku. */
+@layer components {
+  /* Angka rata kanan di tabel & nota tidak goyang lebarnya. Nominal tidak boleh
+     patah ("Rp15.0 / 00"): body memakai overflow-wrap: break-word untuk teks
+     bebas, jadi angka dikecualikan di sini — tata letak yang menampungnya wajib
+     cukup lebar (diuji di 320px). Di dalam layer supaya utilitas tetap bisa
+     menimpanya bila perlu. */
+  .angka-tabel {
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  /* Motif batik kawung sebagai tekstur latar yang sangat samar. Dibuat sebagai
+     SVG data-URI (diizinkan CSP `img-src data:`) supaya tidak menambah satu pun
+     permintaan jaringan, dan diulang oleh CSS — bukan <pattern> ber-id yang
+     bisa bentrok bila dirender lebih dari sekali. */
+  .latar-kawung {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36' viewBox='0 0 36 36'%3E%3Cg fill='none' stroke='%23C2461C' stroke-opacity='.11' stroke-width='1.2'%3E%3Cellipse cx='12' cy='12' rx='3.6' ry='8' transform='rotate(-45 12 12)'/%3E%3Cellipse cx='24' cy='12' rx='3.6' ry='8' transform='rotate(45 24 12)'/%3E%3Cellipse cx='12' cy='24' rx='3.6' ry='8' transform='rotate(45 12 24)'/%3E%3Cellipse cx='24' cy='24' rx='3.6' ry='8' transform='rotate(-45 24 24)'/%3E%3C/g%3E%3Ccircle cx='18' cy='18' r='1.3' fill='%23C2461C' fill-opacity='.14'/%3E%3C/svg%3E");
+    background-size: 36px 36px;
+  }
+  /* Varian lebih samar untuk di belakang ilustrasi hidangan: tekstur, bukan fokus. */
+  .latar-kawung-tipis {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='36' height='36' viewBox='0 0 36 36'%3E%3Cg fill='none' stroke='%23C2461C' stroke-opacity='.06' stroke-width='1.2'%3E%3Cellipse cx='12' cy='12' rx='3.6' ry='8' transform='rotate(-45 12 12)'/%3E%3Cellipse cx='24' cy='12' rx='3.6' ry='8' transform='rotate(45 24 12)'/%3E%3Cellipse cx='12' cy='24' rx='3.6' ry='8' transform='rotate(45 12 24)'/%3E%3Cellipse cx='24' cy='24' rx='3.6' ry='8' transform='rotate(-45 24 24)'/%3E%3C/g%3E%3C/svg%3E");
+    background-size: 36px 36px;
+  }
+
+  /* Pita tiga warna merek (sambal, kunyit, daun pisang) — tanda tangan visual
+     yang dipakai di tepi atas kartu penting dan kaki halaman. */
+  .pita-merek {
+    background: linear-gradient(90deg, var(--color-bata) 0 33.4%, var(--color-kunyit) 33.4% 66.7%, var(--color-daun) 66.7%);
+  }
+
+  /* Tepi memudar pada baris yang bisa digeser: petunjuk bahwa masih ada isi di
+     samping, tanpa panah atau teks tambahan. */
+  .tepi-pudar {
+    -webkit-mask-image: linear-gradient(to right, transparent, #000 12px, #000 calc(100% - 28px), transparent);
+    mask-image: linear-gradient(to right, transparent, #000 12px, #000 calc(100% - 28px), transparent);
+  }
+
+  /* Ruang aman di bawah untuk ponsel berponi/ber-home-indicator. Nilainya baru
+     terisi karena viewport memakai `viewport-fit=cover` (lihat app/layout.tsx). */
+  .aman-bawah {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Denyut titik "Dapur buka": tiga kali saat muncul, lalu diam. Animasi
+     tanpa henti di kepala setiap halaman melanggar WCAG 2.2.2. */
+  .denyut-singkat {
+    animation: denyut-titik 1.2s cubic-bezier(0, 0, 0.2, 1) 3;
+  }
 }
 
-/* Pita tiga warna merek (sambal, kunyit, daun pisang) — tanda tangan visual
-   yang dipakai di tepi atas kartu penting dan kaki halaman. */
-.pita-merek {
-  background: linear-gradient(90deg, var(--color-bata) 0 33.4%, var(--color-kunyit) 33.4% 66.7%, var(--color-daun) 66.7%);
-}
-
-/* Tepi memudar pada baris yang bisa digeser: petunjuk bahwa masih ada isi di
-   samping, tanpa panah atau teks tambahan. */
-.tepi-pudar {
-  -webkit-mask-image: linear-gradient(to right, transparent, #000 12px, #000 calc(100% - 28px), transparent);
-  mask-image: linear-gradient(to right, transparent, #000 12px, #000 calc(100% - 28px), transparent);
-}
-
-/* Ruang aman di bawah untuk ponsel berponi/ber-home-indicator. Nilainya baru
-   terisi karena viewport memakai `viewport-fit=cover` (lihat app/layout.tsx). */
-.aman-bawah {
-  padding-bottom: env(safe-area-inset-bottom);
+@keyframes denyut-titik {
+  75%,
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
 }
 
 /* Scrollbar tipis untuk area geser horizontal */
@@ -276,7 +345,8 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .anim-masuk,
-  .anim-masuk-skala {
+  .anim-masuk-skala,
+  .denyut-singkat {
     animation: none !important;
   }
   html {

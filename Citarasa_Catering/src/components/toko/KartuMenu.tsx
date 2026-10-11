@@ -44,7 +44,7 @@ export function KartuMenu({ menu, prioritas = false }: KartuMenuProps) {
       </span>
 
       <div className="flex flex-1 min-w-0 flex-col p-3 sm:p-5">
-        <h3 className="font-semibold text-kayu leading-snug">
+        <h3 className="font-semibold text-kayu leading-snug break-words">
           <Link
             href={`/menu/${menu.slug}`}
             className="after:absolute after:inset-0 after:content-[''] focus:outline-none focus-visible:after:ring-2 focus-visible:after:ring-bata focus-visible:after:rounded-2xl"
@@ -54,9 +54,11 @@ export function KartuMenu({ menu, prioritas = false }: KartuMenuProps) {
         </h3>
         <p className="mt-1 text-sm text-kayu-sedang line-clamp-1 sm:line-clamp-2">{menu.deskripsi}</p>
 
-        <div className="mt-auto pt-2 sm:pt-4 flex items-end justify-between gap-3">
+        {/* flex-wrap: di HP 320px kolom teks hanya ±150px; tombol "Pesan" turun
+            ke bawah harga alih-alih harga dipatah menjadi "Rp15.0 / 00". */}
+        <div className="mt-auto pt-2 sm:pt-4 flex flex-wrap items-end justify-between gap-x-3 gap-y-2">
           <div className="min-w-0">
-            <p className="font-semibold text-kayu angka-tabel">{rupiah(menu.harga)}</p>
+            <p className="font-semibold text-kayu angka-tabel whitespace-nowrap">{rupiah(menu.harga)}</p>
             {/* Satuan ditaruh di baris kecil, bukan di sebelah harga: di kartu
                 sempit "Rp28.000 /" lalu "kotak" patah ke baris baru. */}
             <p className="text-xs text-kayu-sedang mt-0.5">

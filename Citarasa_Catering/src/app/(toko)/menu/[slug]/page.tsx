@@ -73,7 +73,7 @@ export default async function HalamanDetailMenu({ params }: HalamanDetailMenuPro
 
         <div className="lg:sticky lg:top-24">
           <p className="text-sm font-medium text-bata">{LABEL_KATEGORI[menu.kategori]}</p>
-          <h1 className="font-tampil mt-1 text-3xl sm:text-4xl font-bold text-kayu leading-tight text-balance">
+          <h1 className="font-tampil mt-1 text-3xl sm:text-4xl font-bold text-kayu leading-tight text-balance break-words">
             {menu.nama}
           </h1>
 
