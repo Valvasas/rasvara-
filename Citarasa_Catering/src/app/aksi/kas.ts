@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { MAKS_NOMINAL } from "@/lib/batas";
 import { db } from "@/lib/db";
 import { wajibPemilik } from "@/lib/auth";
 import { dariInputTanggal, hariIniWib } from "@/lib/format";
@@ -15,7 +16,7 @@ const SkemaKas = z.object({
     .number({ message: "Isi jumlah dalam angka" })
     .int("Jumlah harus bilangan bulat")
     .positive("Jumlah harus lebih dari 0")
-    .max(10_000_000_000, "Jumlah terlalu besar"),
+    .max(MAKS_NOMINAL, "Jumlah maksimal Rp2.000.000.000 per catatan. Pecah menjadi beberapa catatan."),
   keterangan: z.string().trim().min(2, "Keterangan wajib diisi").max(200, "Keterangan terlalu panjang"),
   tanggal: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Format tanggal tidak valid"),
 });

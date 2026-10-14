@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { MAKS_NOMINAL } from "@/lib/batas";
 import { db } from "@/lib/db";
 import { wajibPemilik } from "@/lib/auth";
 import { ambilIpKlien, periksaBatasLaju } from "@/lib/pembatas-laju";
@@ -70,10 +71,14 @@ const SkemaVoucher = z.object({
     .regex(/^[A-Za-z0-9-]+$/, "Kode hanya boleh huruf, angka, dan tanda hubung"),
   deskripsi: z.string().max(120).optional(),
   jenis: z.enum(["NOMINAL", "PERSEN"]),
-  nilai: z.coerce.number().int().positive("Nilai potongan harus lebih dari 0"),
-  maksPotongan: z.coerce.number().int().positive().optional(),
-  minBelanja: z.coerce.number().int().min(0).default(0),
-  kuota: z.coerce.number().int().positive().optional(),
+  nilai: z.coerce
+    .number()
+    .int()
+    .positive("Nilai potongan harus lebih dari 0")
+    .max(MAKS_NOMINAL, "Nilai potongan terlalu besar"),
+  maksPotongan: z.coerce.number().int().positive().max(MAKS_NOMINAL, "Maksimal potongan terlalu besar").optional(),
+  minBelanja: z.coerce.number().int().min(0).max(MAKS_NOMINAL, "Minimal belanja terlalu besar").default(0),
+  kuota: z.coerce.number().int().positive().max(1_000_000, "Kuota maksimal 1.000.000 kali pakai").optional(),
   berakhirPada: z.string().optional(),
 });
 

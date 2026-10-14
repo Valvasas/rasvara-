@@ -32,7 +32,7 @@ export default async function HalamanUbahMenu({ params, searchParams }: HalamanU
         <IkonPanahKiri className="w-4 h-4" /> Menu
       </Link>
       <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
-        <div>
+        <div className="min-w-0">
           <h1 className="judul-halaman">{menu.nama}</h1>
           <p className="teks-redup mt-1">
             Dipesan {menu._count.item} kali ·{" "}

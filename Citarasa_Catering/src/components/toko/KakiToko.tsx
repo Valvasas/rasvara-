@@ -14,7 +14,7 @@ export async function KakiToko() {
   return (
     <footer className="mt-auto bg-krem-tua/60">
       <div aria-hidden="true" className="h-1 pita-merek" />
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-10 sm:py-12 grid gap-8 sm:gap-10 grid-cols-2 md:grid-cols-[1.4fr_1fr_1fr]">
+      <div className="mx-auto max-w-6xl px-4 sm:px-6 py-10 sm:py-12 grid gap-8 sm:gap-10 grid-cols-2 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_minmax(0,1fr)]">
         <div className="col-span-2 md:col-span-1 space-y-4 max-w-sm">
           <Wordmark href="/" tagline />
           {pengaturan.tagline && (

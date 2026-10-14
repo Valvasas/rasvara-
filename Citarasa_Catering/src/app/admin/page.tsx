@@ -23,7 +23,9 @@ import { IkonCari, IkonLampiran, IkonLokasi, IkonPeringatan, IkonTruk, IkonWhats
 import { IlustrasiPiringKosong } from "@/components/ilustrasi/Ilustrasi";
 import type { Prisma, StatusPesanan } from "@/generated/prisma/client";
 
-export const metadata: Metadata = { title: "Papan pesanan" };
+// Halaman ini satu segmen dengan admin/layout.tsx, jadi templat judulnya
+// ("%s — Dapur Citarasa") tidak berlaku di sini dan harus ditulis utuh.
+export const metadata: Metadata = { title: { absolute: "Papan pesanan — Dapur Citarasa" } };
 
 /**
  * Kartu per kolom yang dirender. Hitungan di kepala kolom tetap jumlah

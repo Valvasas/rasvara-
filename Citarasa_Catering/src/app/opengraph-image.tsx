@@ -7,6 +7,13 @@ import { IlustrasiHero } from "@/components/ilustrasi/Ilustrasi";
 export const alt = "Citarasa Catering — nasi kotak, tumpeng, dan snack box, siap tepat waktu";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
+/**
+ * Tanpa ini gambar dirender sekali saat build: nama usaha & tagline yang diubah
+ * pemilik di /admin/pengaturan tidak pernah sampai ke pratinjau WhatsApp, dan
+ * bila database tak terjangkau saat build, yang terpanggang adalah nilai
+ * bawaan. Simpan pengaturan juga memanggil revalidatePath untuk rute ini.
+ */
+export const revalidate = 3600;
 
 /** Sama dengan token @theme di globals.css (satori tidak membaca CSS). */
 const WARNA = {
@@ -55,6 +62,14 @@ const ILUSTRASI = `data:image/svg+xml;base64,${Buffer.from(
   keStringSvg(<IlustrasiHero palet="hex" />).replace("<svg", '<svg xmlns="http://www.w3.org/2000/svg"')
 ).toString("base64")}`;
 
+/** Potong di batas kata supaya teks tidak terpenggal di tengah kata. */
+function potong(teks: string, maks: number): string {
+  if (teks.length <= maks) return teks;
+  const dipotong = teks.slice(0, maks - 1);
+  const spasi = dipotong.lastIndexOf(" ");
+  return `${(spasi > maks * 0.6 ? dipotong.slice(0, spasi) : dipotong).replace(/[\s,;:—–-]+$/, "")}…`;
+}
+
 /**
  * Gambar pratinjau saat tautan dibagikan di WhatsApp, Instagram, atau Facebook.
  *
@@ -65,6 +80,15 @@ const ILUSTRASI = `data:image/svg+xml;base64,${Buffer.from(
  */
 export default async function GambarOpenGraph() {
   const pengaturan = await ambilPengaturan();
+
+  // Nama usaha boleh 80 karakter dan tagline 160 karakter. Satori tidak bisa
+  // menggulir atau menyusutkan teks sendiri, jadi ukuran huruf mengikuti
+  // panjangnya; tanpa ini tagline panjang mendorong logo dan nama usaha keluar
+  // dari gambar.
+  const nama = potong(pengaturan.namaUsaha, 48);
+  const tagline = pengaturan.tagline || "Masakan hangat, siap tepat waktu.";
+  const ukuranTagline = tagline.length <= 40 ? 60 : tagline.length <= 80 ? 46 : 40;
+  const taglinePanjang = tagline.length > 80;
 
   return new ImageResponse(
     (
@@ -84,6 +108,7 @@ export default async function GambarOpenGraph() {
                 style={{
                   width: 72,
                   height: 72,
+                  flexShrink: 0,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
@@ -93,25 +118,38 @@ export default async function GambarOpenGraph() {
               >
                 <GlifMangkuk ukuran={44} warna={WARNA.krem} />
               </div>
-              <div style={{ fontSize: 34, fontWeight: 700, color: WARNA.kayu }}>{pengaturan.namaUsaha}</div>
+              <div
+                style={{
+                  flex: 1,
+                  fontSize: nama.length <= 24 ? 34 : 28,
+                  fontWeight: 700,
+                  color: WARNA.kayu,
+                  lineHeight: 1.2,
+                }}
+              >
+                {nama}
+              </div>
             </div>
 
             <div
               style={{
                 marginTop: 36,
-                fontSize: 60,
+                fontSize: ukuranTagline,
                 fontWeight: 700,
                 color: WARNA.kayu,
                 lineHeight: 1.12,
                 display: "flex",
               }}
             >
-              {pengaturan.tagline || "Masakan hangat, siap tepat waktu."}
+              {potong(tagline, 110)}
             </div>
 
-            <div style={{ marginTop: 22, fontSize: 28, color: WARNA.kayuSedang, lineHeight: 1.4, display: "flex" }}>
-              Nasi kotak, tumpeng, snack box, dan nasi goreng — pesan online, pantau dari HP.
-            </div>
+            {/* Tagline panjang sudah bercerita; kalimat kedua dilepas agar muat. */}
+            {!taglinePanjang && (
+              <div style={{ marginTop: 22, fontSize: 28, color: WARNA.kayuSedang, lineHeight: 1.4, display: "flex" }}>
+                Nasi kotak, tumpeng, snack box, dan nasi goreng — pesan online, pantau dari HP.
+              </div>
+            )}
 
             <div style={{ marginTop: 34, display: "flex", gap: 12 }}>
               {["Pesan online", "Lacak status", "Antar / ambil"].map((label) => (

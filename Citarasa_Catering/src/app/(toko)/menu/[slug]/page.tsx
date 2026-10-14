@@ -6,6 +6,7 @@ import { ambilPengaturan } from "@/lib/pengaturan";
 import { linkWhatsapp, rupiah } from "@/lib/format";
 import { LABEL_KATEGORI } from "@/lib/pesanan";
 import { GaleriFotoMenu } from "@/components/toko/GaleriFotoMenu";
+import { PanelFotoMenu } from "@/components/toko/PanelFotoMenu";
 import { KartuMenu } from "@/components/toko/KartuMenu";
 import { IkonKalender, IkonKeranjang, IkonKotakNasi, IkonPanahKanan, IkonWhatsapp } from "@/components/ikon/Ikon";
 import { catatPeristiwa } from "@/lib/analitik";
@@ -64,12 +65,24 @@ export default async function HalamanDetailMenu({ params }: HalamanDetailMenuPro
         </ol>
       </nav>
 
-      <div className="mt-4 sm:mt-6 grid gap-6 lg:gap-12 lg:grid-cols-[1.15fr_1fr] items-start">
-        <GaleriFotoMenu
-          foto={menu.foto.map((f) => ({ id: f.id, url: f.url, keterangan: f.keterangan }))}
-          nama={menu.nama}
-          kategori={menu.kategori}
-        />
+      <div className="mt-4 sm:mt-6 grid grid-cols-1 gap-6 lg:gap-12 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] items-start">
+        {/* Ilustrasi dirender di server: GaleriFotoMenu adalah komponen klien,
+            dan mengimpornya dari sana mengirim keempat ilustrasi sebagai JS. */}
+        {menu.foto.length > 0 ? (
+          <GaleriFotoMenu
+            foto={menu.foto.map((f) => ({ id: f.id, url: f.url, keterangan: f.keterangan }))}
+            nama={menu.nama}
+          />
+        ) : (
+          <PanelFotoMenu
+            foto={[]}
+            kategori={menu.kategori}
+            nama={menu.nama}
+            className="group aspect-[4/3] w-full rounded-2xl border border-krem-gelap"
+            priority
+            tandaiIlustrasi
+          />
+        )}
 
         <div className="lg:sticky lg:top-24">
           <p className="text-sm font-medium text-bata">{LABEL_KATEGORI[menu.kategori]}</p>
@@ -147,7 +160,7 @@ export default async function HalamanDetailMenu({ params }: HalamanDetailMenuPro
               Lihat semua <IkonPanahKanan className="w-4 h-4" />
             </Link>
           </div>
-          <div className="mt-5 grid gap-3 sm:gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-5 grid grid-cols-1 gap-3 sm:gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {menuLain.map((m) => (
               <KartuMenu key={m.id} menu={m} />
             ))}

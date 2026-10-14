@@ -131,7 +131,7 @@ export default async function HalamanMenu({ searchParams }: HalamanMenuProps) {
       )}
 
       {daftar.length > 0 ? (
-        <div className="mt-3 grid gap-3 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {daftar.map((menu, i) => (
             <KartuMenu key={menu.id} menu={menu} prioritas={i < 4} />
           ))}

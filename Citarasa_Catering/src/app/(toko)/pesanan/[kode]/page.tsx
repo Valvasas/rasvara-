@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/lib/db";
@@ -35,6 +36,16 @@ const LANGKAH_PELANGGAN: Record<StatusPesanan, (diantar: boolean) => string> = {
 interface HalamanPesananProps {
   params: Promise<{ kode: string }>;
   searchParams: Promise<{ baru?: string }>;
+}
+
+/**
+ * Halaman ini memuat nama, telepon, dan alamat pemesan, jadi tidak boleh masuk
+ * indeks mesin pencari walau aksesnya sudah dijaga cookie. Kode di judul
+ * membantu pembeli yang membuka beberapa pesanan di tab berbeda.
+ */
+export async function generateMetadata({ params }: HalamanPesananProps): Promise<Metadata> {
+  const { kode } = await params;
+  return { title: `Pesanan ${kode.slice(0, 40)}`, robots: { index: false, follow: false } };
 }
 
 export default async function HalamanDetailPesanan({
@@ -237,7 +248,7 @@ export default async function HalamanDetailPesanan({
       )}
 
       {/* Jadwal */}
-      <section aria-label="Jadwal" className="kartu kartu-isi grid gap-5 sm:grid-cols-2 text-sm">
+      <section aria-label="Jadwal" className="kartu kartu-isi grid grid-cols-1 gap-5 sm:grid-cols-2 text-sm">
         <div>
           <p className="text-kayu-sedang">Jadwal</p>
           <p className="mt-1 font-medium text-kayu">{tanggalPanjang(pesanan.tanggalAcara)}</p>

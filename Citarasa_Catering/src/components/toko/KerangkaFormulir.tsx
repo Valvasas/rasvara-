@@ -22,7 +22,7 @@ interface KerangkaFormulirProps {
 export function KerangkaFormulir({ judul, keterangan, manfaat, children, bawah }: KerangkaFormulirProps) {
   return (
     <div className="mx-auto max-w-5xl px-4 sm:px-6 pt-6 pb-12 sm:py-14">
-      <div className="grid gap-8 lg:gap-12 lg:grid-cols-[1fr_440px] items-center">
+      <div className="grid gap-8 lg:gap-12 lg:grid-cols-[minmax(0,1fr)_440px] items-center">
         <aside className="hidden lg:flex flex-col items-center relative overflow-hidden rounded-3xl border border-krem-gelap bg-krem-tua/60 latar-kawung px-10 py-12">
           <IlustrasiRantang className="w-52 anim-masuk" />
           <ul className="mt-8 space-y-3 self-stretch max-w-sm mx-auto">

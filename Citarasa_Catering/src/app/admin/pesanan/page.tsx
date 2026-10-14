@@ -98,7 +98,7 @@ export default async function HalamanSemuaPesanan({ searchParams }: HalamanSemua
         </p>
       </header>
 
-      <form method="get" className="kartu mt-6 p-4 grid grid-cols-2 gap-3 lg:grid-cols-[1.5fr_1fr_1fr_1fr_1fr_auto] items-end">
+      <form method="get" className="kartu mt-6 p-4 grid grid-cols-2 gap-3 lg:grid-cols-[minmax(0,1.5fr)_repeat(4,minmax(0,1fr))_auto] items-end">
         <div className="col-span-2 lg:col-span-1">
           <label htmlFor="q" className="label">Cari</label>
           <input id="q" type="search" name="q" defaultValue={kataKunci} maxLength={60} placeholder="Nama, kode, nomor HP" className="isian" />

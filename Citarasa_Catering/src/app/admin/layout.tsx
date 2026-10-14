@@ -21,7 +21,7 @@ export default async function LayoutAdmin({ children }: { children: React.ReactN
   const labelPeran = sesi.peran === "STAF_DAPUR" ? "Staf dapur" : "Pemilik";
 
   return (
-    <div className="min-h-screen lg:grid lg:grid-cols-[232px_1fr]">
+    <div className="min-h-screen lg:grid lg:grid-cols-[232px_minmax(0,1fr)]">
       {/* Sidebar (layar lebar) */}
       <aside className="hidden lg:flex lg:flex-col sticky top-0 h-screen border-r border-krem-gelap bg-white px-3 py-5 print:hidden">
         <div className="px-2">

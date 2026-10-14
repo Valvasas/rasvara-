@@ -57,7 +57,7 @@ export default async function BerandaToko() {
           aria-hidden="true"
           className="absolute inset-0 latar-kawung [mask-image:radial-gradient(ellipse_70%_80%_at_85%_30%,#000_15%,transparent_75%)]"
         />
-        <div className="relative mx-auto max-w-6xl px-4 sm:px-6 pt-6 pb-12 sm:pt-12 sm:pb-20 grid gap-6 md:gap-8 lg:gap-10 items-center md:grid-cols-[1.1fr_1fr] lg:grid-cols-[1.05fr_1fr]">
+        <div className="relative mx-auto max-w-6xl px-4 sm:px-6 pt-6 pb-12 sm:pt-12 sm:pb-20 grid grid-cols-1 gap-6 md:gap-8 lg:gap-10 items-center md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
           <div className="anim-masuk">
             <p className="inline-flex items-center gap-1.5 rounded-full bg-white/80 border border-krem-gelap px-3 py-1 text-xs sm:text-sm font-medium text-bata-tua">
               <IkonCabai className="w-4 h-4" />
@@ -202,7 +202,7 @@ export default async function BerandaToko() {
         </div>
 
         {favorit.daftar.length > 0 ? (
-          <div className="mt-6 grid gap-3 sm:gap-5 sm:grid-cols-2 md:grid-cols-3">
+          <div className="mt-6 grid grid-cols-1 gap-3 sm:gap-5 sm:grid-cols-2 md:grid-cols-3">
             {favorit.daftar.map((menu, i) => (
               <KartuMenu key={menu.id} menu={menu} prioritas={i < 3 && fotoHero.length === 0} />
             ))}
@@ -228,7 +228,7 @@ export default async function BerandaToko() {
               Cara pesan
             </h2>
             <p className="teks-redup mt-1">Tiga langkah, tanpa perlu daftar akun.</p>
-            <ol className="relative mt-7 grid gap-6 sm:grid-cols-3 sm:gap-8">
+            <ol className="relative mt-7 grid grid-cols-1 gap-6 sm:grid-cols-3 sm:gap-8">
               {/* garis penghubung antarlangkah di layar lebar */}
               <span
                 aria-hidden="true"

@@ -27,7 +27,7 @@ export function FormPengaturan({ awal }: { awal: Pengaturan }) {
     <form onSubmit={kirim} noValidate className="space-y-6">
       <section aria-labelledby="judul-profil" className="kartu kartu-isi">
         <h2 id="judul-profil" className="judul-bagian">Profil usaha</h2>
-        <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="namaUsaha" className="label">Nama usaha</label>
             <input id="namaUsaha" name="namaUsaha" type="text" maxLength={80} required defaultValue={awal.namaUsaha} className={kelas("namaUsaha")} />
@@ -80,7 +80,7 @@ export function FormPengaturan({ awal }: { awal: Pengaturan }) {
       <section aria-labelledby="judul-rekening" className="kartu kartu-isi">
         <h2 id="judul-rekening" className="judul-bagian">Rekening transfer</h2>
         <p className="teks-redup mt-1">Bila belum lengkap, pembeli hanya bisa memilih bayar tunai.</p>
-        <div className="mt-4 grid gap-4 sm:grid-cols-3">
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div>
             <label htmlFor="namaBank" className="label">Bank</label>
             <input id="namaBank" name="namaBank" type="text" maxLength={40} defaultValue={awal.namaBank} placeholder="BCA" className={kelas("namaBank")} />

@@ -148,10 +148,10 @@ export function TampilanCetakPesanan({
               <div className="divide-y divide-gray-300">
                 {pesanan.item.map((it, idx) => (
                   <div key={it.id} className="py-2.5 flex flex-wrap items-start justify-between gap-3">
-                    <div className="space-y-0.5 flex-1">
+                    <div className="space-y-0.5 flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 font-bold text-sm text-black">
                         <span className="text-xs text-gray-500 font-mono">#{idx + 1}</span>
-                        <span>{it.namaMenu}</span>
+                        <span className="min-w-0 break-words">{it.namaMenu}</span>
                       </div>
                       {it.catatan && (
                         <p className="text-xs italic bg-gray-100 print:bg-transparent px-1.5 py-0.5 rounded inline-block font-semibold border border-gray-300">
@@ -160,7 +160,7 @@ export function TampilanCetakPesanan({
                       )}
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 shrink-0">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 shrink-0 max-w-full">
                       {/* Porsi Besar */}
                       <span className="text-base font-black font-mono border-b-2 border-black pb-0.5">
                         {it.jumlah} {it.satuan}

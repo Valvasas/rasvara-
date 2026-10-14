@@ -538,7 +538,7 @@ export function FormPemesanan({
         <section aria-labelledby="judul-jadwal" className="kartu kartu-isi scroll-mt-4">
           <JudulLangkah id="judul-jadwal" nomor={2} judul="Jadwal & pengambilan" selesai={langkahJadwalSelesai} />
 
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label htmlFor="tanggalAcara" className="label">
                 Tanggal acara
@@ -675,7 +675,7 @@ export function FormPemesanan({
         <section aria-labelledby="judul-data" className="kartu kartu-isi scroll-mt-4">
           <JudulLangkah id="judul-data" nomor={3} judul="Data pemesan & pembayaran" selesai={langkahDataSelesai} />
 
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label htmlFor="namaPemesan" className="label">
                 Nama

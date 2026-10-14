@@ -16,6 +16,7 @@ import {
   selisihHari,
 } from "@/lib/format";
 import { ambilPengaturan, rekeningLengkap } from "@/lib/pengaturan";
+import { MAKS_NOMINAL } from "@/lib/batas";
 import { catatPeristiwa } from "@/lib/analitik";
 import { hitungPotongan, normalkanKodeVoucher, pesanTolak } from "@/lib/voucher";
 import { ambilIpKlien, periksaBatasLaju } from "@/lib/pembatas-laju";
@@ -30,6 +31,14 @@ import type {
   CaraBayar,
   StatusPesanan,
 } from "@/generated/prisma/client";
+
+/**
+ * Penolakan yang pesannya memang ditujukan untuk pemesan (kuota habis,
+ * voucher tidak berlaku, dsb.). Galat lain, misalnya dari Prisma atau sistem
+ * berkas, bisa memuat nama tabel, isi kueri, atau jalur folder server, jadi
+ * tidak pernah diteruskan apa adanya ke peramban.
+ */
+class PenolakanPesanan extends Error {}
 
 /**
  * Batas atas tiap isian.
@@ -249,6 +258,14 @@ export async function aksiBuatPesanan(
     subtotal += menu.harga * item.jumlah;
   }
 
+  if (subtotal > MAKS_NOMINAL) {
+    return {
+      sukses: false,
+      pesan:
+        "Total pesanan ini terlalu besar untuk dipesan online. Hubungi dapur lewat WhatsApp untuk pesanan sebesar ini.",
+    };
+  }
+
   // Gratis ongkir jika melewati batas minimal
   if (
     data.caraAmbil === "DIANTAR" &&
@@ -301,7 +318,7 @@ export async function aksiBuatPesanan(
           const sudahDipesan = petaTerpakai.get(item.menuId) ?? 0;
           if (sudahDipesan + item.jumlah > menu.kapasitasHarian!) {
             const sisa = Math.max(0, menu.kapasitasHarian! - sudahDipesan);
-            throw new Error(
+            throw new PenolakanPesanan(
               `Kapasitas harian untuk "${menu.nama}" pada tanggal tersebut tersisa ${sisa} ${menu.satuan}.`
             );
           }
@@ -319,12 +336,12 @@ export async function aksiBuatPesanan(
           where: { kode: kodeVoucherDiminta },
         });
         if (!voucher) {
-          throw new Error(pesanTolak("TIDAK_DITEMUKAN"));
+          throw new PenolakanPesanan(pesanTolak("TIDAK_DITEMUKAN"));
         }
 
         const hasilVoucher = hitungPotongan(voucher, subtotal);
         if (!hasilVoucher.berlaku) {
-          throw new Error(hasilVoucher.pesan);
+          throw new PenolakanPesanan(hasilVoucher.pesan);
         }
 
         // Kunci optimistis: pemakaian hanya bertambah bila `terpakai` masih sama
@@ -335,7 +352,7 @@ export async function aksiBuatPesanan(
           data: { terpakai: { increment: 1 } },
         });
         if (terkunci.count === 0) {
-          throw new Error(
+          throw new PenolakanPesanan(
             "Voucher sedang dipakai pemesan lain. Silakan kirim ulang pesanan Anda."
           );
         }
@@ -360,7 +377,7 @@ export async function aksiBuatPesanan(
         }
       }
       if (!kode) {
-        throw new Error("Gagal membuat kode pesanan unik. Silakan coba lagi.");
+        throw new PenolakanPesanan("Gagal membuat kode pesanan unik. Silakan coba lagi.");
       }
 
       // Buat entri pesanan
@@ -414,8 +431,15 @@ export async function aksiBuatPesanan(
       return pesanan;
     });
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : "Terjadi kesalahan server.";
-    return { sukses: false, pesan: msg };
+    if (err instanceof PenolakanPesanan) {
+      return { sukses: false, pesan: err.message };
+    }
+    console.error("buatPesanan gagal:", err);
+    return {
+      sukses: false,
+      pesan:
+        "Pesanan belum tersimpan karena gangguan di server. Coba kirim sekali lagi; bila tetap gagal, hubungi dapur lewat WhatsApp.",
+    };
   }
 
   // Tandai cookie pesanan_saya di peramban
@@ -604,8 +628,12 @@ export async function aksiUnggahBuktiBayar(
       pesan: "Bukti transfer berhasil diunggah! Dapur sedang memverifikasi pembayaran Anda.",
     };
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : "Gagal menyimpan berkas bukti transfer.";
-    return { sukses: false, pesan: msg };
+    // Galat sistem berkas memuat jalur folder server; cukup dicatat di log.
+    console.error("unggah bukti transfer gagal:", err);
+    return {
+      sukses: false,
+      pesan: "Bukti transfer belum tersimpan karena gangguan di server. Coba unggah sekali lagi.",
+    };
   }
 }
 
