@@ -1,5 +1,7 @@
 import { KopToko } from "@/components/toko/KopToko";
 import { KakiToko } from "@/components/toko/KakiToko";
+import { NavBawahToko } from "@/components/toko/NavBawahToko";
+import { bacaSesi } from "@/lib/auth";
 import { catatKunjungan } from "@/lib/analitik";
 
 export default async function LayoutToko({
@@ -9,14 +11,16 @@ export default async function LayoutToko({
 }) {
   // Dicatat di satu tempat supaya halaman toko baru otomatis ikut terhitung
   // tanpa perlu menambahkan apa pun di tiap berkas halaman.
-  await catatKunjungan();
+  const [sesi] = await Promise.all([bacaSesi(), catatKunjungan()]);
 
   return (
     <div className="flex flex-col min-h-screen">
       <KopToko />
-      <main id="isi" className="flex-1">{children}</main>
+      <main id="isi" tabIndex={-1} className="flex-1 focus:outline-none">
+        {children}
+      </main>
       <KakiToko />
+      <NavBawahToko peran={sesi?.peran ?? null} />
     </div>
   );
 }
-

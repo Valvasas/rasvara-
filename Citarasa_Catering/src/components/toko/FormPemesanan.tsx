@@ -23,10 +23,15 @@ import {
 import { LABEL_KATEGORI, URUTAN_KATEGORI } from "@/lib/pesanan";
 import {
   IkonCari,
+  IkonCek,
+  IkonKotakNasi,
   IkonKurang,
+  IkonNasiGoreng,
+  IkonSnack,
   IkonTambah,
   IkonToko,
   IkonTruk,
+  IkonTumpeng,
   IkonTutup,
 } from "@/components/ikon/Ikon";
 import type { MenuUntukPemesanan } from "@/lib/menu";
@@ -131,6 +136,53 @@ function KontrolJumlah({
       </button>
     </div>
   );
+}
+
+const IKON_KATEGORI: Record<KategoriMenu, typeof IkonKotakNasi> = {
+  NASI_KOTAK: IkonKotakNasi,
+  SNACK: IkonSnack,
+  TUMPENG: IkonTumpeng,
+  NASI_GORENG: IkonNasiGoreng,
+};
+
+/**
+ * Judul tiap langkah. Nomornya berubah menjadi centang hijau begitu isian di
+ * langkah itu lengkap, jadi pembeli melihat kemajuan dan tahu bagian mana yang
+ * masih kurang tanpa harus menekan tombol kirim dulu.
+ */
+function JudulLangkah({
+  id,
+  nomor,
+  judul,
+  selesai,
+}: {
+  id: string;
+  nomor: number;
+  judul: string;
+  selesai: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <span
+        aria-hidden="true"
+        className={`w-8 h-8 shrink-0 rounded-full flex items-center justify-center text-sm font-semibold transition-colors duration-300 ${
+          selesai ? "bg-daun text-white" : "bg-bata-lembut text-bata-tua"
+        }`}
+      >
+        {selesai ? <IkonCek className="w-4 h-4" strokeWidth={3} /> : nomor}
+      </span>
+      <h2 id={id} className="judul-bagian">
+        <span className="sr-only">Langkah {nomor}: </span>
+        {judul}
+        {selesai && <span className="sr-only"> (sudah lengkap)</span>}
+      </h2>
+    </div>
+  );
+}
+
+function IkonMenu({ kategori }: { kategori: KategoriMenu }) {
+  const Ikon = IKON_KATEGORI[kategori];
+  return <Ikon className="w-5 h-5" />;
 }
 
 function GalatField({ id, pesan }: { id: string; pesan?: string }) {
@@ -343,6 +395,16 @@ export function FormPemesanan({
     return null;
   })();
 
+  const langkahMenuSelesai = itemTerpilih.length > 0;
+  const langkahJadwalSelesai =
+    Boolean(tanggalAcara) &&
+    !tanggalTerlaluCepat &&
+    !isTanggalLibur &&
+    !jamSudahLewat &&
+    (caraAmbil === "AMBIL_SENDIRI" || alamatAntar.trim().length >= 10);
+  const langkahDataSelesai =
+    namaPemesan.trim().length >= 2 && teleponPemesan.replace(/\D/g, "").length >= 8;
+
   const kelasPilihan = (aktif: boolean, nonaktif = false) =>
     `flex items-start gap-3 rounded-xl border p-4 transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-bata/40 ${
       nonaktif
@@ -365,10 +427,8 @@ export function FormPemesanan({
 
       <div className="space-y-6 min-w-0">
         {/* 1. Menu */}
-        <section aria-labelledby="judul-menu" className="kartu kartu-isi">
-          <h2 id="judul-menu" className="judul-bagian">
-            1. Pilih menu
-          </h2>
+        <section aria-labelledby="judul-menu" className="kartu kartu-isi scroll-mt-4">
+          <JudulLangkah id="judul-menu" nomor={1} judul="Pilih menu" selesai={langkahMenuSelesai} />
 
           <div className="mt-4 relative">
             <label htmlFor="cari-menu" className="sr-only">
@@ -387,7 +447,7 @@ export function FormPemesanan({
           </div>
 
           {kategoriTersedia.length > 1 && (
-            <div className="mt-3 -mx-5 px-5 sm:mx-0 sm:px-0 flex gap-2 overflow-x-auto tanpa-scrollbar">
+            <div className="mt-3 -mx-5 px-5 sm:mx-0 sm:px-0 flex gap-2 overflow-x-auto scroll-px-8 tanpa-scrollbar">
               {(["SEMUA", ...kategoriTersedia] as const).map((k) => {
                 const aktif = kategoriAktif === k;
                 return (
@@ -411,8 +471,16 @@ export function FormPemesanan({
               return (
                 <li
                   key={m.id}
-                  className={`flex items-center gap-4 py-4 ${jml > 0 ? "bg-bata-lembut/30 -mx-5 px-5 sm:-mx-6 sm:px-6" : ""}`}
+                  className={`flex items-center gap-3 sm:gap-4 py-3.5 transition-colors ${jml > 0 ? "bg-bata-lembut/40 -mx-5 px-5 sm:-mx-6 sm:px-6" : ""}`}
                 >
+                  <span
+                    aria-hidden="true"
+                    className={`hidden min-[380px]:flex w-10 h-10 shrink-0 rounded-xl items-center justify-center ${
+                      jml > 0 ? "bg-white text-bata" : "bg-krem-tua text-kayu-sedang"
+                    }`}
+                  >
+                    <IkonMenu kategori={m.kategori} />
+                  </span>
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-kayu">{m.nama}</p>
                     <p className="text-sm text-kayu-sedang mt-0.5">
@@ -467,12 +535,10 @@ export function FormPemesanan({
         </section>
 
         {/* 2. Jadwal */}
-        <section aria-labelledby="judul-jadwal" className="kartu kartu-isi">
-          <h2 id="judul-jadwal" className="judul-bagian">
-            2. Jadwal &amp; pengambilan
-          </h2>
+        <section aria-labelledby="judul-jadwal" className="kartu kartu-isi scroll-mt-4">
+          <JudulLangkah id="judul-jadwal" nomor={2} judul="Jadwal & pengambilan" selesai={langkahJadwalSelesai} />
 
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label htmlFor="tanggalAcara" className="label">
                 Tanggal acara
@@ -606,12 +672,10 @@ export function FormPemesanan({
         </section>
 
         {/* 3. Data pemesan */}
-        <section aria-labelledby="judul-data" className="kartu kartu-isi">
-          <h2 id="judul-data" className="judul-bagian">
-            3. Data pemesan &amp; pembayaran
-          </h2>
+        <section aria-labelledby="judul-data" className="kartu kartu-isi scroll-mt-4">
+          <JudulLangkah id="judul-data" nomor={3} judul="Data pemesan & pembayaran" selesai={langkahDataSelesai} />
 
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
               <label htmlFor="namaPemesan" className="label">
                 Nama
@@ -717,8 +781,9 @@ export function FormPemesanan({
       <aside
         ref={ringkasanRef}
         aria-labelledby="judul-ringkasan"
-        className="kartu kartu-isi lg:sticky lg:top-24 scroll-mt-24"
+        className="kartu kartu-isi relative overflow-hidden lg:sticky lg:top-24 scroll-mt-4"
       >
+        <div aria-hidden="true" className="absolute inset-x-0 top-0 h-1 pita-merek" />
         <h2 id="judul-ringkasan" className="judul-bagian">
           Ringkasan
         </h2>

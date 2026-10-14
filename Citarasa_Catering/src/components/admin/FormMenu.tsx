@@ -48,7 +48,7 @@ export function FormMenu({ menu }: { menu?: NilaiMenu }) {
         </div>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-[2fr_1fr]">
+      <div className="grid gap-4 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
         <div>
           <label htmlFor="nama" className="label">Nama menu</label>
           <input type="text" maxLength={80} placeholder="Nasi Kotak Ayam Bakar" {...isian("nama")} />

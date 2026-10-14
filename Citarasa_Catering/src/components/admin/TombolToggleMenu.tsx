@@ -19,6 +19,8 @@ export function TombolToggleMenu({ id, aktif, nama }: { id: string; aktif: boole
     });
   };
 
+  // Saklarnya 24px, tapi area sentuhnya diperluas ke ±44px lewat ::before
+  // supaya mudah ditekan jari di dapur tanpa mengubah tampilannya.
   return (
     <span className="inline-flex items-center gap-2">
       <button
@@ -28,7 +30,7 @@ export function TombolToggleMenu({ id, aktif, nama }: { id: string; aktif: boole
         aria-label={`Tampilkan ${nama} di katalog`}
         onClick={ubah}
         disabled={isPending}
-        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors cursor-pointer disabled:opacity-50 ${
+        className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors cursor-pointer disabled:opacity-50 before:absolute before:-inset-x-1 before:-inset-y-2.5 before:content-[''] ${
           aktif ? "bg-daun" : "bg-krem-gelap"
         }`}
       >

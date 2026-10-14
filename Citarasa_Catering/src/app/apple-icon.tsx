@@ -1,9 +1,13 @@
 import { ImageResponse } from "next/og";
+import { GlifMangkuk } from "@/components/ikon/GlifMangkuk";
 
 export const size = { width: 180, height: 180 };
 export const contentType = "image/png";
 
-/** Ikon saat situs dipasang ke layar utama iPhone/iPad. */
+/**
+ * Ikon saat situs dipasang ke layar utama iPhone/iPad. Tanpa sudut membulat:
+ * iOS memotong sudutnya sendiri. Warna = --color-bata & --color-krem.
+ */
 export default function AppleIcon() {
   return new ImageResponse(
     (
@@ -14,13 +18,10 @@ export default function AppleIcon() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          background: "#C2410C",
-          color: "#FBF7EE",
-          fontSize: 108,
-          fontWeight: 700,
+          background: "#C2461C",
         }}
       >
-        C
+        <GlifMangkuk ukuran={112} warna="#FFFCF7" />
       </div>
     ),
     size

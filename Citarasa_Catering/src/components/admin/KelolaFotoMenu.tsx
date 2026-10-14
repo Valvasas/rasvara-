@@ -120,13 +120,16 @@ export function KelolaFotoMenu({ menuId, namaMenu, foto }: KelolaFotoMenuProps) 
                     )}
                   </div>
 
-                  <div className="p-1.5 flex items-center gap-1">
+                  {/* Di HP 320–390px kolom foto hanya ±120–150px: "Jadikan
+                      sampul" boleh turun baris supaya tombol Hapus tidak
+                      terpotong oleh overflow-hidden kartu. */}
+                  <div className="p-1.5 flex flex-wrap items-center gap-1">
                     {index !== 0 && (
                       <button
                         type="button"
                         onClick={() => jadikanSampul(f.id)}
                         disabled={sedangUbah}
-                        className="tombol-hantu tombol-kecil flex-1 px-1"
+                        className="tombol-hantu tombol-kecil flex-1 min-w-0 px-1 whitespace-normal leading-tight text-center"
                       >
                         Jadikan sampul
                       </button>
@@ -136,7 +139,7 @@ export function KelolaFotoMenu({ menuId, namaMenu, foto }: KelolaFotoMenuProps) 
                       onClick={() => hapus(f.id)}
                       disabled={sedangUbah}
                       aria-label={`Hapus foto ${index + 1} dari ${namaMenu}`}
-                      className={`tombol tombol-kecil px-2 ${akanDihapus === f.id ? "bg-bahaya text-white" : "text-bahaya hover:bg-bahaya-lembut"}`}
+                      className={`tombol-hantu tombol-kecil shrink-0 px-2 ${akanDihapus === f.id ? "bg-bahaya text-white hover:bg-bahaya hover:text-white" : "text-bahaya hover:text-bahaya hover:bg-bahaya-lembut"}`}
                     >
                       {akanDihapus === f.id ? "Yakin?" : "Hapus"}
                     </button>
@@ -146,8 +149,8 @@ export function KelolaFotoMenu({ menuId, namaMenu, foto }: KelolaFotoMenuProps) 
             </ul>
           ) : (
             <p className="teks-redup">
-              Belum ada foto. Menu tanpa foto tampil sebagai ikon kategori di
-              katalog.
+              Belum ada foto. Menu tanpa foto tampil sebagai ilustrasi
+              kategori di katalog; foto asli otomatis menggantikannya.
             </p>
           )}
 

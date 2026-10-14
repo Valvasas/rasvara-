@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { GlifMangkuk } from "@/components/ikon/GlifMangkuk";
 
 interface WordmarkProps {
   href?: string | null;
@@ -22,21 +23,7 @@ export function Wordmark({
         aria-hidden="true"
         className={`${compact ? "w-8 h-8 rounded-lg" : "w-9 h-9 rounded-xl"} bg-bata text-white flex items-center justify-center shrink-0`}
       >
-        <svg
-          className={compact ? "w-5 h-5" : "w-[22px] h-[22px]"}
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <path d="M7 4c.5 1 1 2 0 3" />
-          <path d="M12 2c.7 1.5 1.4 3 0 4.5" />
-          <path d="M17 4c.5 1 1 2 0 3" />
-          <path d="M3 11h18c0 5-3.5 8-9 8s-9-3-9-8z" />
-          <path d="M2 11h20" />
-        </svg>
+        <GlifMangkuk ukuran={compact ? 20 : 22} warna="currentColor" />
       </span>
 
       <span className="flex flex-col">

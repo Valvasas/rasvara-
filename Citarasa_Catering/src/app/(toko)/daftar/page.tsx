@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import Link from "next/link";
 import { aksiDaftar } from "@/app/aksi/auth";
 import { InputSandi } from "@/components/InputSandi";
+import { KerangkaFormulir } from "@/components/toko/KerangkaFormulir";
 
 export default function HalamanDaftar() {
   const [state, action, isPending] = useActionState(aksiDaftar, null);
@@ -14,13 +15,16 @@ export default function HalamanDaftar() {
   const galat = state?.kesalahan ?? {};
 
   return (
-    <div className="mx-auto max-w-md px-4 py-12 sm:py-16">
-      <h1 className="font-tampil text-3xl font-bold text-kayu">Buat akun</h1>
-      <p className="teks-redup mt-2">
-        Supaya data pemesan terisi otomatis dan riwayat pesanan tersimpan.
-      </p>
-
-      <form action={action} noValidate className="kartu kartu-isi mt-6 space-y-5">
+    <KerangkaFormulir
+      judul="Buat akun"
+      keterangan="Opsional — memesan tetap bisa tanpa akun."
+      manfaat={[
+        "Data pemesan terisi otomatis di pesanan berikutnya",
+        "Riwayat semua pesanan tersimpan rapi",
+        "Lacak pesanan tanpa perlu mengetik kode",
+      ]}
+    >
+      <form action={action} noValidate className="space-y-5">
         {state?.pesan && (
           <div role="alert" className="kotak-galat">
             {state.pesan}
@@ -105,6 +109,6 @@ export default function HalamanDaftar() {
           </Link>
         </p>
       </form>
-    </div>
+    </KerangkaFormulir>
   );
 }

@@ -12,6 +12,27 @@ import {
 import { LABEL_AMBIL, LABEL_BAYAR } from "@/lib/pesanan";
 import type { ItemPesanan, Pengaturan, Pesanan } from "@/generated/prisma/client";
 
+/**
+ * Teks tagihan di lembar dapur (KOT) dan nota, menurut cara bayar.
+ *
+ * Dulu semua pesanan yang belum lunas tercetak "TAGIH TUNAI", termasuk pesanan
+ * transfer yang buktinya sedang dicek. Kurir yang membawa lembar itu lalu
+ * menagih uang tunai di lokasi acara padahal pembeli sudah mentransfer.
+ */
+function teksTagihan(pesanan: Pick<Pesanan, "caraBayar" | "statusBayar" | "total">) {
+  if (pesanan.statusBayar === "LUNAS") return { kot: "SUDAH LUNAS", nota: "LUNAS" };
+  if (pesanan.caraBayar === "TUNAI") {
+    return { kot: `TAGIH TUNAI (${rupiah(pesanan.total)})`, nota: "BELUM LUNAS / TAGIH SAAT TERIMA" };
+  }
+  if (pesanan.statusBayar === "MENUNGGU_VERIFIKASI") {
+    return { kot: "TRANSFER SEDANG DICEK — JANGAN TAGIH", nota: "TRANSFER SEDANG DIVERIFIKASI" };
+  }
+  return {
+    kot: `BELUM TRANSFER (${rupiah(pesanan.total)}) — TANYA DAPUR SEBELUM SERAH TERIMA`,
+    nota: "BELUM LUNAS / MENUNGGU TRANSFER",
+  };
+}
+
 interface TampilanCetakPesananProps {
   pesanan: Pesanan & { item: ItemPesanan[] };
   pengaturan: Pengaturan;
@@ -22,6 +43,7 @@ export function TampilanCetakPesanan({
   pengaturan,
 }: TampilanCetakPesananProps) {
   const [modeCetak, setModeCetak] = useState<"dapur" | "nota">("dapur");
+  const tagihan = teksTagihan(pesanan);
 
   const jalankanCetak = () => {
     window.print();
@@ -110,11 +132,9 @@ export function TampilanCetakPesanan({
                   </p>
                 </div>
               )}
-              <div className="pt-1 border-t border-dashed border-gray-400 flex justify-between items-center">
-                <span className="font-bold text-gray-700">Status Bayar:</span>
-                <span className="font-mono font-bold uppercase">
-                  {pesanan.statusBayar === "LUNAS" ? "SUDAH LUNAS" : `TAGIH TUNAI (${rupiah(pesanan.total)})`}
-                </span>
+              <div className="pt-1 border-t border-dashed border-gray-400 flex justify-between items-start gap-3">
+                <span className="font-bold text-gray-700 shrink-0">Status Bayar:</span>
+                <span className="font-mono font-bold uppercase text-right">{tagihan.kot}</span>
               </div>
             </div>
 
@@ -127,11 +147,11 @@ export function TampilanCetakPesanan({
 
               <div className="divide-y divide-gray-300">
                 {pesanan.item.map((it, idx) => (
-                  <div key={it.id} className="py-2.5 flex items-start justify-between gap-3">
-                    <div className="space-y-0.5 flex-1">
+                  <div key={it.id} className="py-2.5 flex flex-wrap items-start justify-between gap-3">
+                    <div className="space-y-0.5 flex-1 min-w-0">
                       <div className="flex items-center gap-1.5 font-bold text-sm text-black">
                         <span className="text-xs text-gray-500 font-mono">#{idx + 1}</span>
-                        <span>{it.namaMenu}</span>
+                        <span className="min-w-0 break-words">{it.namaMenu}</span>
                       </div>
                       {it.catatan && (
                         <p className="text-xs italic bg-gray-100 print:bg-transparent px-1.5 py-0.5 rounded inline-block font-semibold border border-gray-300">
@@ -140,7 +160,7 @@ export function TampilanCetakPesanan({
                       )}
                     </div>
 
-                    <div className="flex items-center gap-4 shrink-0">
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 shrink-0 max-w-full">
                       {/* Porsi Besar */}
                       <span className="text-base font-black font-mono border-b-2 border-black pb-0.5">
                         {it.jumlah} {it.satuan}
@@ -292,7 +312,7 @@ export function TampilanCetakPesanan({
             {/* Status Bayar & Rekening */}
             <div className="text-center py-2 bg-gray-50 print:bg-transparent rounded border border-dashed border-black space-y-1">
               <div className="font-extrabold text-sm uppercase">
-                {pesanan.statusBayar === "LUNAS" ? "LUNAS" : "BELUM LUNAS / TAGIH SAAT TERIMA"}
+                {tagihan.nota}
               </div>
               {pesanan.statusBayar !== "LUNAS" && pengaturan.nomorRekening && (
                 <div className="text-[11px]">

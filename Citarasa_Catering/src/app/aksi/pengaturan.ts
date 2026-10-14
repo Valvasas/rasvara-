@@ -105,6 +105,7 @@ export async function aksiSimpanPengaturan(
   revalidatePath("/menu");
   revalidatePath("/pesan");
   revalidatePath("/admin/pengaturan");
+  revalidatePath("/opengraph-image");
   return { sukses: true, pesan: "Pengaturan berhasil disimpan." };
 }
 

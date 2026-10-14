@@ -114,6 +114,8 @@ Kode ini sengaja memakai istilah domain berbahasa Indonesia untuk model, variabe
 - `SESSION_SECRET` (env var): jangan pernah di-hardcode, log, atau expose ke client.
 - Berkas unggahan disimpan di `DIREKTORI_UNGGAHAN` (bawaan `data/unggahan`), **di luar `public/`**, dan hanya dilayani lewat `src/app/unggahan/[nama]/route.ts` yang memeriksa wewenang: foto menu terbuka untuk umum, bukti transfer hanya untuk dapur dan pemilik pesanannya. Jangan memindahkan berkas unggahan kembali ke `public/` — apa pun di sana dilayani kepada siapa saja yang tahu URL-nya, tanpa pemeriksaan. Jika menambah fitur upload, validasi tipe/ukuran file di server.
 - Middleware/guard akses admin ada terpusat di `src/app/admin/layout.tsx` — jangan buat halaman admin baru yang melewati layout ini.
+- **Jangan teruskan `err.message` mentah ke peramban.** Galat Prisma/sistem berkas memuat isi kueri, nama tabel, dan jalur folder server. Pesan untuk pengguna dilempar sebagai kelas khusus (mis. `PenolakanPesanan` di `aksi/pesanan.ts`); galat lain dicatat dengan `console.error` dan dibalas pesan umum. `tests/produksi.test.ts` memeriksa pola `instanceof Error ? err.message`.
+- **Kolom uang bertipe `Int` (maks ±2,1 miliar).** Setiap isian nominal dibatasi `MAKS_NOMINAL` (`src/lib/batas.ts`), termasuk total pesanan, supaya nilai raksasa ditolak dengan pesan yang jelas, bukan galat "value out of range".
 
 ## 8. Yang TIDAK ada saat ini (jangan berasumsi)
 
@@ -136,6 +138,64 @@ Kode ini sengaja memakai istilah domain berbahasa Indonesia untuk model, variabe
   tak-terkendali setiap aksi formulir selesai.
 - Daftar yang bisa tumbuh (menu, pesanan, kas, riwayat) wajib berpaginasi di
   database (`skip`/`take`) memakai `KomponenPaginasi`.
+- **Responsif: uji di 320, 390, 820, dan 1366 px.** Tabel admin di bawah
+  ±1024px diganti daftar kartu (lihat `admin/menu`, `admin/pesanan`,
+  `admin/keuangan`), bukan tabel yang digeser. Grid satu kolom di ponsel tulis
+  `grid-cols-1` secara eksplisit (= `minmax(0,1fr)`); grid tanpa kolom
+  membiarkan isi melebar melampaui layar. Kolom `fr` di nilai arbitrer juga
+  wajib `minmax(0,…)` (mis. `lg:grid-cols-[232px_minmax(0,1fr)]`): `1fr` polos
+  tidak bisa lebih sempit dari kata terpanjang di dalamnya, jadi satu nama
+  menu tanpa spasi melebarkan seluruh halaman, bahkan di desktop. Anak flex
+  yang memuat teks pengguna diberi `min-w-0`. Label `sr-only` di dalam wadah
+  `overflow-x-auto` butuh leluhur `relative` (`.tabel` sudah) — kalau tidak,
+  seluruh halaman ikut bisa digeser ke samping.
+- **Navigasi:** ponsel memakai `NavBawahToko` (Beranda · Menu · Pesan · Lacak ·
+  Akun), disembunyikan di `/pesan` karena formulir itu punya bilah total
+  sendiri. Tablet/desktop memakai `NavToko` di kepala halaman. Elemen `fixed`
+  di bawah layar memakai `.aman-bawah` (viewport `viewport-fit=cover`).
+- **Ilustrasi** ada di `src/components/ilustrasi/Ilustrasi.tsx`: SVG inline,
+  bidang datar, garis cokelat `#4A2E1F`, warna merek lewat `var(--color-*)`,
+  tanpa `id`/`<defs>`/gradien (aman dirender berkali-kali), selalu
+  `aria-hidden`. Menu tanpa foto memakai `IlustrasiKategori` lewat
+  `PanelFotoMenu` — begitu pemilik mengunggah foto, foto asli otomatis
+  menggantikannya. Jangan kembali ke maskot/gambar raster. **Jangan impor
+  ilustrasi dari komponen `"use client"`**: semua yang diimpor komponen klien
+  ikut dikirim sebagai JavaScript. Render di server lalu oper sebagai prop/
+  children (contoh: `menu/[slug]` memilih `PanelFotoMenu` atau
+  `GaleriFotoMenu`). Pengecualian satu-satunya `app/error.tsx` (wajib klien),
+  yang hanya memakai `IlustrasiWajan`.
+- Kelas hias bersama: `latar-kawung` / `latar-kawung-tipis` (motif batik
+  samar), `pita-merek` (pita tiga warna di tepi atas kartu penting),
+  `tepi-pudar` (petunjuk baris yang bisa digeser), `denyut-singkat`. Kelas
+  CSS buatan sendiri **wajib** di dalam `@layer components`: CSS di luar
+  layer selalu mengalahkan utilitas Tailwind, sehingga varian seperti
+  `sm:[mask-image:none]` diam-diam tidak berlaku.
+- **Bilah menempel & gulir:** `globals.css` memberi `scroll-padding-top`
+  setinggi kepala sticky (toko 5rem; /menu 9rem lewat `[data-kategori-tempel]`;
+  admin <lg 7,5rem lewat `[data-kop-admin]`) dan `scroll-padding-bottom` untuk
+  nav bawah HP. Tanpa itu judul halaman setelah navigasi, lompatan skip link,
+  dan elemen yang difokus keyboard tertutup bilah (WCAG 2.4.11). Bilah
+  menempel baru wajib ikut diperhitungkan di sana, dan diberi
+  `[@media(max-height:500px)]:static` supaya tidak memakan layar HP mendatar /
+  zoom 400%. Jangan menambah `scroll-mt-*` yang menumpuk dengan padding ini.
+  `<html data-scroll-behavior="smooth">` wajib dipertahankan (Next 16).
+- **Teks panjang vs angka:** `body` memakai `overflow-wrap: break-word` supaya
+  nama menu/alamat tanpa spasi tidak melebarkan layar (bukan `anywhere`: sudah
+  diukur, itu mematahkan label UI seperti "Diteri-ma" di kolom sempit);
+  `.angka-tabel` memakai
+  `nowrap` supaya nominal tidak patah ("Rp15.0 / 00"). Pakai `angka-tabel`
+  untuk semua nominal dan `whitespace-nowrap` untuk kode pesanan; tata letak
+  yang menampungnya harus cukup lebar di 320px (bungkus baris, bukan patah).
+- Logo mangkuk hanya satu sumber: `components/ikon/GlifMangkuk.tsx` (Wordmark,
+  favicon/ikon PWA di `app/icon.tsx`, `apple-icon`, gambar OG). Gambar OG
+  dirender satori yang tidak membaca CSS: ilustrasi dipakai dengan
+  `palet="hex"` dan diserialisasi ke string SVG. Ukuran huruf nama usaha &
+  tagline di sana mengikuti panjangnya (keduanya bisa diubah pemilik, maks
+  80/160 karakter), dan rutenya `revalidate` + di-revalidate saat pengaturan
+  disimpan.
+- `tombol` adalah `@utility` (lapisan utilities) — jangan dipasangkan langsung
+  dengan `tombol-kecil`/`tombol-besar` (lapisan components) karena ukurannya
+  kalah. Pakai `tombol-kedua tombol-kecil` lalu timpa warnanya dengan utilitas.
 
 Yang **sudah** ada (jangan dibangun ulang): test runner bawaan Node + `tsx` (`npm test`),
 CI di `.github/workflows/ci.yml`, `eslint.config.mjs` (flat config), Dockerfile,

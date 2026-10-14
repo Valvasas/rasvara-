@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { db } from "@/lib/db";
@@ -19,10 +20,32 @@ import { FormUnggahBukti } from "@/components/toko/FormUnggahBukti";
 import { TombolCetakPesanan } from "@/components/admin/TombolCetakPesanan";
 import { TombolSalin } from "@/components/TombolSalin";
 import { IkonCek, IkonWhatsapp } from "@/components/ikon/Ikon";
+import { IlustrasiRantang } from "@/components/ilustrasi/Ilustrasi";
+import type { StatusPesanan } from "@/generated/prisma/client";
+
+/** Apa yang sedang terjadi, ditulis dari sudut pandang pembeli. */
+const LANGKAH_PELANGGAN: Record<StatusPesanan, (diantar: boolean) => string> = {
+  BARU: () => "dapur akan mengecek pesananmu dan mengonfirmasi lewat WhatsApp.",
+  DIKONFIRMASI: () => "pesanan sudah diterima dan masuk jadwal masak dapur.",
+  DIPROSES: () => "masakanmu sedang disiapkan di dapur.",
+  SIAP: (diantar) => (diantar ? "pesanan sudah siap dan segera diantar." : "pesanan sudah siap diambil di dapur."),
+  SELESAI: () => "pesanan sudah diterima. Terima kasih, selamat menikmati!",
+  DIBATALKAN: () => "pesanan ini dibatalkan.",
+};
 
 interface HalamanPesananProps {
   params: Promise<{ kode: string }>;
   searchParams: Promise<{ baru?: string }>;
+}
+
+/**
+ * Halaman ini memuat nama, telepon, dan alamat pemesan, jadi tidak boleh masuk
+ * indeks mesin pencari walau aksesnya sudah dijaga cookie. Kode di judul
+ * membantu pembeli yang membuka beberapa pesanan di tab berbeda.
+ */
+export async function generateMetadata({ params }: HalamanPesananProps): Promise<Metadata> {
+  const { kode } = await params;
+  return { title: `Pesanan ${kode.slice(0, 40)}`, robots: { index: false, follow: false } };
 }
 
 export default async function HalamanDetailPesanan({
@@ -64,12 +87,14 @@ export default async function HalamanDetailPesanan({
     ? linkWhatsapp(pengaturan.whatsapp, pesanWa)
     : null;
 
+  // `pendek` dipakai di bawah 640px: di layar 320px kolom tiap tahap hanya
+  // ±49px, sehingga "Dikonfirmasi" menempel dengan label di sebelahnya.
   const tahapan = [
-    { kunci: "BARU", nama: "Dipesan" },
-    { kunci: "DIKONFIRMASI", nama: "Dikonfirmasi" },
-    { kunci: "DIPROSES", nama: "Dimasak" },
-    { kunci: "SIAP", nama: "Siap" },
-    { kunci: "SELESAI", nama: "Selesai" },
+    { kunci: "BARU", nama: "Dipesan", pendek: "Dipesan" },
+    { kunci: "DIKONFIRMASI", nama: "Dikonfirmasi", pendek: "Diterima" },
+    { kunci: "DIPROSES", nama: "Dimasak", pendek: "Dimasak" },
+    { kunci: "SIAP", nama: "Siap", pendek: "Siap" },
+    { kunci: "SELESAI", nama: "Selesai", pendek: "Selesai" },
   ];
   const indeksAktif = tahapan.findIndex((t) => t.kunci === pesanan.status);
   const dibatalkan = pesanan.status === "DIBATALKAN";
@@ -79,12 +104,21 @@ export default async function HalamanDetailPesanan({
   return (
     <div className="mx-auto max-w-2xl px-4 sm:px-6 py-8 sm:py-12 space-y-5">
       {baru === "1" && (
-        <div role="status" className="kotak-sukses flex items-start gap-3 anim-masuk">
-          <IkonCek className="w-5 h-5 shrink-0 mt-0.5" strokeWidth={2.25} />
-          <div>
-            <p className="font-semibold">Pesanan terkirim</p>
-            <p className="mt-0.5">
-              Simpan kode di bawah. Dapur akan mengonfirmasi lewat WhatsApp.
+        <div
+          role="status"
+          className="relative overflow-hidden rounded-2xl border border-daun/20 bg-daun-lembut latar-kawung px-5 py-5 sm:px-6 flex items-center gap-4 sm:gap-5 anim-masuk"
+        >
+          <div className="relative shrink-0">
+            <IlustrasiRantang className="w-20 sm:w-24" />
+            <span className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-daun text-white flex items-center justify-center ring-4 ring-daun-lembut">
+              <IkonCek className="w-4 h-4" strokeWidth={3} />
+            </span>
+          </div>
+          <div className="text-daun-tua">
+            <p className="font-tampil text-xl font-bold">Pesanan terkirim!</p>
+            <p className="mt-1 text-sm">
+              Simpan kode di bawah. Dapur akan mengonfirmasi lewat WhatsApp
+              {perluBayar && rekeningAda && pesanan.caraBayar === "TRANSFER" ? ", dan kamu bisa langsung mengirim bukti transfer." : "."}
             </p>
           </div>
         </div>
@@ -95,8 +129,8 @@ export default async function HalamanDetailPesanan({
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="teks-redup">Kode pesanan</p>
-            <div className="flex items-center gap-2 mt-1">
-              <h1 className="text-2xl font-bold text-kayu font-mono tracking-tight">{pesanan.kode}</h1>
+            <div className="flex flex-wrap items-center gap-2 mt-1">
+              <h1 className="text-xl sm:text-2xl font-bold text-kayu font-mono tracking-tight whitespace-nowrap">{pesanan.kode}</h1>
               <TombolSalin teks={pesanan.kode} label="Salin" ringkas />
             </div>
           </div>
@@ -142,16 +176,24 @@ export default async function HalamanDetailPesanan({
                     {lewat ? <IkonCek className="w-3.5 h-3.5" strokeWidth={3} /> : idx + 1}
                   </span>
                   <span
-                    className={`mt-2 text-xs ${
+                    className={`mt-2 text-[11px] sm:text-xs leading-tight ${
                       sekarang ? "font-semibold text-kayu" : lewat ? "text-kayu" : "text-kayu-sedang"
                     }`}
                   >
-                    {t.nama}
+                    <span className="sm:hidden">{t.pendek}</span>
+                    <span className="hidden sm:inline">{t.nama}</span>
                   </span>
                 </li>
               );
             })}
           </ol>
+        )}
+
+        {!dibatalkan && (
+          <p className="mt-5 rounded-xl bg-krem-tua/70 px-4 py-3 text-sm text-kayu">
+            <span className="font-semibold">Sekarang: </span>
+            {LANGKAH_PELANGGAN[pesanan.status](pesanan.caraAmbil === "DIANTAR")}
+          </p>
         )}
       </header>
 
@@ -206,7 +248,7 @@ export default async function HalamanDetailPesanan({
       )}
 
       {/* Jadwal */}
-      <section aria-label="Jadwal" className="kartu kartu-isi grid gap-5 sm:grid-cols-2 text-sm">
+      <section aria-label="Jadwal" className="kartu kartu-isi grid grid-cols-1 gap-5 sm:grid-cols-2 text-sm">
         <div>
           <p className="text-kayu-sedang">Jadwal</p>
           <p className="mt-1 font-medium text-kayu">{tanggalPanjang(pesanan.tanggalAcara)}</p>

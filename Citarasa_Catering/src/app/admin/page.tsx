@@ -9,8 +9,10 @@ import {
   hariIniWib,
   jamTampil,
   kunciHari,
+  labelHari,
   linkWhatsapp,
   rupiah,
+  selisihHari,
   tanggalPendek,
   teleponTampil,
 } from "@/lib/format";
@@ -18,9 +20,12 @@ import { INFO_STATUS, KOLOM_PAPAN } from "@/lib/pesanan";
 import { LencanaBayar } from "@/components/Lencana";
 import { AksiPesanan } from "@/components/admin/AksiPesanan";
 import { IkonCari, IkonLampiran, IkonLokasi, IkonPeringatan, IkonTruk, IkonWhatsapp } from "@/components/ikon/Ikon";
+import { IlustrasiPiringKosong } from "@/components/ilustrasi/Ilustrasi";
 import type { Prisma, StatusPesanan } from "@/generated/prisma/client";
 
-export const metadata: Metadata = { title: "Papan pesanan" };
+// Halaman ini satu segmen dengan admin/layout.tsx, jadi templat judulnya
+// ("%s — Dapur Citarasa") tidak berlaku di sini dan harus ditulis utuh.
+export const metadata: Metadata = { title: { absolute: "Papan pesanan — Dapur Citarasa" } };
 
 /**
  * Kartu per kolom yang dirender. Hitungan di kepala kolom tetap jumlah
@@ -37,6 +42,16 @@ const RENTANG = [
 ] as const;
 type KunciRentang = (typeof RENTANG)[number]["kunci"];
 
+/** Label sependek mungkin untuk kotak lompatan di ponsel (4 kolom × ±80px). */
+const LABEL_PENDEK: Record<StatusPesanan, string> = {
+  BARU: "Baru",
+  DIKONFIRMASI: "Diterima",
+  DIPROSES: "Dimasak",
+  SIAP: "Siap",
+  SELESAI: "Selesai",
+  DIBATALKAN: "Batal",
+};
+
 const WARNA_TITIK: Record<StatusPesanan, string> = {
   BARU: "bg-kunyit",
   DIKONFIRMASI: "bg-kayu-sedang",
@@ -45,6 +60,23 @@ const WARNA_TITIK: Record<StatusPesanan, string> = {
   SELESAI: "bg-daun",
   DIBATALKAN: "bg-bahaya",
 };
+
+/**
+ * Penanda mendesak di kartu: hari ini, besok, atau sudah lewat. Pesanan yang
+ * tanggal acaranya sudah lewat tetapi masih ada di papan adalah yang paling
+ * genting (lupa diselesaikan atau terlambat), jadi diberi warna galat.
+ */
+function PenandaHari({ tanggal }: { tanggal: Date }) {
+  const selisih = selisihHari(tanggal);
+  if (selisih > 1) return null;
+  const [teks, kelas] =
+    selisih < 0
+      ? [`Lewat ${-selisih} hari`, "bg-bahaya-lembut text-bahaya"]
+      : selisih === 0
+      ? [labelHari(tanggal), "bg-bata-lembut text-bata-tua"]
+      : [labelHari(tanggal), "bg-kunyit-lembut text-kunyit-tua"];
+  return <span className={`lencana px-2 py-0 border-transparent ${kelas}`}>{teks}</span>;
+}
 
 function rentangTanggal(kunci: KunciRentang): { gte: Date; lt: Date } | undefined {
   const hariIni = hariIniWib();
@@ -193,13 +225,54 @@ export default async function HalamanPapanDapur({ searchParams }: HalamanPapanDa
         )}
       </div>
 
-      <div className="mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-4 items-start">
+      {/* Ponsel: kolom bertumpuk ke bawah, jadi ringkasan jumlah per tahap
+          ditaruh di atas sebagai lompatan cepat ke kolomnya. */}
+      {totalAktif > 0 && (
+        <nav aria-label="Lompat ke tahap" className="md:hidden mt-4 grid grid-cols-4 gap-2">
+          {KOLOM_PAPAN.map((s) => {
+            const n = jumlahStatus(s);
+            return (
+              <a
+                key={s}
+                href={`#kolom-${s}`}
+                className={`rounded-xl border px-2 py-2 text-center transition-colors ${
+                  n > 0 ? "bg-white border-krem-gelap active:bg-krem-tua" : "bg-krem-tua/50 border-transparent"
+                }`}
+              >
+                {/* Kotak kosong dibedakan lewat latar, bukan teks pudar: angka 0
+                    dengan alpha 60% hanya 2,6:1 (WCAG minta 4,5:1). */}
+                <span className={`block text-lg font-bold angka-tabel ${n > 0 ? "text-kayu" : "text-kayu-sedang"}`}>{n}</span>
+                <span className="flex items-center justify-center gap-1 text-[11px] leading-tight text-kayu-sedang">
+                  <span aria-hidden="true" className={`w-1.5 h-1.5 shrink-0 rounded-full ${WARNA_TITIK[s]}`} />
+                  {LABEL_PENDEK[s]}
+                </span>
+              </a>
+            );
+          })}
+        </nav>
+      )}
+
+      {totalAktif === 0 && (
+        <div className="kartu kartu-isi mt-6 text-center">
+          <IlustrasiPiringKosong className="w-40 mx-auto" />
+          <p className="mt-2 font-semibold text-kayu">
+            {adaSaringan || rentang !== "semua" ? "Tidak ada pesanan yang cocok" : "Belum ada pesanan aktif"}
+          </p>
+          <p className="teks-redup mt-1">
+            {adaSaringan || rentang !== "semua"
+              ? "Coba ubah saringan atau rentang tanggal."
+              : "Pesanan baru dari pembeli akan langsung muncul di kolom pertama."}
+          </p>
+        </div>
+      )}
+
+      <div className={`mt-6 grid gap-5 md:grid-cols-2 xl:grid-cols-4 items-start ${totalAktif === 0 ? "hidden md:grid" : ""}`}>
         {KOLOM_PAPAN.map((status, i) => {
           const daftar = perKolom[i];
           const jumlah = jumlahStatus(status);
           return (
-            <section key={status} aria-labelledby={`kolom-${status}`} className="min-w-0">
-              <h2 id={`kolom-${status}`} className="flex items-center gap-2 px-1 text-sm font-semibold text-kayu">
+            <section key={status} id={`kolom-${status}`} aria-labelledby={`judul-kolom-${status}`} className="min-w-0">
+              <h2 id={`judul-kolom-${status}`} className="flex items-center gap-2 px-1 text-sm font-semibold text-kayu">
                 <span aria-hidden="true" className={`w-2 h-2 rounded-full ${WARNA_TITIK[status]}`} />
                 {INFO_STATUS[status].label}
                 <span className="ml-auto text-kayu-sedang font-normal angka-tabel">{jumlah}</span>
@@ -209,8 +282,8 @@ export default async function HalamanPapanDapur({ searchParams }: HalamanPapanDa
                   tetap terlihat sejajar dan halaman tidak memanjang ribuan piksel. */}
               <div className="mt-3 space-y-3 xl:max-h-[calc(100vh-260px)] xl:overflow-y-auto gulir-tipis xl:pr-1 xl:-mr-1">
                 {daftar.length === 0 ? (
-                  <p className="rounded-2xl border border-dashed border-krem-gelap px-4 py-8 text-center text-sm text-kayu-sedang">
-                    Kosong
+                  <p className="rounded-2xl border border-dashed border-krem-gelap px-4 py-3 md:py-8 text-center text-sm text-kayu-sedang">
+                    Tidak ada pesanan
                   </p>
                 ) : (
                   daftar.map((p) => {
@@ -220,9 +293,12 @@ export default async function HalamanPapanDapur({ searchParams }: HalamanPapanDa
                       <article key={p.id} className="kartu p-4">
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <p className="text-xs text-kayu-sedang">
-                              {tanggalPendek(p.tanggalAcara)} ·{" "}
-                              <span className="font-semibold text-kayu">{jamTampil(p.jamAcara)}</span>
+                            <p className="text-xs text-kayu-sedang flex flex-wrap items-center gap-x-1.5 gap-y-1">
+                              <PenandaHari tanggal={p.tanggalAcara} />
+                              <span>
+                                {tanggalPendek(p.tanggalAcara)} ·{" "}
+                                <span className="font-semibold text-kayu">{jamTampil(p.jamAcara)}</span>
+                              </span>
                             </p>
                             <h3 className="mt-1 font-semibold text-kayu truncate">{p.namaPemesan}</h3>
                           </div>

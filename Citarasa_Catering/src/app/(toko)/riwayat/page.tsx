@@ -9,6 +9,7 @@ import { TombolKeluar } from "@/components/TombolKeluar";
 import { KomponenPaginasi } from "@/components/KomponenPaginasi";
 import { FormGantiSandi } from "@/components/FormGantiSandi";
 import { IkonPanahKanan } from "@/components/ikon/Ikon";
+import { IlustrasiPiringKosong } from "@/components/ilustrasi/Ilustrasi";
 
 export const metadata: Metadata = { title: "Pesanan saya", robots: { index: false } };
 
@@ -49,7 +50,7 @@ export default async function HalamanRiwayat({ searchParams }: HalamanRiwayatPro
   ]);
 
   return (
-    <div className="mx-auto max-w-3xl px-4 sm:px-6 py-10 sm:py-14">
+    <div className="mx-auto max-w-3xl px-4 sm:px-6 pt-6 pb-10 sm:py-14">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="font-tampil text-3xl font-bold text-kayu">Pesanan saya</h1>
@@ -67,7 +68,8 @@ export default async function HalamanRiwayat({ searchParams }: HalamanRiwayatPro
 
       {daftar.length === 0 ? (
         <div className="kartu kartu-isi mt-8 text-center">
-          <p className="font-semibold text-kayu">Belum ada pesanan</p>
+          <IlustrasiPiringKosong className="w-44 mx-auto" />
+          <p className="mt-2 font-semibold text-kayu">Belum ada pesanan</p>
           <p className="teks-redup mt-1">Pesanan yang kamu buat dengan nomor ini akan muncul di sini.</p>
           <Link href="/menu" className="tombol-kedua mt-5">
             Lihat menu
@@ -85,7 +87,7 @@ export default async function HalamanRiwayat({ searchParams }: HalamanRiwayatPro
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                      <span className="font-mono text-sm font-medium text-kayu">{p.kode}</span>
+                      <span className="font-mono text-sm font-medium text-kayu whitespace-nowrap">{p.kode}</span>
                       <LencanaStatus status={p.status} untukPelanggan />
                     </div>
                     <p className="mt-1 text-sm text-kayu-sedang truncate">

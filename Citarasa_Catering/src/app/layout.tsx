@@ -64,7 +64,11 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#FBF7EE",
+  // Tanpa "cover", env(safe-area-inset-bottom) selalu 0 di iPhone, sehingga
+  // bar bawah (navigasi & total pesanan) tertutup garis home indicator.
+  viewportFit: "cover",
+  // Sama dengan --color-krem supaya bilah alamat browser menyatu dengan kepala halaman.
+  themeColor: "#FFFCF7",
 };
 
 export default function RootLayout({
@@ -73,7 +77,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="id" className={`${archivo.variable} ${domine.variable}`}>
+    // data-scroll-behavior: sejak Next.js 16, gulir ke atas saat pindah halaman
+    // ikut `scroll-behavior: smooth` dari globals.css kecuali atribut ini ada —
+    // tanpanya setiap navigasi dianimasikan ±650ms dari posisi lama ke atas.
+    <html lang="id" data-scroll-behavior="smooth" className={`${archivo.variable} ${domine.variable}`}>
       <body className="bg-krem text-kayu min-h-screen flex flex-col selection:bg-bata selection:text-white">
         {children}
       </body>

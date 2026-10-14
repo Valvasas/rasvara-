@@ -1,23 +1,6 @@
 import Image from "next/image";
 import type { KategoriMenu } from "@/generated/prisma/client";
-import {
-  IkonKotakNasi,
-  IkonNasiGoreng,
-  IkonSnack,
-  IkonTumpeng,
-} from "@/components/ikon/Ikon";
-
-const GAYA_KATEGORI: Record<
-  KategoriMenu,
-  { latar: string; ikonWarna: string; Ikon: typeof IkonKotakNasi }
-> = {
-  // Satu keluarga warna hangat yang sama, hanya beda nada tipis per kategori,
-  // supaya grid menu tanpa foto tidak terlihat seperti papan permen warna-warni.
-  NASI_KOTAK: { latar: "bg-[#F6E7DC]", ikonWarna: "text-bata/45", Ikon: IkonKotakNasi },
-  SNACK: { latar: "bg-[#F8EDD8]", ikonWarna: "text-kunyit-tua/45", Ikon: IkonSnack },
-  TUMPENG: { latar: "bg-[#F4EAD6]", ikonWarna: "text-kunyit-tua/45", Ikon: IkonTumpeng },
-  NASI_GORENG: { latar: "bg-[#F3E4DA]", ikonWarna: "text-bata-tua/40", Ikon: IkonNasiGoreng },
-};
+import { IlustrasiKategori, LATAR_KATEGORI } from "@/components/ilustrasi/Ilustrasi";
 
 interface PanelFotoMenuProps {
   /** Galeri menu, sudah urut. Foto pertama dipakai sebagai sampul. */
@@ -25,26 +8,30 @@ interface PanelFotoMenuProps {
   kategori: KategoriMenu;
   nama: string;
   className?: string;
-  ukuranIkon?: string;
   sizes?: string;
   priority?: boolean;
+  /** Tulis label kecil "Ilustrasi" di atas gambar pengganti (dipakai di halaman detail). */
+  tandaiIlustrasi?: boolean;
 }
 
 /**
- * Sampul menu dengan fallback ikon-per-kategori saat galerinya masih kosong.
- * Satu sumber kebenaran dipakai di kartu Beranda, kartu /menu, dan halaman
- * detail supaya begitu foto asli diunggah, semua tempat otomatis ikut berubah.
+ * Sampul menu dengan ilustrasi hidangan per kategori saat galerinya masih
+ * kosong. Satu sumber kebenaran dipakai di kartu Beranda, kartu /menu, dan
+ * halaman detail supaya begitu foto asli diunggah, semua tempat otomatis ikut
+ * berubah.
+ *
+ * Ilustrasi jelas bergaya gambar (bukan foto), jadi tidak menjanjikan tampilan
+ * hidangan yang persis; di halaman detail labelnya ditulis terang-terangan.
  */
 export function PanelFotoMenu({
   foto,
   kategori,
   nama,
   className = "",
-  ukuranIkon = "w-10 h-10",
   sizes = "(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw",
   priority = false,
+  tandaiIlustrasi = false,
 }: PanelFotoMenuProps) {
-  const gaya = GAYA_KATEGORI[kategori];
   const sampul = foto[0];
 
   return (
@@ -57,7 +44,7 @@ export function PanelFotoMenu({
             fill
             sizes={sizes}
             priority={priority}
-            className="object-cover"
+            className="object-cover transition-transform duration-500 group-hover:scale-[1.03]"
           />
           {foto.length > 1 && (
             <span className="absolute bottom-2 right-2 text-[11px] font-medium px-2 py-0.5 rounded-full bg-white/90 text-kayu">
@@ -66,8 +53,16 @@ export function PanelFotoMenu({
           )}
         </>
       ) : (
-        <div className={`absolute inset-0 flex items-center justify-center ${gaya.latar}`}>
-          <gaya.Ikon className={`${ukuranIkon} ${gaya.ikonWarna}`} strokeWidth={1.1} />
+        <div className={`absolute inset-0 flex items-center justify-center latar-kawung-tipis ${LATAR_KATEGORI[kategori]}`}>
+          <IlustrasiKategori
+            kategori={kategori}
+            className="w-[88%] h-[88%] transition-transform duration-500 group-hover:scale-[1.04] group-hover:-rotate-1"
+          />
+          {tandaiIlustrasi && (
+            <span className="absolute bottom-3 left-3 text-[11px] font-medium px-2.5 py-1 rounded-full bg-white/90 text-kayu-sedang">
+              Ilustrasi · foto asli menyusul
+            </span>
+          )}
         </div>
       )}
     </div>

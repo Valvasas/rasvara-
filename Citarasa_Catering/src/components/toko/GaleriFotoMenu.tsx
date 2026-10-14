@@ -2,8 +2,6 @@
 
 import Image from "next/image";
 import { useCallback, useRef, useState } from "react";
-import type { KategoriMenu } from "@/generated/prisma/client";
-import { PanelFotoMenu } from "@/components/toko/PanelFotoMenu";
 
 export interface FotoGaleri {
   id: string;
@@ -12,9 +10,9 @@ export interface FotoGaleri {
 }
 
 interface GaleriFotoMenuProps {
+  /** Minimal satu foto. Menu tanpa foto memakai `PanelFotoMenu` dari server. */
   foto: FotoGaleri[];
   nama: string;
-  kategori: KategoriMenu;
 }
 
 /**
@@ -25,8 +23,11 @@ interface GaleriFotoMenuProps {
  * tidak menambah beban JavaScript untuk pembeli yang mayoritas memakai data
  * seluler. Tidak ada putar-otomatis — foto makanan perlu dibaca dengan tenang,
  * dan slide yang bergerak sendiri merampas kendali pembaca layar.
+ *
+ * Komponen ini sengaja tidak mengimpor ilustrasi: sebagai komponen klien,
+ * semua yang diimpornya ikut dikirim sebagai JavaScript ke peramban.
  */
-export function GaleriFotoMenu({ foto, nama, kategori }: GaleriFotoMenuProps) {
+export function GaleriFotoMenu({ foto, nama }: GaleriFotoMenuProps) {
   const trekRef = useRef<HTMLDivElement>(null);
   const [aktif, setAktif] = useState(0);
 
@@ -47,20 +48,6 @@ export function GaleriFotoMenu({ foto, nama, kategori }: GaleriFotoMenuProps) {
     const index = Math.round(trek.scrollLeft / lebar);
     setAktif((lama) => (lama === index ? lama : index));
   }, []);
-
-  // Tanpa foto: pakai panel ikon kategori yang sudah dipakai di seluruh katalog.
-  if (foto.length === 0) {
-    return (
-      <PanelFotoMenu
-        foto={[]}
-        kategori={kategori}
-        nama={nama}
-        className="aspect-[4/3] w-full rounded-2xl border border-krem-gelap"
-        ukuranIkon="w-20 h-20"
-        priority
-      />
-    );
-  }
 
   const tunggal = foto.length === 1;
 
