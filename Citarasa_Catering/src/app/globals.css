@@ -1,17 +1,27 @@
 @import "tailwindcss";
 
 /*
- * Design system Citarasa.
+ * Design system Citarasa — versi 2 (siap rilis).
  *
- * Satu warna aksi (bata/terakota) di atas permukaan terang yang hangat.
- * Warna gelap hanya untuk teks — tidak ada lagi blok latar cokelat tua yang
- * menelan konten di sekitarnya.
+ * Arah visual: "dapur hangat yang ramai". Warna diambil dari isi dapurnya
+ * sendiri: kertas nasi (krem), sambal & gerabah (bata), kunyit, daun pisang,
+ * dan meja kayu. Warna hangat dipilih dengan sengaja — merah-oranye-kuning
+ * menaikkan selera makan, sedangkan biru/ungu menurunkannya; itu sebabnya
+ * hampir semua aplikasi pesan-antar makanan memakai merah/oranye/hijau.
  *
  * Aturan kontras (semua sudah dihitung, minimal WCAG AA 4.5:1):
  *   - teks biasa: kayu / kayu-sedang di atas krem, krem-tua, atau putih
  *   - teks di atas latar *-lembut WAJIB memakai varian *-tua
- *   - teks putih hanya di atas bata, bata-tua, daun, atau bahaya
- *   - kunyit adalah aksen latar, bukan warna teks
+ *   - teks putih hanya di atas bata, bata-tua, daun, kayu, atau bahaya
+ *   - kunyit adalah aksen latar/ilustrasi, bukan warna teks
+ *
+ * Aturan keterbacaan (untuk remaja sampai orang tua):
+ *   - isian formulir selalu 16px: di bawah itu Safari iPhone memperbesar
+ *     halaman tiap kali kolom disentuh, lalu tata letak bergeser
+ *   - tombol utama tinggi 48px, tombol kecil 40px (target sentuh jempol)
+ *   - teks keterangan terkecil 13px; 12px hanya untuk lencana angka
+ *   - mode "Teks besar" menaikkan seluruh ukuran 12.5% lewat font-size root,
+ *     karena semua ukuran Tailwind memakai rem
  */
 @theme {
   /* Permukaan */
@@ -23,16 +33,19 @@
   --color-bata: #C2461C;
   --color-bata-tua: #9E3714;
   --color-bata-lembut: #FCEDE5;
+  --color-bata-terang: #E8673A; /* hanya untuk gradien & ilustrasi, bukan latar teks */
 
   /* Aksen hangat */
   --color-kunyit: #E39B2E;
   --color-kunyit-tua: #8A5410;
   --color-kunyit-lembut: #FDF4DF;
+  --color-kunyit-terang: #F6C453; /* ilustrasi */
 
-  /* Sukses */
+  /* Sukses / segar */
   --color-daun: #2E7D4F;
   --color-daun-tua: #1F5E3A;
   --color-daun-lembut: #E6F4EB;
+  --color-daun-terang: #5DAA6E; /* ilustrasi */
 
   /* Teks */
   --color-kayu: #2B211B;
@@ -48,7 +61,11 @@
   --font-display: var(--font-domine), Georgia, "Times New Roman", serif;
 
   --shadow-lembut: 0 1px 2px rgba(43, 33, 27, 0.04), 0 4px 16px -4px rgba(43, 33, 27, 0.08);
-  --shadow-angkat: 0 2px 4px rgba(43, 33, 27, 0.04), 0 12px 32px -8px rgba(43, 33, 27, 0.16);
+  --shadow-angkat: 0 2px 4px rgba(43, 33, 27, 0.04), 0 14px 32px -10px rgba(120, 50, 20, 0.22);
+  --shadow-mengambang: 0 -4px 24px -6px rgba(43, 33, 27, 0.14);
+
+  --ease-pegas: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-halus: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 html {
@@ -57,6 +74,13 @@ html {
   color: var(--color-kayu);
   background-color: var(--color-krem);
   -webkit-text-size-adjust: 100%;
+  /* Ruang untuk bar navigasi bawah di ponsel saat melompat ke #jangkar */
+  scroll-padding-top: 5rem;
+}
+
+/* Mode teks besar — dipilih pengguna, disimpan di perangkat (lihat SakelarTeks). */
+html[data-teks="besar"] {
+  font-size: 18px;
 }
 
 body {
@@ -65,15 +89,16 @@ body {
   font-family: var(--font-sans);
   background-color: var(--color-krem);
   color: var(--color-kayu);
-  line-height: 1.55;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* Judul editorial: serif hanya untuk headline halaman toko */
+/* Judul editorial: serif hanya untuk headline */
 .font-tampil {
   font-family: var(--font-display);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.015em;
 }
 
 /* Angka rata kanan di tabel & nota tidak goyang lebarnya */
@@ -82,30 +107,35 @@ body {
 }
 
 :focus-visible {
-  outline: 2px solid var(--color-bata);
+  outline: 3px solid var(--color-bata);
   outline-offset: 2px;
+  border-radius: 6px;
 }
 
 /* ===================== Komponen dasar ===================== */
 
 /* Dasar tombol & kotak pesan didaftarkan sebagai @utility karena Tailwind v4
-   hanya mengizinkan @apply pada utilitas, bukan pada kelas buatan biasa.
-   Tinggi minimal 44px = target sentuh nyaman di ponsel. */
+   hanya mengizinkan @apply pada utilitas, bukan pada kelas buatan biasa. */
 @utility tombol {
-  @apply inline-flex items-center justify-center gap-2 min-h-[44px] px-5 rounded-xl
-    text-sm font-semibold whitespace-nowrap transition-colors cursor-pointer
-    disabled:opacity-50 disabled:cursor-not-allowed select-none;
+  @apply inline-flex items-center justify-center gap-2 min-h-[48px] px-5 rounded-xl
+    text-[15px] font-semibold whitespace-nowrap cursor-pointer select-none
+    transition-[background-color,border-color,color,box-shadow,transform] duration-150
+    active:scale-[0.97]
+    disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100;
 }
 @utility kotak-info {
-  @apply rounded-xl px-4 py-3 text-sm border;
+  @apply rounded-xl px-4 py-3 text-[15px] border leading-relaxed;
 }
 
 @layer components {
   .tombol-utama {
-    @apply tombol bg-bata text-white hover:bg-bata-tua;
+    @apply tombol bg-bata text-white shadow-[0_6px_16px_-6px_rgba(194,70,28,0.55)] hover:bg-bata-tua;
   }
   .tombol-kedua {
     @apply tombol bg-white text-kayu border border-krem-gelap hover:bg-krem-tua hover:border-kayu-sedang/30;
+  }
+  .tombol-garis {
+    @apply tombol bg-white text-bata-tua border-[1.5px] border-bata hover:bg-bata-lembut;
   }
   .tombol-hantu {
     @apply tombol text-kayu-sedang hover:text-kayu hover:bg-krem-tua;
@@ -116,11 +146,18 @@ body {
   .tombol-bahaya {
     @apply tombol bg-white text-bahaya border border-bahaya/30 hover:bg-bahaya-lembut;
   }
+  .tombol-wa {
+    @apply tombol bg-daun text-white hover:bg-daun-tua;
+  }
   .tombol-kecil {
-    @apply min-h-[36px] px-3 text-xs rounded-lg;
+    @apply min-h-[40px] px-3.5 text-sm rounded-lg;
   }
   .tombol-besar {
-    @apply min-h-[52px] px-7 text-base rounded-2xl;
+    @apply min-h-[54px] px-7 text-base rounded-2xl;
+  }
+  .tombol-ikon {
+    @apply inline-flex items-center justify-center w-11 h-11 rounded-xl text-kayu-sedang
+      hover:text-kayu hover:bg-krem-tua transition-colors cursor-pointer active:scale-95;
   }
 
   /* Kartu & permukaan */
@@ -130,30 +167,34 @@ body {
   .kartu-isi {
     @apply p-5 sm:p-6;
   }
+  .kartu-interaktif {
+    @apply transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-angkat)] hover:border-bata/30;
+  }
 
-  /* Isian formulir */
+  /* Isian formulir — 16px wajib (lihat catatan di atas) */
   .label {
-    @apply block text-sm font-medium text-kayu mb-1.5;
+    @apply block text-[15px] font-semibold text-kayu mb-1.5;
   }
   .petunjuk {
-    @apply text-xs text-kayu-sedang mt-1.5;
+    @apply text-[13px] text-kayu-sedang mt-1.5 leading-snug;
   }
   .isian {
-    @apply w-full min-h-[44px] px-3.5 py-2 rounded-xl border border-krem-gelap bg-white
-      text-sm text-kayu placeholder:text-kayu-sedang/60 transition-colors
-      focus:outline-none focus:border-bata focus:ring-2 focus:ring-bata/15
+    @apply w-full min-h-[48px] px-4 py-2 rounded-xl border-[1.5px] border-krem-gelap bg-white
+      text-base text-kayu placeholder:text-kayu-sedang/55 transition-colors
+      hover:border-kayu-sedang/35
+      focus:outline-none focus:border-bata focus:ring-4 focus:ring-bata/12
       disabled:bg-krem-tua disabled:text-kayu-sedang;
   }
   .isian-galat {
     @apply border-bahaya focus:border-bahaya focus:ring-bahaya/15;
   }
   .pesan-galat {
-    @apply text-xs font-medium text-bahaya mt-1.5;
+    @apply text-[13px] font-medium text-bahaya mt-1.5;
   }
 
   /* Lencana status */
   .lencana {
-    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium border whitespace-nowrap;
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[13px] font-semibold border whitespace-nowrap;
   }
 
   /* Judul */
@@ -161,10 +202,10 @@ body {
     @apply text-2xl sm:text-3xl font-bold text-kayu tracking-tight;
   }
   .judul-bagian {
-    @apply text-lg font-semibold text-kayu;
+    @apply text-lg sm:text-xl font-bold text-kayu;
   }
   .teks-redup {
-    @apply text-sm text-kayu-sedang;
+    @apply text-[15px] text-kayu-sedang;
   }
 
   /* Pemberitahuan dalam halaman */
@@ -180,10 +221,10 @@ body {
 
   /* Tabel data admin */
   .tabel {
-    @apply w-full text-sm;
+    @apply w-full text-[15px];
   }
   .tabel th {
-    @apply text-left text-xs font-medium text-kayu-sedang px-4 py-3 bg-krem-tua/60 border-b border-krem-gelap whitespace-nowrap;
+    @apply text-left text-[13px] font-semibold text-kayu-sedang px-4 py-3 bg-krem-tua/60 border-b border-krem-gelap whitespace-nowrap;
   }
   .tabel td {
     @apply px-4 py-3 border-b border-krem-gelap/70 align-middle;
@@ -197,11 +238,35 @@ body {
 
   /* Pil filter */
   .pil {
-    @apply inline-flex items-center gap-1.5 min-h-[40px] px-4 rounded-full text-sm font-medium border
-      border-krem-gelap bg-white text-kayu-sedang hover:text-kayu hover:border-kayu-sedang/30 transition-colors whitespace-nowrap;
+    @apply inline-flex items-center gap-1.5 min-h-[42px] px-4 rounded-full text-[15px] font-medium border
+      border-krem-gelap bg-white text-kayu-sedang hover:text-kayu hover:border-kayu-sedang/30
+      transition-[background-color,color,border-color,transform] active:scale-95 whitespace-nowrap;
   }
   .pil-aktif {
     @apply bg-kayu text-white border-kayu hover:text-white hover:border-kayu;
+  }
+
+  /* Lencana angka kecil (keranjang, notifikasi) */
+  .lencana-angka {
+    @apply absolute -top-1 -right-1 min-w-[20px] h-5 px-1.5 rounded-full bg-bata text-white
+      text-[12px] font-bold leading-5 text-center ring-2 ring-white tabular-nums;
+  }
+
+  /* Latar hangat untuk hero & panel ilustrasi */
+  .permukaan-hangat {
+    background:
+      radial-gradient(120% 90% at 100% 0%, rgba(246, 196, 83, 0.28) 0%, transparent 55%),
+      radial-gradient(90% 80% at 0% 100%, rgba(232, 103, 58, 0.14) 0%, transparent 60%),
+      var(--color-krem);
+  }
+
+  /* Kerangka pemuatan (skeleton) */
+  .kerangka {
+    @apply rounded-xl bg-krem-tua;
+    background-image: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.75) 50%, transparent 100%);
+    background-size: 200% 100%;
+    background-repeat: no-repeat;
+    animation: kilau 1.4s ease-in-out infinite;
   }
 }
 
@@ -225,25 +290,184 @@ body {
   display: none;
 }
 
-/* Animasi masuk halus, satu jenis saja agar tidak ramai */
+/* Ruang aman bawah untuk bar navigasi & bar aksi yang menempel di ponsel */
+.aman-bawah {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+/* ===================== Gerak ===================== */
+/*
+ * Prinsip: gerak menjelaskan, bukan menghias. Setiap animasi menjawab satu
+ * pertanyaan pengguna — "dari mana ini muncul?", "apakah tombolku tertekan?",
+ * "apakah keranjangku bertambah?". Durasi 150–450 ms, kurva pegas untuk
+ * umpan balik sentuhan, kurva halus untuk konten yang masuk.
+ */
+
 @keyframes masuk-naik {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(14px); }
   to { opacity: 1; transform: translateY(0); }
 }
+@keyframes masuk-skala {
+  from { opacity: 0; transform: scale(0.94); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes kilau {
+  from { background-position: 150% 0; }
+  to { background-position: -50% 0; }
+}
+@keyframes lompat {
+  0%, 100% { transform: scale(1); }
+  30% { transform: scale(1.28); }
+  55% { transform: scale(0.9); }
+  75% { transform: scale(1.08); }
+}
+@keyframes goyang {
+  0%, 100% { transform: rotate(0); }
+  20% { transform: rotate(-12deg); }
+  40% { transform: rotate(10deg); }
+  60% { transform: rotate(-6deg); }
+  80% { transform: rotate(3deg); }
+}
+@keyframes ayun {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+@keyframes uap {
+  0% { opacity: 0; transform: translateY(6px) scaleY(0.8); }
+  25% { opacity: 0.9; }
+  100% { opacity: 0; transform: translateY(-22px) scaleY(1.15); }
+}
+@keyframes denyut {
+  0% { box-shadow: 0 0 0 0 rgba(194, 70, 28, 0.45); }
+  70% { box-shadow: 0 0 0 12px rgba(194, 70, 28, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(194, 70, 28, 0); }
+}
+@keyframes berputar-pelan {
+  to { transform: rotate(360deg); }
+}
+@keyframes konfeti {
+  0% { opacity: 1; transform: translate3d(0, -10px, 0) rotate(0); }
+  100% { opacity: 0; transform: translate3d(var(--x, 0px), 180px, 0) rotate(var(--r, 540deg)); }
+}
+@keyframes geser-masuk-bawah {
+  from { opacity: 0; transform: translateY(110%); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes tumbuh {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+@keyframes kedip-lembut {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
 .anim-masuk {
-  animation: masuk-naik 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: masuk-naik 0.5s var(--ease-halus) both;
+  animation-delay: var(--tunda, 0ms);
 }
 .anim-masuk-skala {
-  animation: masuk-naik 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: masuk-skala 0.35s var(--ease-pegas) both;
+  animation-delay: var(--tunda, 0ms);
+}
+.anim-tumbuh {
+  transform-origin: bottom;
+  animation: tumbuh 0.6s var(--ease-halus) both;
+  animation-delay: var(--tunda, 0ms);
+}
+.anim-lompat {
+  animation: lompat 0.55s var(--ease-pegas);
+}
+.anim-goyang {
+  animation: goyang 0.6s ease-in-out;
+  transform-origin: 50% 20%;
+}
+.anim-ayun {
+  animation: ayun 4.5s ease-in-out infinite;
+}
+.anim-ayun-lambat {
+  animation: ayun 6s ease-in-out infinite;
+  animation-delay: -2s;
+}
+.anim-denyut {
+  animation: denyut 2s ease-out infinite;
+}
+.anim-putar-pelan {
+  animation: berputar-pelan 22s linear infinite;
+}
+.anim-kedip {
+  animation: kedip-lembut 1.6s ease-in-out infinite;
+}
+
+/* Di dalam SVG, titik pusat transformasi bawaan adalah pojok kiri-atas
+   kanvas — elemen yang "membesar" akan tampak terbang dari pojok. */
+svg .anim-masuk-skala,
+svg .anim-kedip,
+svg .anim-ayun,
+svg .anim-ayun-lambat {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* Uap di ilustrasi: tiap garis diberi tunda berbeda lewat --tunda */
+.uap {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: uap 2.6s ease-out infinite;
+  animation-delay: var(--tunda, 0s);
+}
+
+/* Muncul saat digulir, sekali jalan (lihat PengamatMuncul). Konten hanya
+   disembunyikan bila skrip sudah memastikan pengamatnya siap
+   (html[data-gerak]) — tanpa JavaScript, saat dicetak, atau saat gerak
+   dikurangi, semuanya langsung terlihat. */
+html[data-gerak] .anim-muncul {
+  transition: opacity 0.6s var(--ease-halus), transform 0.6s var(--ease-halus);
+  transition-delay: var(--tunda, 0ms);
+}
+html[data-gerak] .anim-muncul:not([data-terlihat]) {
+  opacity: 0;
+  transform: translateY(18px);
+}
+@media print {
+  html[data-gerak] .anim-muncul:not([data-terlihat]) {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Perpindahan halaman (React <ViewTransition>, lihat (toko)/template.tsx) */
+::view-transition-old(.halaman) {
+  animation: 140ms ease-in both pudar-keluar;
+}
+::view-transition-new(.halaman) {
+  animation: 320ms var(--ease-halus) 60ms both masuk-naik;
+}
+@keyframes pudar-keluar {
+  to { opacity: 0; }
+}
+/* Foto menu "terbang" dari kartu ke halaman detail */
+::view-transition-group(.foto-menu) {
+  animation-duration: 380ms;
+  animation-timing-function: var(--ease-halus);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .anim-masuk,
-  .anim-masuk-skala {
-    animation: none !important;
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
-  html {
-    scroll-behavior: auto;
+  .uap {
+    display: none;
+  }
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
   }
 }
 

@@ -9,7 +9,7 @@ interface TombolKeluarProps {
 export function TombolKeluar({ label = "Keluar", className = "" }: TombolKeluarProps) {
   return (
     <form action={aksiKeluar} className="inline-block">
-      <button type="submit" className={`tombol-hantu ${className}`}>
+      <button type="submit" aria-label={label ? undefined : "Keluar"} className={`tombol-hantu ${className}`}>
         <IkonKeluar className="w-4 h-4" />
         {label}
       </button>

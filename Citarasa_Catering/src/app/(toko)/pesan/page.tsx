@@ -6,6 +6,7 @@ import { ambilMenuUntukPemesanan } from "@/lib/menu";
 import { kunciHari, linkWhatsapp } from "@/lib/format";
 import { catatPeristiwa } from "@/lib/analitik";
 import { FormPemesanan } from "@/components/toko/FormPemesanan";
+import { LangkahPesan } from "@/components/toko/LangkahPesan";
 
 export const metadata: Metadata = {
   title: "Buat pesanan",
@@ -36,7 +37,11 @@ export default async function HalamanPesan({ searchParams }: HalamanPesanProps) 
 
   await catatPeristiwa("FORM_PESAN_DIBUKA");
 
-  const pengguna = sesi ? await db.pengguna.findUnique({ where: { id: sesi.id } }) : null;
+  // Hanya bidang yang dipakai formulir: objek Pengguna utuh memuat hash sandi,
+  // dan apa pun yang dioper ke komponen klien ikut terkirim ke peramban.
+  const pengguna = sesi
+    ? await db.pengguna.findUnique({ where: { id: sesi.id }, select: { nama: true, telepon: true, alamat: true } })
+    : null;
 
   if (daftarMenu.length === 0) {
     return (
@@ -61,9 +66,10 @@ export default async function HalamanPesan({ searchParams }: HalamanPesanProps) 
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8 sm:py-12">
-      <h1 className="font-tampil text-3xl sm:text-4xl font-bold text-kayu">Buat pesanan</h1>
-      <p className="teks-redup mt-1.5 mb-8">Isi tiga langkah di bawah. Total selalu terlihat di ringkasan.</p>
+    <div className="mx-auto max-w-6xl px-4 sm:px-6 pt-5 pb-8 sm:pt-10 sm:pb-12">
+      <LangkahPesan aktif={2} />
+      <h1 className="mt-5 font-tampil text-[1.75rem] sm:text-4xl font-bold text-kayu">Checkout</h1>
+      <p className="teks-redup mt-1 mb-6">Lengkapi empat bagian di bawah. Total selalu terlihat di ringkasan.</p>
 
       <FormPemesanan
         daftarMenu={daftarMenu}

@@ -40,7 +40,7 @@ export function FormLacak({ pesanAwal }: FormLacakProps) {
           maxLength={32}
           value={kode}
           onChange={(e) => setKode(e.target.value.toUpperCase())}
-          placeholder="CR-261001-XXXXXX"
+          placeholder="Mis. CR-261001-AB12CD"
           aria-invalid={state?.kesalahan?.kode ? true : undefined}
           className={`isian font-mono tracking-wide ${state?.kesalahan?.kode ? "isian-galat" : ""}`}
         />
@@ -49,7 +49,7 @@ export function FormLacak({ pesanAwal }: FormLacakProps) {
 
       <div>
         <label htmlFor="telepon" className="label">
-          Nomor WhatsApp saat memesan
+          Nomor WhatsApp yang dipakai saat memesan
         </label>
         <input
           type="tel"
@@ -61,15 +61,15 @@ export function FormLacak({ pesanAwal }: FormLacakProps) {
           maxLength={20}
           value={telepon}
           onChange={(e) => setTelepon(e.target.value)}
-          placeholder="08xxxxxxxxxx"
+          placeholder="0812 3456 7890"
           aria-invalid={state?.kesalahan?.telepon ? true : undefined}
           className={`isian ${state?.kesalahan?.telepon ? "isian-galat" : ""}`}
         />
         {state?.kesalahan?.telepon && <p className="pesan-galat">{state.kesalahan.telepon[0]}</p>}
       </div>
 
-      <button type="submit" disabled={isPending} className="tombol-utama w-full">
-        {isPending ? "Mencari..." : "Lihat status"}
+      <button type="submit" disabled={isPending} className="tombol-utama tombol-besar w-full">
+        {isPending ? "Mencari…" : "Lihat status pesanan"}
       </button>
     </form>
   );

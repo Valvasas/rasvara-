@@ -261,3 +261,28 @@ export function amankanCsv(nilai: string | null | undefined): string {
   }
   return `"${teks.replace(/"/g, '""')}"`;
 }
+
+/**
+ * Label "terjual" ala marketplace. Angka kecil tidak ditampilkan (null) —
+ * "2 terjual" justru terdengar sepi dan menurunkan kepercayaan. Angka besar
+ * dibulatkan ke bawah supaya tidak pernah melebih-lebihkan.
+ */
+export function labelTerjual(jumlah: number): string | null {
+  if (!Number.isFinite(jumlah) || jumlah < 10) return null;
+  if (jumlah < 100) return `${Math.floor(jumlah / 10) * 10}+ terjual`;
+  if (jumlah < 1000) return `${Math.floor(jumlah / 100) * 100}+ terjual`;
+  if (jumlah < 1_000_000) {
+    const rb = Math.floor(jumlah / 100) / 10;
+    return `${String(rb).replace(".", ",")}rb+ terjual`;
+  }
+  return "1jt+ terjual";
+}
+
+/** Sapaan sesuai jam WIB untuk dashboard: "Selamat pagi". */
+export function sapaanWaktu(): string {
+  const menit = menitSekarangWib();
+  if (menit < 11 * 60) return "Selamat pagi";
+  if (menit < 15 * 60) return "Selamat siang";
+  if (menit < 18 * 60 + 30) return "Selamat sore";
+  return "Selamat malam";
+}

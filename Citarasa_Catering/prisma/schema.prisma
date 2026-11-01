@@ -180,6 +180,13 @@ model Pesanan {
   @@index([tanggalAcara])
   @@index([teleponPemesan])
   @@index([dibuatPada])
+  /// "Pesanan saya" kini mencari lewat akun, bukan nomor HP. Postgres tidak
+  /// membuat indeks foreign key sendiri, jadi tanpa ini setiap pembukaan
+  /// riwayat memindai seluruh tabel pesanan.
+  @@index([penggunaId, dibuatPada])
+  /// Antrean "cek pembayaran" dihitung di dashboard & pemantau pesanan baru
+  /// setiap 30 detik per tab dapur yang terbuka.
+  @@index([statusBayar, status])
   /// Route `/unggahan/[nama]` mencari pemilik sah sebuah bukti transfer lewat
   /// kolom ini pada setiap permintaan gambar; tanpa indeks, tiap kartu pesanan
   /// yang menampilkan bukti memicu pemindaian seluruh tabel pesanan.
@@ -204,6 +211,9 @@ model ItemPesanan {
   subtotal    Int
 
   @@index([pesananId])
+  /// Cek kuota harian (di dalam transaksi pembuatan pesanan), hitungan
+  /// "terjual", dan menu terlaris semuanya mengelompokkan per menu.
+  @@index([menuId])
 }
 
 model RiwayatStatus {

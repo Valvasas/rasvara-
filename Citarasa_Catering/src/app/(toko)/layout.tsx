@@ -1,4 +1,4 @@
-import { KopToko } from "@/components/toko/KopToko";
+import { KopToko, NavBawahToko } from "@/components/toko/KopToko";
 import { KakiToko } from "@/components/toko/KakiToko";
 import { catatKunjungan } from "@/lib/analitik";
 
@@ -16,7 +16,7 @@ export default async function LayoutToko({
       <KopToko />
       <main id="isi" className="flex-1">{children}</main>
       <KakiToko />
+      <NavBawahToko />
     </div>
   );
 }
-

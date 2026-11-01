@@ -1,21 +1,23 @@
 import Link from "next/link";
 import { Wordmark } from "@/components/Wordmark";
+import { Ilustrasi404 } from "@/components/ilustrasi/Ilustrasi";
 
 export default function TidakDitemukan() {
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-16 text-center">
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12 text-center permukaan-hangat">
       <Wordmark href="/" />
-      <p className="mt-10 text-sm font-medium text-bata">404</p>
-      <h1 className="font-tampil mt-2 text-3xl font-bold text-kayu">Halaman tidak ditemukan</h1>
+      <Ilustrasi404 className="mt-6 w-64 sm:w-72" />
+      <p className="text-sm font-bold text-bata tracking-widest">404</p>
+      <h1 className="font-tampil mt-2 text-3xl font-bold text-kayu">Waduh, halamannya tumpah!</h1>
       <p className="teks-redup mt-3 max-w-sm">
-        Alamatnya mungkin salah ketik, atau menunya sudah tidak tersedia.
+        Alamatnya mungkin salah ketik, atau menunya sudah tidak tersedia. Yuk balik ke menu.
       </p>
-      <div className="mt-8 flex flex-wrap justify-center gap-3">
-        <Link href="/menu" className="tombol-utama">
+      <div className="mt-8 flex flex-col sm:flex-row justify-center gap-3 w-full max-w-xs sm:max-w-none">
+        <Link href="/menu" className="tombol-utama tombol-besar">
           Lihat menu
         </Link>
-        <Link href="/" className="tombol-kedua">
-          Beranda
+        <Link href="/" className="tombol-kedua tombol-besar">
+          Ke beranda
         </Link>
       </div>
     </div>

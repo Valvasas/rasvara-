@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo, Domine } from "next/font/google";
 import { alamatSitus } from "@/lib/situs";
+import { Pemberitahuan } from "@/components/Pemberitahuan";
 import "./globals.css";
 
 const archivo = Archivo({
@@ -64,8 +65,20 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#FBF7EE",
+  themeColor: "#FFFCF7",
+  // Pengguna tetap boleh mencubit-perbesar: banyak orang tua mengandalkannya.
+  maximumScale: 5,
 };
+
+/**
+ * Menerapkan pilihan "Teks besar" (dan menyalakan animasi muncul-saat-digulir
+ * bila peramban mendukung & pengguna tidak meminta gerak dikurangi) sebelum
+ * halaman pertama kali dilukis.
+ * Kalau ditunggu sampai React berjalan, pengguna melihat teks kecil sekejap
+ * lalu melompat membesar di setiap pembukaan halaman. Dibungkus try karena
+ * localStorage bisa diblokir (mode privat, pengaturan peramban).
+ */
+const SKRIP_AWAL = `try{var h=document.documentElement;if(localStorage.getItem("citarasa:teks")==="besar")h.dataset.teks="besar";if("IntersectionObserver"in window&&!matchMedia("(prefers-reduced-motion: reduce)").matches)h.dataset.gerak="1"}catch(e){}`;
 
 export default function RootLayout({
   children,
@@ -73,9 +86,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="id" className={`${archivo.variable} ${domine.variable}`}>
+    // suppressHydrationWarning: atribut data-teks sengaja dipasang skrip di
+    // bawah sebelum React mengambil alih, jadi HTML server dan klien memang beda.
+    <html lang="id" className={`${archivo.variable} ${domine.variable}`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: SKRIP_AWAL }} />
+      </head>
       <body className="bg-krem text-kayu min-h-screen flex flex-col selection:bg-bata selection:text-white">
+        <a
+          href="#isi"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] tombol-utama"
+        >
+          Lompat ke isi halaman
+        </a>
         {children}
+        <Pemberitahuan />
       </body>
     </html>
   );

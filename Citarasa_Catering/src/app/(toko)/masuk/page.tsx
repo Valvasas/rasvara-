@@ -1,16 +1,36 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { FormMasuk } from "@/components/FormMasuk";
+import { KerangkaAuth } from "@/components/KerangkaAuth";
+import { bacaSesi } from "@/lib/auth";
+import { ambilPengaturan } from "@/lib/pengaturan";
+import { linkWhatsapp } from "@/lib/format";
+import { tujuanAman } from "@/lib/kepemilikan";
 
 export const metadata: Metadata = { title: "Masuk", robots: { index: false } };
 
-export default function HalamanMasuk() {
+interface HalamanMasukProps {
+  searchParams: Promise<{ ke?: string }>;
+}
+
+export default async function HalamanMasuk({ searchParams }: HalamanMasukProps) {
+  const [{ ke: keMentah }, sesi, pengaturan] = await Promise.all([searchParams, bacaSesi(), ambilPengaturan()]);
+  // Disaring sejak di sini juga (bukan hanya di server action) supaya tautan
+  // tab Masuk/Daftar tidak ikut membawa tujuan berbahaya.
+  const ke = keMentah ? tujuanAman(keMentah, "") || undefined : undefined;
+
+  // Sudah masuk: tidak ada gunanya melihat formulir lagi.
+  if (sesi) {
+    redirect(ke ?? (sesi.peran === "PELANGGAN" ? "/riwayat" : "/admin"));
+  }
+
+  const waLupaSandi = pengaturan.whatsapp
+    ? linkWhatsapp(pengaturan.whatsapp, `Halo ${pengaturan.namaUsaha}, saya lupa kata sandi akun saya. Nomor saya: `)
+    : null;
+
   return (
-    <div className="mx-auto max-w-md px-4 py-12 sm:py-16">
-      <h1 className="font-tampil text-3xl font-bold text-kayu">Masuk</h1>
-      <p className="teks-redup mt-2">Lihat riwayat pesanan atau buka dashboard dapur.</p>
-      <div className="kartu kartu-isi mt-6">
-        <FormMasuk />
-      </div>
-    </div>
+    <KerangkaAuth mode="masuk" ke={ke}>
+      <FormMasuk ke={ke} waLupaSandi={waLupaSandi} />
+    </KerangkaAuth>
   );
 }

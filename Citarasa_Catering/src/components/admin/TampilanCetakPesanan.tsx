@@ -31,7 +31,7 @@ export function TampilanCetakPesanan({
     <div className="min-h-screen py-6 px-4 print:bg-white print:p-0 print:m-0">
       {/* Kontrol di layar, disembunyikan saat dicetak */}
       <div className="max-w-xl mx-auto mb-6 flex flex-wrap items-center justify-between gap-3 print:hidden">
-        <Link href="/admin" className="tombol-hantu -ml-3">
+        <Link href="/admin/papan" className="tombol-hantu -ml-3">
           &larr; Papan pesanan
         </Link>
         <div className="flex items-center gap-2">
