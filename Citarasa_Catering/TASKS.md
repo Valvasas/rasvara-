@@ -9,7 +9,8 @@ Cara pakai: sebelum mulai kerja, cek dulu apakah tugas terkait sudah ada di sini
 Kode, database Supabase `rasvara-`, dan proyek Vercel sudah disiapkan (lihat Selesai, 2026-11-01). Sisa langkah yang **hanya bisa dilakukan pemilik** — rinciannya di [SIAP_ONLINE.md](SIAP_ONLINE.md):
 
 - [ ] **Isi `SUPABASE_SERVICE_ROLE_KEY` di Vercel** — tanpa ini unggah foto menu & bukti transfer ditolak. Cek `/api/health` → `konfigurasi.penyimpanan: "supabase"`.
-- [ ] **Pastikan `DATABASE_URL` di Vercel = Transaction pooler (port 6543)** — koneksi langsung Supabase hanya IPv6 dan tidak terjangkau dari Vercel.
+- [ ] **Perbaiki sandi di `DATABASE_URL` Vercel** — bentuknya sudah benar (`/api/health` → `koneksiDatabase: "supabase-pooler-transaksi"`), tetapi Supabase menolak sandinya (`password authentication failed`). Ganti `[YOUR-PASSWORD]` termasuk kurung sikunya, atau reset sandi database di Supabase.
+- [ ] *(Opsional, kapan saja)* Hapus kolom sisa `Menu.fotoUrl` di Supabase: `ALTER TABLE "Menu" DROP COLUMN "fotoUrl";` — kosong & tidak dipakai; ditunda karena perintah destruktif butuh persetujuan pemilik.
 - [ ] **Ganti sandi sementara pemilik** setelah login pertama, lalu lengkapi profil usaha & rekening.
 - [ ] **Putuskan backup** — paket gratis Supabase tanpa backup harian.
 - [ ] **Paket Vercel** — Hobby hanya untuk non-komersial; toko yang menerima pembayaran wajib Pro.

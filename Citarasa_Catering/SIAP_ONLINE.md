@@ -17,7 +17,7 @@ Legenda: 🔴 **Wajib** (tanpa ini data hilang / fitur rusak / tidak aman) ·
 | Penyimpanan foto & bukti transfer | 🔴 Tinggal 1 kunci | Kode & bucket siap; isi `SUPABASE_SERVICE_ROLE_KEY` (bagian 3) |
 | Pembatas laju (rate limit) | ✅ Bersama di Postgres | Tabel `BatasLaju`, berlaku lintas instans serverless |
 | Proyek Vercel `rasvara` | ✅ Dikonfigurasi | Root directory, region `hnd1`, proteksi preview (bagian 5) |
-| `DATABASE_URL` di Vercel | 🔴 Periksa sekali | Wajib string **pooler** (bagian 2) |
+| `DATABASE_URL` di Vercel | 🔴 Sandi salah | Bentuk URL sudah benar (pooler transaksi), tetapi Supabase menolak sandinya (bagian 2) |
 | Isi profil usaha (WA, alamat, rekening) | 🔴 Dilakukan pemilik | Bagian 6 |
 | Backup | 🔴 Putuskan | Paket gratis Supabase **tidak** punya backup otomatis (bagian 9) |
 
@@ -34,8 +34,13 @@ hanya menampilkan label status, tidak pernah nilai rahasia.
 
 Sudah dikerjakan di proyek `rasvara-` (ref `ldqzazvhvlmbgvnigqcb`, region Tokyo):
 
-- Semua migrasi Prisma ter-apply dan tercatat di `_prisma_migrations` (jadi
-  `npm run db:deploy` berikutnya hanya menjalankan migrasi baru).
+- Semua 9 migrasi Prisma ter-apply dan tercatat di `_prisma_migrations` dengan checksum
+  yang sama persis dengan berkasnya (jadi `npm run db:deploy` berikutnya hanya menjalankan
+  migrasi baru). Skema diverifikasi identik dengan hasil migrasi asli (sidik md5 atas
+  222 kolom/indeks/constraint/enum).
+- Satu sisa yang disengaja: kolom lama `Menu.fotoUrl` (kosong, nullable, tidak dipakai
+  aplikasi) belum dihapus karena perintah `DROP COLUMN` menunggu persetujuan pemilik.
+  Aman dihapus kapan saja lewat *SQL Editor*: `ALTER TABLE "Menu" DROP COLUMN "fotoUrl";`
 - **RLS aktif di semua tabel** tanpa policy, dan hak `anon`/`authenticated` dicabut —
   termasuk untuk tabel yang dibuat migrasi mendatang (`ALTER DEFAULT PRIVILEGES`).
   Aplikasi tidak memakai Data API Supabase; ia terhubung sebagai pemilik tabel.
@@ -74,6 +79,12 @@ Cara memeriksa isian `DATABASE_URL` tanpa membukanya: `/api/health` →
   belum di-encode (`#` → `%23`). Kutip & spasi di awal/akhir sudah dibuang otomatis.
 - `supabase-langsung` = masih koneksi langsung (IPv6) — ganti ke pooler transaksi.
 - `supabase-pooler-sesi` = port 5432 — ganti ke **6543**.
+
+Bila labelnya sudah `supabase-pooler-transaksi` tetapi `database.status` masih
+`terputus`, cek log Vercel. `password authentication failed` = **sandi salah**: templat
+Supabase menampilkan `[YOUR-PASSWORD]` — ganti seluruhnya **termasuk kurung siku**.
+Lupa sandi? Supabase → *Project Settings → Database → Reset database password*, lalu
+tempel ulang (aplikasi tidak memakai sandi ini di tempat lain).
 
 Kenapa **wajib pooler**: koneksi langsung Supabase (`db.<ref>.supabase.co:5432`) hanya
 IPv6, sedangkan fungsi Vercel keluar lewat IPv4 — hasilnya database "terputus". Pooler
