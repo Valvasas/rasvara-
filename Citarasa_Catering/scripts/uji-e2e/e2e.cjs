@@ -26,7 +26,7 @@ async function konteks(browser, nama) {
   const ctx = await browser.newContext({ viewport: { width: 1366, height: 900 }, locale: 'id-ID' });
   const page = await ctx.newPage();
   page.on('pageerror', (e) => masalah.push(`[${nama}] pageerror: ${e.message}`));
-  page.on('console', (m) => { if (m.type() === 'error' && !/favicon|Failed to load resource: the server responded with a status of 404/.test(m.text())) masalah.push(`[${nama}] console: ${m.text().slice(0, 200)}`); });
+  page.on('console', (m) => { if (m.type() === 'error' && !/favicon|Failed to load resource: the server responded with a status of (404|401)/.test(m.text())) masalah.push(`[${nama}] console: ${m.text().slice(0, 200)}`); });
   page.on('response', (r) => { if (r.status() >= 500) masalah.push(`[${nama}] HTTP ${r.status()} ${r.url()}`); });
   return { ctx, page };
 }
@@ -55,15 +55,20 @@ async function masuk(page, telp, sandi) {
   ok('Pemilik masuk → /admin', a.url().endsWith('/admin'));
 
   let r = await buka(a, '/admin');
+  ok('Beranda dapur: ubin "Yang perlu dikerjakan"', r.status === 200 && (await a.getByText('Yang perlu dikerjakan').count()) > 0, `${r.ms} ms`);
+  r = await buka(a, '/admin/produksi');
+  ok('Rekap masak hari ini', r.status === 200 && (await a.getByText('Yang harus dimasak').count()) > 0, `${r.ms} ms`);
+  ok('Denyut dapur (API) hanya untuk dapur', (await a.request.get(BASE + '/api/admin/denyut')).status() === 200);
+  r = await buka(a, '/admin/papan');
   ok('Papan pesanan dimuat (242 aktif)', r.status === 200 && (await a.getByText(/242 pesanan aktif/).count()) > 0, `${r.ms} ms`);
   const kartuPapan = await a.locator('article').count();
   ok('Papan dibatasi ≤ 80 kartu walau 242 aktif', kartuPapan <= 80, `${kartuPapan} kartu`);
   ok('Tautan "Lihat semua" muncul untuk kolom penuh', (await a.getByText(/Lihat semua \d+ pesanan/).count()) > 0);
   ok('Banner cek pembayaran tampil', (await a.getByText(/pembayaran\s*menunggu dicek/).count()) > 0);
 
-  r = await buka(a, '/admin?rentang=hari-ini');
+  r = await buka(a, '/admin/papan?rentang=hari-ini');
   ok('Saring "Hari ini"', r.status === 200, `${r.ms} ms`);
-  r = await buka(a, '/admin?q=Pemesan%20Uji%2012');
+  r = await buka(a, '/admin/papan?q=Pemesan%20Uji%2012');
   ok('Cari di papan', r.status === 200 && (await a.locator('article').count()) > 0);
 
   // Arsip
@@ -138,8 +143,12 @@ async function masuk(page, telp, sandi) {
   ok('Saklar tampilkan lagi', (await q(`select aktif from "Menu" where slug='nasi-box-uji-e2e'`))[0].aktif === true);
 
   // Kas
-  r = await buka(a, '/admin/keuangan');
+  // Bulan dengan catatan terbanyak, bukan bulan berjalan: di awal bulan buku
+  // kas bulan ini memang baru berisi beberapa baris, dan tes jadi bergantung tanggal.
+  const bulanRamai = (await q(`select to_char(tanggal at time zone 'UTC' at time zone 'Asia/Jakarta','YYYY-MM') b from "CatatanKas" group by 1 order by count(*) desc limit 1`))[0].b;
+  r = await buka(a, `/admin/keuangan?bulan=${bulanRamai}`);
   ok('Buku kas: paginasi 30 baris', r.status === 200 && (await a.locator('tbody tr').count()) === 30, `${r.ms} ms`);
+  await buka(a, '/admin/keuangan');
   await a.fill('#kas-jumlah', '123456');
   await a.fill('#kas-keterangan', 'Catatan uji hapus');
   await a.getByRole('button', { name: 'Simpan catatan' }).click();
@@ -174,7 +183,7 @@ async function masuk(page, telp, sandi) {
   await jumlah.fill('150');
   await jumlah.press('Enter');
   ok('Input jumlah langsung 150', (await c.getByText(/150 box × Rp29\.000/).count()) > 0);
-  ok('Tombol kirim terkunci + alasan', (await c.getByRole('button', { name: 'Kirim pesanan' }).isDisabled()) && (await c.getByText('Tentukan tanggal acara.').count()) > 0);
+  ok('Tombol kirim terkunci + alasan', (await c.getByRole('button', { name: 'Buat pesanan' }).isDisabled()) && (await c.getByText('Tentukan tanggal acara.').count()) > 0);
   await c.fill('#tanggalAcara', libur);
   ok('Tanggal libur ditolak di formulir', (await c.getByText('Dapur tutup di tanggal ini.').count()) > 0);
   await c.fill('#tanggalAcara', tglWib(5));
@@ -185,7 +194,7 @@ async function masuk(page, telp, sandi) {
   await c.getByRole('button', { name: 'Pakai' }).click();
   await c.waitForTimeout(1500);
   ok('Voucher terpakai di ringkasan', (await c.getByText(/HEMAT10 terpakai|Voucher HEMAT10/).count()) > 0);
-  await Promise.all([c.waitForURL(/\/pesanan\//, { timeout: 20000 }), c.getByRole('button', { name: 'Kirim pesanan' }).click()]);
+  await Promise.all([c.waitForURL(/\/pesanan\//, { timeout: 20000 }), c.getByRole('button', { name: 'Buat pesanan' }).click()]);
   const kode = c.url().split('/pesanan/')[1].split('?')[0];
   const ps = (await q(`select total, diskon, subtotal from "Pesanan" where kode=$1`, [kode]))[0];
   ok('Pesanan dibuat, total dihitung server', ps && ps.subtotal === 150 * 29000 && ps.diskon > 0 && ps.total === ps.subtotal - ps.diskon, `${kode} total ${ps && ps.total}`);
@@ -198,11 +207,11 @@ async function masuk(page, telp, sandi) {
   await buka(c, '/lacak');
   await c.fill('#kode', kode);
   await c.fill('#telepon', '0899999999');
-  await c.getByRole('button', { name: 'Lihat status' }).click();
+  await c.getByRole('button', { name: 'Lihat status pesanan' }).click();
   await c.waitForTimeout(1200);
   ok('Lacak nomor salah → galat, isian tetap', (await c.locator('.kotak-galat').count()) > 0 && (await c.inputValue('#kode')) === kode);
   await c.fill('#telepon', '081377788899');
-  await Promise.all([c.waitForURL(/\/pesanan\//), c.getByRole('button', { name: 'Lihat status' }).click()]);
+  await Promise.all([c.waitForURL(/\/pesanan\//), c.getByRole('button', { name: 'Lihat status pesanan' }).click()]);
   ok('Lacak benar → nota', c.url().includes(kode));
 
   await buka(c, '/daftar');
@@ -214,8 +223,13 @@ async function masuk(page, telp, sandi) {
   ok('Daftar sandi < 8 ditolak, nama tetap', (await c.getByText('Kata sandi minimal 8 karakter').count()) > 0 && (await c.inputValue('#nama')) === 'Rina Uji');
   await c.fill('#sandi', 'rahasia123');
   await Promise.all([c.waitForURL(/riwayat/), c.getByRole('button', { name: 'Buat akun' }).click()]);
-  ok('Riwayat menampilkan pesanan dari nomor yang sama', (await c.getByText(kode).count()) > 0);
-  await c.getByText('Keamanan akun').click();
+  // Ditunggu, bukan dihitung seketika: loading.tsx membuat URL berpindah lebih
+  // dulu sambil menampilkan kerangka, isi halaman menyusul.
+  const tampil = await c.getByText(kode).first().waitFor({ timeout: 15000 }).then(() => true, () => false);
+  ok('Riwayat: pesanan tamu dari perangkat ini ikut tersambung ke akun baru', tampil);
+  ok('Keranjang kosong setelah pesanan dibuat', await c.evaluate(() => !localStorage.getItem('citarasa:keranjang:v1')));
+  await buka(c, '/akun');
+  await c.locator('summary', { hasText: 'Ganti kata sandi' }).click();
   await c.fill('#sandiLama', 'salahsandi');
   await c.fill('#sandiBaru', 'sandibaru123');
   await c.fill('#ulangiSandi', 'sandibaru123');
@@ -229,8 +243,27 @@ async function masuk(page, telp, sandi) {
   await c.waitForTimeout(1500);
   ok('Ganti sandi pelanggan berhasil', (await c.getByText('Kata sandi berhasil diganti.').count()) > 0);
 
+  // Nomor HP tidak diverifikasi saat daftar. Penyerang yang tahu nomor
+  // pemesan tamu (dari grup WA, undangan) mendaftar dengan nomor itu di
+  // perangkatnya sendiri — ia tidak boleh ikut melihat pesanan korban.
+  const korban = (await q(`select kode, "teleponPemesan" t from "Pesanan" where "penggunaId" is null and "teleponPemesan" not in (select telepon from "Pengguna") order by "dibuatPada" desc limit 1`))[0];
+  const P = await konteks(browser, 'penyusup');
+  await buka(P.page, '/daftar');
+  await P.page.fill('#nama', 'Penyusup');
+  await P.page.fill('#telepon', '0' + korban.t.slice(2));
+  await P.page.fill('#sandi', 'penyusup123');
+  await Promise.all([P.page.waitForURL(/riwayat/, { timeout: 15000 }), P.page.getByRole('button', { name: 'Buat akun' }).click()]);
+  // Tunggu daftar benar-benar termuat; menghitung saat kerangka masih tampil = lulus palsu.
+  await P.page.getByRole('navigation', { name: 'Saring status pesanan' }).waitFor({ timeout: 15000 });
+  await P.page.getByText(/Belum ada pesanan|Total/).first().waitFor({ timeout: 15000 });
+  ok('Penyusup bernomor sama: riwayat tidak memuat pesanan korban', (await P.page.getByText(korban.kode).count()) === 0);
+  await buka(P.page, `/pesanan/${korban.kode}`);
+  ok('Penyusup bernomor sama: detail pesanan korban ditolak', P.page.url().includes('/lacak'));
+  ok('Penyusup bernomor sama: pesanan korban tidak diklaim', (await q(`select "penggunaId" from "Pesanan" where kode=$1`, [korban.kode]))[0].penggunaId === null);
+  await P.ctx.close();
+
   // ================= ALUR DAPUR untuk pesanan baru =================
-  await buka(a, `/admin?q=${kode}`);
+  await buka(a, `/admin/papan?q=${kode}`);
   const kartu = () => a.locator('article', { hasText: 'Rina Uji' });
   for (const tombol of ['Terima pesanan', 'Mulai masak', 'Tandai siap']) {
     await kartu().getByRole('button', { name: tombol }).click();
@@ -249,7 +282,7 @@ async function masuk(page, telp, sandi) {
 
   // Pembatalan pesanan BARU dari data uji
   const target = (await q(`select kode from "Pesanan" where status='BARU' and "statusBayar"<>'LUNAS' order by "tanggalAcara" limit 1`))[0].kode;
-  await buka(a, `/admin?q=${target}`);
+  await buka(a, `/admin/papan?q=${target}`);
   const kb = a.locator('article', { hasText: target.slice(-6) });
   await kb.getByRole('button', { name: 'Batalkan' }).click();
   ok('Tombol batalkan terkunci sebelum alasan diisi', await kb.getByRole('button', { name: 'Batalkan pesanan' }).isDisabled());
@@ -270,10 +303,12 @@ async function masuk(page, telp, sandi) {
   ok('Staf ditambahkan', (await q(`select count(*)::int n from "Pengguna" where telepon='6281311122233'`))[0].n === 1);
   const S = await konteks(browser, 'staf');
   await masuk(S.page, '081311122233', 'stafuji123');
-  ok('Staf masuk → papan', S.page.url().endsWith('/admin'));
+  ok('Staf masuk → beranda dapur', S.page.url().endsWith('/admin'));
   ok('Staf tidak melihat omzet / menu kas', (await S.page.getByRole('link', { name: 'Buku kas' }).count()) === 0);
   await buka(S.page, '/admin/keuangan');
   ok('Staf dialihkan dari Buku kas', S.page.url().endsWith('/admin'));
+  await buka(S.page, '/admin/papan');
+  ok('Staf: template WA tanpa nominal', (await S.page.locator('a[href*="wa.me"]').evaluateAll((els) => els.every((e) => !decodeURIComponent(e.getAttribute('href')).includes('Rp')))));
   ok('Staf: kolom Siap belum lunas → "Menunggu pelunasan"', (await S.page.getByText('Menunggu pelunasan oleh pemilik').count()) > 0);
 
   // Ganti sandi pemilik mengeluarkan sesi lain

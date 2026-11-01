@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import {
@@ -13,6 +14,8 @@ import {
   lupakanSinggahanPeran,
 } from "@/lib/auth";
 import { normalkanTelepon } from "@/lib/format";
+import { klaimPesananTamu } from "@/lib/akses-pesanan";
+import { tujuanAman } from "@/lib/kepemilikan";
 import {
   ambilIpKlien,
   periksaBatasLaju,
@@ -26,12 +29,32 @@ const SkemaMasuk = z.object({
   sandi: z.string().min(1, "Isi kata sandi").max(128, "Kata sandi terlalu panjang"),
 });
 
-const SkemaDaftar = z.object({
-  nama: z.string().trim().min(2, "Nama minimal 2 karakter").max(100, "Nama terlalu panjang"),
-  telepon: z.string().min(8, "Nomor HP minimal 8 digit").max(20, "Nomor HP terlalu panjang"),
-  sandi: z.string().min(8, "Kata sandi minimal 8 karakter").max(128, "Kata sandi terlalu panjang"),
-  alamat: z.string().max(500, "Alamat terlalu panjang").optional(),
-});
+const SkemaDaftar = z
+  .object({
+    nama: z.string().trim().min(2, "Nama minimal 2 karakter").max(100, "Nama terlalu panjang"),
+    telepon: z.string().min(8, "Nomor HP minimal 8 digit").max(20, "Nomor HP terlalu panjang"),
+    sandi: z
+      .string()
+      .min(8, "Kata sandi minimal 8 karakter")
+      .max(128, "Kata sandi terlalu panjang")
+      .regex(/\d/, "Kata sandi perlu memuat minimal satu angka"),
+    alamat: z.string().max(500, "Alamat terlalu panjang").optional(),
+  })
+  // Nomor HP adalah tebakan pertama siapa pun yang mencoba masuk ke akun orang
+  // lain — dan nomornya justru tertulis di formulir masuk.
+  .refine((d) => normalkanTelepon(d.sandi.replace(/\D/g, "")) !== normalkanTelepon(d.telepon), {
+    path: ["sandi"],
+    message: "Kata sandi tidak boleh sama dengan nomor HP",
+  });
+
+/**
+ * Hash tiruan berukuran sama dengan hash asli. Saat nomor tidak terdaftar,
+ * sandi tetap "dicocokkan" ke hash ini supaya waktu balasannya sama dengan
+ * nomor yang terdaftar. Tanpa ini, penyerang cukup mengukur lama balasan
+ * (tanpa scrypt ≈ 5 ms, dengan scrypt ≈ 60 ms) untuk mengetahui nomor mana
+ * yang punya akun — walau pesan galatnya sudah dibuat seragam.
+ */
+const HASH_TIRUAN = `${"0".repeat(32)}:${"0".repeat(128)}`;
 
 export type HasilAuth = {
   sukses: boolean;
@@ -96,15 +119,8 @@ export async function aksiMasuk(
     where: { telepon: nomorNorm },
   });
 
-  if (!pengguna) {
-    return {
-      sukses: false,
-      pesan: "Nomor telepon atau kata sandi tidak cocok.",
-    };
-  }
-
-  const cocok = await cocokkanSandi(parsed.data.sandi, pengguna.sandiHash);
-  if (!cocok) {
+  const cocok = await cocokkanSandi(parsed.data.sandi, pengguna?.sandiHash ?? HASH_TIRUAN);
+  if (!pengguna || !cocok) {
     return {
       sukses: false,
       pesan: "Nomor telepon atau kata sandi tidak cocok.",
@@ -120,11 +136,15 @@ export async function aksiMasuk(
     peran: pengguna.peran,
   });
 
+  const ke = formData.get("ke");
   if (pengguna.peran === "PEMILIK" || pengguna.peran === "STAF_DAPUR") {
-    redirect("/admin");
-  } else {
-    redirect("/riwayat");
+    redirect(tujuanAman(ke, "/admin"));
   }
+
+  // Pesanan yang dibuat sebagai tamu dari perangkat ini ikut masuk ke akun,
+  // sehingga muncul di "Pesanan saya" tanpa perlu dilacak satu per satu.
+  await klaimPesananTamu(pengguna);
+  redirect(tujuanAman(ke, "/riwayat"));
 }
 
 export async function aksiDaftar(
@@ -203,7 +223,8 @@ export async function aksiDaftar(
     peran: penggunaBaru.peran,
   });
 
-  redirect("/riwayat");
+  await klaimPesananTamu(penggunaBaru);
+  redirect(tujuanAman(formData.get("ke"), "/riwayat"));
 }
 
 export async function aksiKeluar(): Promise<void> {
@@ -218,7 +239,8 @@ const SkemaGantiSandi = z
     sandiBaru: z
       .string()
       .min(8, "Kata sandi baru minimal 8 karakter")
-      .max(128, "Kata sandi terlalu panjang"),
+      .max(128, "Kata sandi terlalu panjang")
+      .regex(/\d/, "Kata sandi baru perlu memuat minimal satu angka"),
     ulangiSandi: z.string(),
   })
   .refine((d) => d.sandiBaru === d.ulangiSandi, {
@@ -305,4 +327,49 @@ export async function aksiGantiSandi(
   });
 
   return { sukses: true, pesan: "Kata sandi berhasil diganti." };
+}
+
+const SkemaProfil = z.object({
+  nama: z.string().trim().min(2, "Nama minimal 2 karakter").max(100, "Nama terlalu panjang"),
+  alamat: z.string().trim().max(500, "Alamat terlalu panjang"),
+});
+
+/**
+ * Ubah nama & alamat antar bawaan. Nomor HP sengaja tidak bisa diubah di sini:
+ * nomor adalah identitas login, dan menggantinya tanpa verifikasi OTP sama
+ * dengan membiarkan akun dipindah ke nomor siapa saja.
+ */
+export async function aksiUbahProfil(
+  _prevState: HasilAuth | null,
+  formData: FormData
+): Promise<HasilAuth> {
+  const sesi = await bacaSesi();
+  if (!sesi) {
+    return { sukses: false, pesan: "Sesi Anda sudah berakhir. Silakan masuk lagi." };
+  }
+
+  const cekLaju = periksaBatasLaju({ kunci: `profil:${sesi.id}`, maksimal: 10, jendelaDetik: 5 * 60 });
+  if (!cekLaju.diizinkan) {
+    return { sukses: false, pesan: `Terlalu sering. Coba lagi dalam ${cekLaju.tungguDetik} detik.` };
+  }
+
+  const parsed = SkemaProfil.safeParse({
+    nama: formData.get("nama") ?? "",
+    alamat: formData.get("alamat") ?? "",
+  });
+  if (!parsed.success) {
+    return { sukses: false, kesalahan: parsed.error.flatten().fieldErrors, pesan: "Periksa kembali isian Anda." };
+  }
+
+  const pengguna = await db.pengguna.update({
+    where: { id: sesi.id },
+    data: { nama: parsed.data.nama, alamat: parsed.data.alamat || null },
+    select: { id: true, nama: true, telepon: true, peran: true },
+  });
+
+  // Nama ikut tertulis di token sesi (dipakai kepala halaman), jadi tokennya
+  // diterbitkan ulang supaya nama baru langsung tampil.
+  await buatSesi(pengguna);
+  revalidatePath("/akun");
+  return { sukses: true, pesan: "Profil tersimpan." };
 }

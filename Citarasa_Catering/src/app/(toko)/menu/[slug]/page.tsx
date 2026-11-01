@@ -1,11 +1,21 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ViewTransition } from "react";
 import { notFound } from "next/navigation";
-import { ambilMenuBerdasarkanSlug } from "@/lib/menu";
-import { rupiah } from "@/lib/format";
+import {
+  ambilHalamanMenu,
+  ambilMenuBerdasarkanSlug,
+  ambilPetaTerjual,
+  dataKeranjangDariMenu,
+} from "@/lib/menu";
+import { labelTerjual, linkWhatsapp, rupiah } from "@/lib/format";
+import { ambilPengaturan } from "@/lib/pengaturan";
 import { LABEL_KATEGORI } from "@/lib/pesanan";
 import { GaleriFotoMenu } from "@/components/toko/GaleriFotoMenu";
-import { IkonKalender, IkonPanahKiri } from "@/components/ikon/Ikon";
+import { KartuMenu } from "@/components/toko/KartuMenu";
+import { Muncul } from "@/components/Muncul";
+import { PembelianMenu } from "@/components/toko/PembelianMenu";
+import { IkonApi, IkonCek, IkonKalender, IkonPanahKiri, IkonTruk } from "@/components/ikon/Ikon";
 import { catatPeristiwa } from "@/lib/analitik";
 
 interface HalamanDetailMenuProps {
@@ -30,65 +40,126 @@ export default async function HalamanDetailMenu({ params }: HalamanDetailMenuPro
     notFound();
   }
 
-  await catatPeristiwa("MENU_DILIHAT");
+  const [pengaturan, terjual, sekategori] = await Promise.all([
+    ambilPengaturan(),
+    ambilPetaTerjual(),
+    ambilHalamanMenu({ kategori: menu.kategori, halaman: 1, ukuran: 5 }),
+    catatPeristiwa("MENU_DILIHAT"),
+  ]);
+
+  const labelLaku = labelTerjual(terjual.get(menu.id) ?? 0);
+  const lainnya = sekategori.daftar.filter((m) => m.id !== menu.id).slice(0, 4);
+  const waUrl = pengaturan.whatsapp
+    ? linkWhatsapp(pengaturan.whatsapp, `Halo ${pengaturan.namaUsaha}, saya mau tanya soal menu "${menu.nama}".`)
+    : null;
 
   return (
-    <div className="mx-auto max-w-6xl px-4 sm:px-6 py-8 sm:py-12">
-      <Link
-        href={`/menu?kategori=${menu.kategori}`}
-        className="inline-flex items-center gap-1.5 text-sm text-kayu-sedang hover:text-kayu"
-      >
-        <IkonPanahKiri className="w-4 h-4" />
-        {LABEL_KATEGORI[menu.kategori]}
-      </Link>
+    <div className="mx-auto max-w-6xl px-4 sm:px-6 pt-4 pb-10 sm:pt-8 sm:pb-14">
+      <nav aria-label="Jejak halaman" className="flex items-center gap-1.5 text-[14px] text-kayu-sedang">
+        <Link href="/menu" className="inline-flex items-center gap-1 min-h-[40px] hover:text-kayu">
+          <IkonPanahKiri className="w-4 h-4" />
+          Menu
+        </Link>
+        <span aria-hidden="true">/</span>
+        <Link href={`/menu?kategori=${menu.kategori}`} className="min-h-[40px] inline-flex items-center hover:text-kayu">
+          {LABEL_KATEGORI[menu.kategori]}
+        </Link>
+      </nav>
 
-      <div className="mt-5 grid gap-8 lg:gap-12 lg:grid-cols-[1.15fr_1fr] items-start">
-        <GaleriFotoMenu
-          foto={menu.foto.map((f) => ({ id: f.id, url: f.url, keterangan: f.keterangan }))}
-          nama={menu.nama}
-          kategori={menu.kategori}
-        />
+      <div className="mt-2 grid gap-6 lg:gap-12 lg:grid-cols-[1.1fr_1fr] items-start">
+        <ViewTransition name={`foto-${menu.id}`} share="foto-menu" default="none">
+          <div>
+            <GaleriFotoMenu
+              foto={menu.foto.map((f) => ({ id: f.id, url: f.url, keterangan: f.keterangan }))}
+              nama={menu.nama}
+              kategori={menu.kategori}
+            />
+          </div>
+        </ViewTransition>
 
         <div className="lg:sticky lg:top-24">
-          <h1 className="font-tampil text-3xl sm:text-4xl font-bold text-kayu leading-tight">
-            {menu.nama}
-          </h1>
+          <h1 className="font-tampil text-[1.75rem] sm:text-4xl font-bold text-kayu leading-tight">{menu.nama}</h1>
 
-          <p className="mt-4 text-2xl font-semibold text-kayu angka-tabel">
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            {labelLaku && (
+              <span className="lencana bg-bata-lembut text-bata-tua border-bata/20">
+                <IkonApi className="w-3.5 h-3.5" />
+                {labelLaku}
+              </span>
+            )}
+            <span className="lencana bg-kayu-lembut text-kayu border-kayu/10">{LABEL_KATEGORI[menu.kategori]}</span>
+          </div>
+
+          <p className="mt-4 text-3xl font-bold text-bata-tua angka-tabel">
             {rupiah(menu.harga)}
-            <span className="text-base font-normal text-kayu-sedang"> / {menu.satuan}</span>
+            <span className="text-base font-medium text-kayu-sedang"> / {menu.satuan}</span>
           </p>
 
-          <p className="mt-5 text-kayu-sedang leading-relaxed whitespace-pre-line">{menu.deskripsi}</p>
+          <p className="mt-4 text-[17px] text-kayu-sedang leading-relaxed whitespace-pre-line">{menu.deskripsi}</p>
 
-          <dl className="mt-6 divide-y divide-krem-gelap border-y border-krem-gelap text-sm">
-            <div className="flex justify-between py-3">
-              <dt className="text-kayu-sedang">Minimal pesan</dt>
-              <dd className="font-medium text-kayu">
-                {menu.minPesan} {menu.satuan}
-              </dd>
-            </div>
-            <div className="flex justify-between py-3">
-              <dt className="text-kayu-sedang">Waktu pesan</dt>
-              <dd className="font-medium text-kayu">
-                {menu.preorderHari > 0 ? `Paling lambat H-${menu.preorderHari}` : "Bisa untuk hari ini"}
-              </dd>
-            </div>
-          </dl>
+          <ul className="mt-5 grid gap-2.5 text-[15px]">
+            <li className="flex items-start gap-3">
+              <span className="w-8 h-8 shrink-0 rounded-lg bg-kunyit-lembut text-kunyit-tua flex items-center justify-center">
+                <IkonKalender className="w-[18px] h-[18px]" />
+              </span>
+              <span className="pt-1">
+                {menu.preorderHari > 0 ? (
+                  <>
+                    Pesan paling lambat <strong className="text-kayu">H-{menu.preorderHari}</strong> — dimasak khusus untukmu
+                  </>
+                ) : (
+                  <>Bisa dipesan <strong className="text-kayu">untuk hari ini</strong></>
+                )}
+              </span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="w-8 h-8 shrink-0 rounded-lg bg-daun-lembut text-daun-tua flex items-center justify-center">
+                <IkonCek className="w-[18px] h-[18px]" />
+              </span>
+              <span className="pt-1">
+                Minimal pesan <strong className="text-kayu">{menu.minPesan} {menu.satuan}</strong>, bisa digabung menu lain
+              </span>
+            </li>
+            <li className="flex items-start gap-3">
+              <span className="w-8 h-8 shrink-0 rounded-lg bg-bata-lembut text-bata-tua flex items-center justify-center">
+                <IkonTruk className="w-[18px] h-[18px]" />
+              </span>
+              <span className="pt-1">
+                {pengaturan.ongkirDefault === 0
+                  ? "Diantar gratis atau ambil sendiri"
+                  : pengaturan.minOrderAntar > 0
+                  ? `Gratis ongkir untuk belanja min. ${rupiah(pengaturan.minOrderAntar)}`
+                  : `Diantar (ongkir ${rupiah(pengaturan.ongkirDefault)}) atau ambil sendiri`}
+              </span>
+            </li>
+          </ul>
 
-          <Link href={`/pesan?menu=${menu.slug}`} className="tombol-utama tombol-besar w-full mt-6">
-            Pesan menu ini
-          </Link>
-
-          {menu.preorderHari > 0 && (
-            <p className="mt-3 flex items-start gap-2 text-xs text-kayu-sedang">
-              <IkonKalender className="w-4 h-4 shrink-0" />
-              Menu ini dimasak khusus, jadi tanggal acara paling cepat {menu.preorderHari} hari dari
-              sekarang.
-            </p>
-          )}
+          <PembelianMenu menu={dataKeranjangDariMenu(menu)} waUrl={waUrl} />
         </div>
       </div>
+
+      {lainnya.length > 0 && (
+        <section aria-labelledby="judul-lainnya" className="mt-12 sm:mt-16">
+          <div className="flex items-end justify-between gap-4">
+            <h2 id="judul-lainnya" className="judul-bagian">
+              {LABEL_KATEGORI[menu.kategori]} lainnya
+            </h2>
+            <Link
+              href={`/menu?kategori=${menu.kategori}`}
+              className="shrink-0 min-h-[44px] inline-flex items-center text-[15px] font-semibold text-bata hover:text-bata-tua"
+            >
+              Lihat semua
+            </Link>
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
+            {lainnya.map((m) => (
+              <Muncul key={m.id}>
+                <KartuMenu menu={m} terjual={terjual.get(m.id) ?? 0} />
+              </Muncul>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }

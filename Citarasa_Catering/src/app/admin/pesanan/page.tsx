@@ -24,6 +24,9 @@ interface HalamanSemuaPesananProps {
     dari?: string;
     sampai?: string;
     halaman?: string;
+    /** Saringan dari ubin dashboard: cara bayar & sembunyikan pesanan batal. */
+    cara?: string;
+    aktif?: string;
   }>;
 }
 
@@ -37,10 +40,13 @@ export default async function HalamanSemuaPesanan({ searchParams }: HalamanSemua
   const bayar = SEMUA_BAYAR.includes(params.bayar as StatusBayar) ? (params.bayar as StatusBayar) : undefined;
   const dari = POLA_TANGGAL.test(params.dari ?? "") ? params.dari : undefined;
   const sampai = POLA_TANGGAL.test(params.sampai ?? "") ? params.sampai : undefined;
+  const cara = params.cara === "TRANSFER" || params.cara === "TUNAI" ? params.cara : undefined;
+  const hanyaAktif = params.aktif === "1";
 
   const where: Prisma.PesananWhereInput = {
-    ...(status ? { status } : {}),
+    ...(status ? { status } : hanyaAktif ? { status: { not: "DIBATALKAN" } } : {}),
     ...(bayar ? { statusBayar: bayar } : {}),
+    ...(cara ? { caraBayar: cara } : {}),
     ...(dari || sampai
       ? {
           tanggalAcara: {
@@ -86,7 +92,7 @@ export default async function HalamanSemuaPesanan({ searchParams }: HalamanSemua
     adalahPemilik ? db.pesanan.aggregate({ where, _sum: { total: true } }) : Promise.resolve(null),
   ]);
 
-  const adaSaringan = Boolean(kataKunci || status || bayar || dari || sampai);
+  const adaSaringan = Boolean(kataKunci || status || bayar || dari || sampai || cara || hanyaAktif);
 
   return (
     <div>
@@ -99,6 +105,8 @@ export default async function HalamanSemuaPesanan({ searchParams }: HalamanSemua
       </header>
 
       <form method="get" className="kartu mt-6 p-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr_1fr_auto] items-end">
+        {cara && <input type="hidden" name="cara" value={cara} />}
+        {hanyaAktif && <input type="hidden" name="aktif" value="1" />}
         <div>
           <label htmlFor="q" className="label">Cari</label>
           <input id="q" type="search" name="q" defaultValue={kataKunci} maxLength={60} placeholder="Nama, kode, nomor HP" className="isian" />
@@ -189,7 +197,7 @@ export default async function HalamanSemuaPesanan({ searchParams }: HalamanSemua
         halamanAktif={halaman}
         totalHalaman={totalHalaman}
         basePath="/admin/pesanan"
-        queryLain={{ q: kataKunci || undefined, status, bayar, dari, sampai }}
+        queryLain={{ q: kataKunci || undefined, status, bayar, dari, sampai, cara, aktif: hanyaAktif ? "1" : undefined }}
       />
     </div>
   );

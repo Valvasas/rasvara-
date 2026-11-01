@@ -16,7 +16,10 @@ export type MenuUntukPemesanan = Pick<
   | "satuan"
   | "minPesan"
   | "preorderHari"
->;
+> & {
+  /** Hanya sampul (maks. satu foto) — untuk gambar kecil di keranjang & checkout. */
+  foto: { url: string }[];
+};
 
 const URUT_FOTO = { foto: { orderBy: { urutan: "asc" as const } } };
 const URUTAN_KATALOG = [
@@ -90,11 +93,14 @@ export async function ambilMenuAktif(
  * tetap ditarik dari database dan dibuang lagi — makin banyak menu, makin besar
  * kerja yang terbuang untuk menampilkan sembilan kartu yang sama.
  */
+export type UrutanKatalog = "rekomendasi" | "harga-naik" | "harga-turun";
+
 export async function ambilHalamanMenu(opsi: {
   kategori?: KategoriMenu;
   cari?: string;
   halaman: number;
   ukuran: number;
+  urut?: UrutanKatalog;
 }): Promise<{ daftar: MenuDenganFoto[]; total: number }> {
   const where = {
     aktif: true,
@@ -121,10 +127,20 @@ export async function ambilHalamanMenu(opsi: {
     Math.max(1, Math.ceil(total / opsi.ukuran))
   );
 
-  const daftar = await muat(`halaman:${kunci}:${halaman}:${opsi.ukuran}`, () =>
+  const urut = opsi.urut ?? "rekomendasi";
+  // id sebagai pemutus seri: tanpa urutan yang benar-benar unik, menu berharga
+  // sama bisa muncul di dua halaman sekaligus (atau tidak sama sekali).
+  const orderBy =
+    urut === "harga-naik"
+      ? [{ harga: "asc" as const }, { id: "asc" as const }]
+      : urut === "harga-turun"
+      ? [{ harga: "desc" as const }, { id: "asc" as const }]
+      : [...URUTAN_KATALOG, { id: "asc" as const }];
+
+  const daftar = await muat(`halaman:${kunci}:${urut}:${halaman}:${opsi.ukuran}`, () =>
     db.menu.findMany({
       where,
-      orderBy: URUTAN_KATALOG,
+      orderBy,
       include: URUT_FOTO,
       skip: (halaman - 1) * opsi.ukuran,
       take: opsi.ukuran,
@@ -143,8 +159,8 @@ export async function ambilHalamanMenu(opsi: {
  * kemudian gagal. Lebih jujur membiarkan halaman ini menyatakan katalog sedang
  * tidak bisa dimuat.
  *
- * Galeri foto juga tidak ikut diambil: formulir tidak menampilkannya, tapi kalau
- * ikut terbawa, seluruh barisan foto tiap menu ikut terkirim ke peramban.
+ * Dari galeri hanya sampulnya yang ikut (gambar kecil di keranjang): kalau
+ * seluruh galeri terbawa, semua barisan foto tiap menu ikut terkirim ke peramban.
  */
 export async function ambilMenuUntukPemesanan(): Promise<MenuUntukPemesanan[]> {
   return denganSinggahan("pemesanan", () =>
@@ -161,6 +177,7 @@ export async function ambilMenuUntukPemesanan(): Promise<MenuUntukPemesanan[]> {
         satuan: true,
         minPesan: true,
         preorderHari: true,
+        foto: { select: { url: true }, orderBy: { urutan: "asc" }, take: 1 },
       },
     })
   );
@@ -255,4 +272,56 @@ export async function ambilRingkasanKategori(): Promise<RingkasanKategori[]> {
       hargaTermurah: b._min.harga ?? 0,
     }));
   });
+}
+
+const UMUR_SINGGAHAN_TERJUAL_MS = 10 * 60 * 1000;
+let singgahanTerjual: { nilai: Map<string, number>; kedaluwarsa: number } | null = null;
+let muatTerjual: Promise<Map<string, number>> | null = null;
+
+/**
+ * Jumlah porsi terjual per menu (semua waktu, pesanan batal tidak dihitung) —
+ * bukti sosial "120+ terjual" yang jadi kebiasaan pembeli marketplace.
+ *
+ * Satu kueri agregat untuk seluruh katalog, disinggahkan 10 menit: angka ini
+ * tidak perlu tepat per detik, sedangkan menghitungnya per kartu berarti
+ * belasan kueri di setiap pembukaan halaman menu.
+ */
+export async function ambilPetaTerjual(): Promise<Map<string, number>> {
+  if (singgahanTerjual && singgahanTerjual.kedaluwarsa > Date.now()) return singgahanTerjual.nilai;
+  if (muatTerjual) return muatTerjual;
+
+  muatTerjual = db.itemPesanan
+    .groupBy({
+      by: ["menuId"],
+      where: { menuId: { not: null }, pesanan: { status: { not: "DIBATALKAN" } } },
+      _sum: { jumlah: true },
+    })
+    .then((baris) => {
+      const peta = new Map<string, number>();
+      for (const b of baris) if (b.menuId) peta.set(b.menuId, b._sum.jumlah ?? 0);
+      singgahanTerjual = { nilai: peta, kedaluwarsa: Date.now() + UMUR_SINGGAHAN_TERJUAL_MS };
+      return peta;
+    })
+    .finally(() => {
+      muatTerjual = null;
+    });
+  return muatTerjual;
+}
+
+/** Data ringkas yang dibutuhkan keranjang di peramban. */
+export function dataKeranjangDariMenu(
+  m: Pick<Menu, "id" | "slug" | "nama" | "harga" | "satuan" | "minPesan" | "preorderHari"> & {
+    foto?: { url: string }[];
+  }
+) {
+  return {
+    menuId: m.id,
+    slug: m.slug,
+    nama: m.nama,
+    harga: m.harga,
+    satuan: m.satuan,
+    minPesan: m.minPesan,
+    preorderHari: m.preorderHari,
+    fotoUrl: m.foto?.[0]?.url ?? null,
+  };
 }

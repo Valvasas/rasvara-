@@ -7,6 +7,8 @@ interface WordmarkProps {
   /** Teks kecil di samping nama, mis. "Dapur" di dashboard admin. */
   label?: string;
   className?: string;
+  /** Kelas untuk blok teks — mis. "hidden sm:flex" supaya di ponsel hanya ikon. */
+  kelasTeks?: string;
 }
 
 export function Wordmark({
@@ -15,12 +17,13 @@ export function Wordmark({
   tagline = false,
   label,
   className = "",
+  kelasTeks = "flex",
 }: WordmarkProps) {
   const content = (
     <span className={`flex items-center gap-2.5 ${className}`}>
       <span
         aria-hidden="true"
-        className={`${compact ? "w-8 h-8 rounded-lg" : "w-9 h-9 rounded-xl"} bg-bata text-white flex items-center justify-center shrink-0`}
+        className={`${compact ? "w-9 h-9 rounded-xl" : "w-10 h-10 rounded-xl"} bg-gradient-to-br from-bata-terang to-bata text-white flex items-center justify-center shrink-0 shadow-[0_4px_12px_-4px_rgba(194,70,28,0.6)]`}
       >
         <svg
           className={compact ? "w-5 h-5" : "w-[22px] h-[22px]"}
@@ -39,7 +42,7 @@ export function Wordmark({
         </svg>
       </span>
 
-      <span className="flex flex-col">
+      <span className={`${kelasTeks} flex-col`}>
         <span
           className={`font-tampil font-bold text-kayu leading-none ${
             compact ? "text-lg" : "text-xl"

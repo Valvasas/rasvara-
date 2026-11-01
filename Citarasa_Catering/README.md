@@ -137,15 +137,36 @@ Beberapa hal sengaja dibuat begini, jangan diubah tanpa alasan:
 - **Menu yang pernah dipesan tidak bisa dihapus,** hanya disembunyikan, supaya
   riwayat pesanan tidak rusak.
 
+## Yang bisa dilakukan
+
+**Pembeli** — cari & saring menu, masukkan keranjang (tersimpan di perangkat),
+checkout dengan jadwal & alamat (peta opsional), bayar transfer (unggah bukti)
+atau tunai, pantau status yang memperbarui diri, pesan lagi sekali tekan.
+Tanpa akun pun bisa; dengan akun, riwayat & alamat tersimpan. Ada mode
+**Teks besar** di kaki halaman dan halaman Akun.
+
+**Penjual** — beranda dapur (yang perlu dikerjakan, jadwal, penjualan 7 hari,
+terlaris), papan pesanan, **rekap masak** per tanggal untuk belanja & produksi,
+notifikasi pesanan baru (bunyi + angka di tab), tombol **Kabari pembeli** yang
+membuka WhatsApp dengan pesan siap kirim per tahap pesanan, buku kas, laporan,
+voucher, dan statistik pengunjung.
+
 ## Catatan desain
 
 Palet diambil dari isi dapurnya sendiri: kertas nasi (krem), sambal dan gerabah
 (bata), kunyit serta lampu warung malam (kunyit), daun pisang (daun), dan meja
 kayu (kayu). Tidak ada warna dingin karena menurunkan selera makan.
 
-Ukuran huruf dasar 17px dan semua tombol minimal 48px tingginya, karena website
-ini dipakai pemilik berumur 40-an sambil berdiri di dapur pada malam hari.
-Navigasi tidak disembunyikan di balik ikon tiga garis.
+Isian formulir 16px (di bawah itu iPhone memperbesar halaman tiap kolom
+disentuh), tombol utama 48px, dan mode Teks besar untuk pembeli lanjut usia.
+Tata letak meniru marketplace yang sudah dihafal jempol pembeli Indonesia:
+kolom cari di atas, bar navigasi bawah 5 tab berlabel di ponsel, keranjang
+berlencana, dan bar beli yang menempel di bawah layar. Navigasi tidak pernah
+disembunyikan di balik ikon tiga garis.
+
+Ilustrasi digambar sebagai SVG (tajam di semua layar, beberapa kilobyte, bisa
+dianimasikan), dan semua gerak berhenti bila pengguna memilih "kurangi
+gerakan" di sistem operasinya.
 
 ## Menaruh di server
 

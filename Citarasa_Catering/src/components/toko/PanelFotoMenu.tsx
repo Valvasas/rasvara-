@@ -28,6 +28,8 @@ interface PanelFotoMenuProps {
   ukuranIkon?: string;
   sizes?: string;
   priority?: boolean;
+  /** Foto sedikit membesar saat kartu induknya (kelas `group`) disorot. */
+  zoomSaatHover?: boolean;
 }
 
 /**
@@ -43,6 +45,7 @@ export function PanelFotoMenu({
   ukuranIkon = "w-10 h-10",
   sizes = "(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw",
   priority = false,
+  zoomSaatHover = false,
 }: PanelFotoMenuProps) {
   const gaya = GAYA_KATEGORI[kategori];
   const sampul = foto[0];
@@ -57,17 +60,20 @@ export function PanelFotoMenu({
             fill
             sizes={sizes}
             priority={priority}
-            className="object-cover"
+            className={`object-cover ${zoomSaatHover ? "transition-transform duration-500 ease-out group-hover:scale-105" : ""}`}
           />
           {foto.length > 1 && (
-            <span className="absolute bottom-2 right-2 text-[11px] font-medium px-2 py-0.5 rounded-full bg-white/90 text-kayu">
+            <span className="absolute bottom-2 right-2 text-[12px] font-semibold px-2 py-0.5 rounded-full bg-white/90 text-kayu">
               {foto.length} foto
             </span>
           )}
         </>
       ) : (
         <div className={`absolute inset-0 flex items-center justify-center ${gaya.latar}`}>
-          <gaya.Ikon className={`${ukuranIkon} ${gaya.ikonWarna}`} strokeWidth={1.1} />
+          <gaya.Ikon
+            className={`${ukuranIkon} ${gaya.ikonWarna} ${zoomSaatHover ? "transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-6" : ""}`}
+            strokeWidth={1.1}
+          />
         </div>
       )}
     </div>

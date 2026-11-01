@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { bacaSesi } from "@/lib/auth";
 import { punyaAksesPesanan } from "@/lib/akses-pesanan";
+import { pesananMilikAkun, sesiDapur } from "@/lib/kepemilikan";
 import {
   POLA_NAMA_BERKAS,
   bacaBerkasUnggahan,
@@ -37,17 +38,16 @@ function tidakDitemukan(): NextResponse {
 
 async function bolehLihatBukti(nama: string): Promise<boolean> {
   const sesi = await bacaSesi();
-  if (sesi && (sesi.peran === "PEMILIK" || sesi.peran === "STAF_DAPUR")) {
-    return true;
-  }
+  if (sesiDapur(sesi)) return true;
 
   const pesanan = await db.pesanan.findFirst({
     where: { buktiBayarUrl: `/unggahan/${nama}` },
-    select: { kode: true, teleponPemesan: true },
+    select: { kode: true, penggunaId: true },
   });
   if (!pesanan) return false;
 
-  if (sesi && sesi.telepon === pesanan.teleponPemesan) return true;
+  // Bukan nomor HP: nomor saat mendaftar tidak diverifikasi (lihat lib/kepemilikan.ts).
+  if (pesananMilikAkun(sesi, pesanan)) return true;
 
   // Pembeli tamu: haknya ada di cookie bertanda tangan yang diberikan saat ia
   // membuat pesanan atau berhasil mencocokkan nomor HP di halaman lacak.

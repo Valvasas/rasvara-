@@ -8,6 +8,7 @@ import {
   useState,
   useTransition,
 } from "react";
+import Link from "next/link";
 import dynamic from "next/dynamic";
 import { aksiBuatPesanan } from "@/app/aksi/pesanan";
 import { aksiCekVoucher } from "@/app/aksi/voucher";
@@ -19,16 +20,31 @@ import {
   menitDariJam,
   menitSekarangWib,
   rupiah,
+  tanggalPendek,
 } from "@/lib/format";
 import { LABEL_KATEGORI, URUTAN_KATEGORI } from "@/lib/pesanan";
 import {
+  pastikanDiKeranjang,
+  selaraskanKeranjang,
+  tambahKeKeranjang,
+  ubahJumlahKeranjang,
+  useKeranjang,
+  type DataMenuKeranjang,
+} from "@/lib/keranjang";
+import {
   IkonCari,
-  IkonKurang,
+  IkonDompet,
+  IkonKalender,
+  IkonKartuNama,
+  IkonKeranjang,
   IkonTambah,
+  IkonTiket,
   IkonToko,
   IkonTruk,
-  IkonTutup,
 } from "@/components/ikon/Ikon";
+import { kabari } from "@/components/Pemberitahuan";
+import { KontrolJumlah } from "@/components/toko/KontrolJumlah";
+import { GambarMini } from "@/components/toko/IsiKeranjang";
 import type { MenuUntukPemesanan } from "@/lib/menu";
 import type { KategoriMenu, Pengaturan, Pengguna } from "@/generated/prisma/client";
 
@@ -38,11 +54,7 @@ const PetaLokasiAntar = dynamic(
   () => import("@/components/toko/PetaLokasiAntar").then((m) => m.PetaLokasiAntar),
   {
     ssr: false,
-    loading: () => (
-      <div className="w-full h-64 rounded-xl border border-krem-gelap bg-krem-tua flex items-center justify-center text-sm text-kayu-sedang">
-        Menyiapkan peta...
-      </div>
-    ),
+    loading: () => <div className="kerangka w-full h-64" />,
   }
 );
 
@@ -51,86 +63,32 @@ interface FormPemesananProps {
   menuAwalSlug?: string;
   pengaturan: Pengaturan;
   tanggalLibur: string[];
-  pengguna: Pengguna | null;
+  pengguna: Pick<Pengguna, "nama" | "telepon" | "alamat"> | null;
   rekeningTersedia: boolean;
 }
 
-/**
- * Berapa baris menu yang tampil sebelum tombol "tampilkan lainnya". Katalog
- * bisa ratusan item; menumpuk semuanya membuat bagian jadwal & data pemesan di
- * bawahnya praktis tidak pernah terlihat.
- */
-const TAMPIL_AWAL = 10;
+/** Berapa baris katalog tampil di pemilih "tambah menu" sebelum "tampilkan lainnya". */
+const TAMPIL_AWAL = 8;
 
-/** Batas atas sama dengan validasi server, supaya input tidak bisa melampauinya. */
-const MAKS_JUMLAH = 5000;
+/** Jam siap yang paling sering dipilih — mengetik jam di ponsel itu repot. */
+const JAM_CEPAT = [
+  { jam: "07:00", label: "Pagi" },
+  { jam: "11:30", label: "Siang" },
+  { jam: "15:30", label: "Sore" },
+  { jam: "18:30", label: "Malam" },
+];
 
-/**
- * Kontrol jumlah: tombol −/+ untuk penyesuaian kecil dan kolom angka untuk
- * pesanan besar. Memesan 150 kotak tidak boleh berarti 140 kali menekan "+".
- */
-function KontrolJumlah({
-  jumlah,
-  min,
-  satuan,
-  nama,
-  onUbah,
-}: {
-  jumlah: number;
-  min: number;
-  satuan: string;
-  nama: string;
-  onUbah: (n: number) => void;
-}) {
-  const [draf, setDraf] = useState(String(jumlah));
-  useEffect(() => setDraf(String(jumlah)), [jumlah]);
-
-  const terapkan = () => {
-    const n = Math.floor(Number(draf));
-    if (!Number.isFinite(n) || n <= 0) {
-      setDraf(String(jumlah));
-      return;
-    }
-    onUbah(Math.min(MAKS_JUMLAH, Math.max(min, n)));
+function keDataKeranjang(m: MenuUntukPemesanan): DataMenuKeranjang {
+  return {
+    menuId: m.id,
+    slug: m.slug,
+    nama: m.nama,
+    harga: m.harga,
+    satuan: m.satuan,
+    minPesan: m.minPesan,
+    preorderHari: m.preorderHari,
+    fotoUrl: m.foto[0]?.url ?? null,
   };
-
-  return (
-    <div className="flex items-center rounded-xl border border-krem-gelap bg-white">
-      <button
-        type="button"
-        onClick={() => onUbah(jumlah - 1 < min ? 0 : jumlah - 1)}
-        aria-label={jumlah - 1 < min ? `Hapus ${nama}` : `Kurangi ${nama}`}
-        className="w-10 h-10 flex items-center justify-center text-kayu-sedang hover:text-kayu cursor-pointer rounded-l-xl"
-      >
-        {jumlah - 1 < min ? <IkonTutup className="w-4 h-4" /> : <IkonKurang className="w-4 h-4" />}
-      </button>
-      <input
-        type="number"
-        inputMode="numeric"
-        min={min}
-        max={MAKS_JUMLAH}
-        value={draf}
-        onChange={(e) => setDraf(e.target.value)}
-        onBlur={terapkan}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            terapkan();
-          }
-        }}
-        aria-label={`Jumlah ${nama} (${satuan})`}
-        className="w-14 h-10 text-center text-sm font-semibold text-kayu angka-tabel bg-transparent border-x border-krem-gelap focus:outline-none focus:bg-krem [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-      />
-      <button
-        type="button"
-        onClick={() => onUbah(Math.min(MAKS_JUMLAH, jumlah + 1))}
-        aria-label={`Tambah ${nama}`}
-        className="w-10 h-10 flex items-center justify-center text-kayu-sedang hover:text-kayu cursor-pointer rounded-r-xl"
-      >
-        <IkonTambah className="w-4 h-4" />
-      </button>
-    </div>
-  );
 }
 
 function GalatField({ id, pesan }: { id: string; pesan?: string }) {
@@ -139,6 +97,20 @@ function GalatField({ id, pesan }: { id: string; pesan?: string }) {
     <p id={id} className="pesan-galat">
       {pesan}
     </p>
+  );
+}
+
+function JudulBagian({ nomor, judul, Ikon, id }: { nomor: number; judul: string; Ikon: typeof IkonKeranjang; id: string }) {
+  return (
+    <h2 id={id} className="flex items-center gap-3 judul-bagian">
+      <span className="relative w-10 h-10 shrink-0 rounded-xl bg-bata-lembut text-bata-tua flex items-center justify-center">
+        <Ikon className="w-5 h-5" />
+        <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-bata text-white text-[11px] font-bold flex items-center justify-center ring-2 ring-white">
+          {nomor}
+        </span>
+      </span>
+      {judul}
+    </h2>
   );
 }
 
@@ -155,56 +127,64 @@ export function FormPemesanan({
 
   const petaMenu = useMemo(() => new Map(daftarMenu.map((m) => [m.id, m])), [daftarMenu]);
 
-  const [jumlahMenu, setJumlahMenu] = useState<Record<string, number>>(() => {
-    const awal: Record<string, number> = {};
-    const cocok = menuAwalSlug ? daftarMenu.find((m) => m.slug === menuAwalSlug) : undefined;
-    if (cocok) awal[cocok.id] = cocok.minPesan;
-    return awal;
-  });
+  // --- Keranjang = sumber tunggal daftar menu yang dipesan ---
+  const keranjang = useKeranjang();
+  const [siap, setSiap] = useState(false);
+  const [dibuang, setDibuang] = useState<string[]>([]);
+  useEffect(() => {
+    setDibuang(selaraskanKeranjang(new Map(daftarMenu.map((m) => [m.id, keDataKeranjang(m)]))));
+    // Tautan lama "/pesan?menu=slug" (mis. dibagikan di WhatsApp) tetap jalan.
+    const awal = menuAwalSlug ? daftarMenu.find((m) => m.slug === menuAwalSlug) : undefined;
+    if (awal) pastikanDiKeranjang(keDataKeranjang(awal));
+    setSiap(true);
+  }, [daftarMenu, menuAwalSlug]);
 
-  // --- Penyaring katalog ---
+  // Harga & aturan selalu dari katalog server, bukan dari salinan di keranjang.
+  const itemTerpilih = useMemo(
+    () =>
+      keranjang.flatMap((k) => {
+        const m = petaMenu.get(k.menuId);
+        if (!m) return [];
+        const jumlah = Math.max(m.minPesan, k.jumlah);
+        return [{ ...m, fotoUrl: m.foto[0]?.url ?? null, jumlah, subtotal: m.harga * jumlah }];
+      }),
+    [keranjang, petaMenu]
+  );
+  const jumlahDi = useMemo(() => new Map(itemTerpilih.map((i) => [i.id, i.jumlah])), [itemTerpilih]);
+
+  const ubahJumlah = (menu: MenuUntukPemesanan, jumlah: number) => {
+    if (jumlahDi.has(menu.id)) ubahJumlahKeranjang(menu.id, jumlah);
+    else if (jumlah > 0) tambahKeKeranjang(keDataKeranjang(menu), jumlah);
+  };
+
+  // --- Pemilih "tambah menu lain" ---
+  const [pemilihTerbuka, setPemilihTerbuka] = useState(false);
   const [cari, setCari] = useState("");
   const [kategoriAktif, setKategoriAktif] = useState<KategoriMenu | "SEMUA">("SEMUA");
   const [batasTampil, setBatasTampil] = useState(TAMPIL_AWAL);
-
   const kategoriTersedia = useMemo(() => {
     const ada = new Set(daftarMenu.map((m) => m.kategori));
     return URUTAN_KATEGORI.filter((k) => ada.has(k));
   }, [daftarMenu]);
-
   const menuTersaring = useMemo(() => {
     const kunci = cari.trim().toLowerCase();
     return daftarMenu.filter((m) => {
+      if (jumlahDi.has(m.id)) return false;
       if (kategoriAktif !== "SEMUA" && m.kategori !== kategoriAktif) return false;
       if (!kunci) return true;
       return m.nama.toLowerCase().includes(kunci) || m.deskripsi.toLowerCase().includes(kunci);
     });
-  }, [daftarMenu, cari, kategoriAktif]);
-
-  useEffect(() => {
-    setBatasTampil(TAMPIL_AWAL);
-  }, [cari, kategoriAktif]);
-
-  // Menu yang dibawa dari tombol "Pesan" disematkan paling atas. Tanpa ini,
-  // menu yang urutannya jauh di katalog (mis. menu ke-140) memang masuk
-  // ringkasan, tetapi barisnya tersembunyi di balik "tampilkan lainnya" dan
-  // jumlahnya tidak bisa diubah.
-  const [idSematan] = useState(() => daftarMenu.find((m) => m.slug === menuAwalSlug)?.id ?? null);
-  const menuUrut = useMemo(() => {
-    if (!idSematan) return menuTersaring;
-    const sematan = menuTersaring.find((m) => m.id === idSematan);
-    return sematan ? [sematan, ...menuTersaring.filter((m) => m.id !== idSematan)] : menuTersaring;
-  }, [menuTersaring, idSematan]);
-  const menuTampil = menuUrut.slice(0, batasTampil);
+  }, [daftarMenu, cari, kategoriAktif, jumlahDi]);
+  useEffect(() => setBatasTampil(TAMPIL_AWAL), [cari, kategoriAktif]);
+  const menuTampil = menuTersaring.slice(0, batasTampil);
+  const pemilihTampil = pemilihTerbuka || (siap && itemTerpilih.length === 0);
 
   // --- Isian (semua terkendali) ---
   // React 19 mengosongkan isian tak-terkendali setiap kali aksi formulir
   // selesai, termasuk saat server menolak pesanan. Tanpa state ini, pembeli
   // yang pesanannya ditolak karena kuota penuh harus mengetik ulang semuanya.
   const [caraAmbil, setCaraAmbil] = useState<"AMBIL_SENDIRI" | "DIANTAR">("AMBIL_SENDIRI");
-  const [caraBayar, setCaraBayar] = useState<"TRANSFER" | "TUNAI">(
-    rekeningTersedia ? "TRANSFER" : "TUNAI"
-  );
+  const [caraBayar, setCaraBayar] = useState<"TRANSFER" | "TUNAI">(rekeningTersedia ? "TRANSFER" : "TUNAI");
   const [tanggalAcara, setTanggalAcara] = useState("");
   const [jamAcara, setJamAcara] = useState("11:30");
   const [alamatAntar, setAlamatAntar] = useState(pengguna?.alamat ?? "");
@@ -215,52 +195,45 @@ export function FormPemesanan({
   const [catatan, setCatatan] = useState("");
   const [koordinat, setKoordinat] = useState<{ lat: number; lng: number } | null>(null);
 
-  const ringkasanRef = useRef<HTMLElement>(null);
   const galatRef = useRef<HTMLDivElement>(null);
 
   // Galat dari server ditampilkan di dekat tombol kirim — di situlah mata
   // pembeli berada saat menekannya — dan difokuskan supaya terbaca.
   useEffect(() => {
-    if (state && !state.sukses) galatRef.current?.focus();
+    if (state && !state.sukses) {
+      galatRef.current?.focus();
+      galatRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
   }, [state]);
-
-  const ubahJumlah = (menuId: string, jumlah: number) => {
-    setJumlahMenu((prev) => {
-      const salinan = { ...prev };
-      if (jumlah <= 0) delete salinan[menuId];
-      else salinan[menuId] = jumlah;
-      return salinan;
-    });
-  };
-
-  const itemTerpilih = useMemo(
-    () =>
-      Object.entries(jumlahMenu).flatMap(([id, jml]) => {
-        const m = petaMenu.get(id);
-        if (!m || jml <= 0) return [];
-        return [{ ...m, jumlah: jml, subtotal: m.harga * jml }];
-      }),
-    [jumlahMenu, petaMenu]
-  );
 
   const maxPreorder = itemTerpilih.reduce((n, i) => Math.max(n, i.preorderHari), 0);
 
   // Minimum tanggal pemesanan (hari ini + maxPreorder), dihitung dalam WIB.
-  const minTanggal = useMemo(() => {
+  const geserHari = (hari: number) => {
     const d = dariInputTanggal(hariIniWib());
-    d.setUTCDate(d.getUTCDate() + maxPreorder);
+    d.setUTCDate(d.getUTCDate() + hari);
     return kunciHari(d);
-  }, [maxPreorder]);
+  };
+  const minTanggal = useMemo(() => geserHari(maxPreorder), [maxPreorder]);
+
+  // Pilihan tanggal cepat: tiga hari terdekat yang sah (bukan libur, memenuhi H-n).
+  const tanggalCepat = useMemo(() => {
+    const hasil: { nilai: string; label: string }[] = [];
+    for (let h = maxPreorder; h < maxPreorder + 14 && hasil.length < 3; h++) {
+      const nilai = geserHari(h);
+      if (tanggalLibur.includes(nilai)) continue;
+      const label = h === 0 ? "Hari ini" : h === 1 ? "Besok" : h === 2 ? "Lusa" : tanggalPendek(dariInputTanggal(nilai));
+      hasil.push({ nilai, label });
+    }
+    return hasil;
+  }, [maxPreorder, tanggalLibur]);
 
   const jamSudahLewat =
-    Boolean(tanggalAcara) &&
-    tanggalAcara === hariIniWib() &&
-    menitDariJam(jamAcara) <= menitSekarangWib();
+    Boolean(tanggalAcara) && tanggalAcara === hariIniWib() && menitDariJam(jamAcara) <= menitSekarangWib();
   const tanggalTerlaluCepat = Boolean(tanggalAcara) && tanggalAcara < minTanggal;
   const isTanggalLibur = tanggalLibur.includes(tanggalAcara);
 
   const subtotal = itemTerpilih.reduce((n, i) => n + i.subtotal, 0);
-
   const gratisOngkir = pengaturan.minOrderAntar > 0 && subtotal >= pengaturan.minOrderAntar;
   const ongkir = caraAmbil === "DIANTAR" && !gratisOngkir ? pengaturan.ongkirDefault : 0;
 
@@ -324,208 +297,297 @@ export function FormPemesanan({
   }
 
   const total = Math.max(0, subtotal - potongan) + ongkir;
-
   const itemsJson = JSON.stringify(itemTerpilih.map((i) => ({ menuId: i.id, jumlah: i.jumlah })));
 
   // Tombol kirim yang mati tanpa alasan terasa seperti aplikasi macet. Alasan
-  // pertama yang menghalangi selalu ditulis tepat di bawah tombolnya.
-  const alasanTerkunci = (() => {
-    if (itemTerpilih.length === 0) return "Pilih minimal satu menu.";
-    if (!tanggalAcara) return "Tentukan tanggal acara.";
+  // pertama yang menghalangi selalu ditulis, dan tombol di bar bawah ponsel
+  // membawa pembeli langsung ke bagian yang belum beres.
+  const halangan = ((): { pesan: string; ke: string } | null => {
+    if (itemTerpilih.length === 0) return { pesan: "Pilih minimal satu menu.", ke: "bagian-menu" };
+    if (!tanggalAcara) return { pesan: "Tentukan tanggal acara.", ke: "bagian-jadwal" };
     if (tanggalTerlaluCepat)
-      return `Menu pilihanmu perlu dipesan paling lambat H-${maxPreorder}. Pilih tanggal yang lebih jauh.`;
-    if (isTanggalLibur) return "Dapur tutup pada tanggal itu. Pilih tanggal lain.";
-    if (jamSudahLewat) return "Jam itu sudah lewat untuk hari ini.";
+      return { pesan: `Menu pilihanmu perlu dipesan paling lambat H-${maxPreorder}. Pilih tanggal yang lebih jauh.`, ke: "bagian-jadwal" };
+    if (isTanggalLibur) return { pesan: "Dapur tutup pada tanggal itu. Pilih tanggal lain.", ke: "bagian-jadwal" };
+    if (jamSudahLewat) return { pesan: "Jam itu sudah lewat untuk hari ini.", ke: "bagian-jadwal" };
     if (caraAmbil === "DIANTAR" && alamatAntar.trim().length < 10)
-      return "Lengkapi alamat pengantaran.";
-    if (namaPemesan.trim().length < 2) return "Isi nama pemesan.";
-    if (teleponPemesan.replace(/\D/g, "").length < 8) return "Isi nomor WhatsApp yang aktif.";
+      return { pesan: "Lengkapi alamat pengantaran.", ke: "bagian-jadwal" };
+    if (namaPemesan.trim().length < 2) return { pesan: "Isi nama pemesan.", ke: "bagian-data" };
+    if (teleponPemesan.replace(/\D/g, "").length < 8) return { pesan: "Isi nomor WhatsApp yang aktif.", ke: "bagian-data" };
     return null;
   })();
 
+  const tunjukkanHalangan = () => {
+    if (!halangan) return;
+    kabari(halangan.pesan, { jenis: "galat" });
+    document.getElementById(halangan.ke)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   const kelasPilihan = (aktif: boolean, nonaktif = false) =>
-    `flex items-start gap-3 rounded-xl border p-4 transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-bata/40 ${
+    `relative flex items-start gap-3 rounded-2xl border-[1.5px] p-4 transition-[border-color,background-color,transform] has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-bata/25 ${
       nonaktif
         ? "border-krem-gelap bg-krem-tua/60 opacity-60 cursor-not-allowed"
         : aktif
-        ? "border-bata bg-bata-lembut/50 cursor-pointer"
-        : "border-krem-gelap bg-white hover:border-kayu-sedang/30 cursor-pointer"
+        ? "border-bata bg-bata-lembut/60 cursor-pointer"
+        : "border-krem-gelap bg-white hover:border-kayu-sedang/35 cursor-pointer active:scale-[0.99]"
     }`;
 
-  return (
-    <form
-      action={action}
-      noValidate
-      className={`grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8 items-start ${
-        itemTerpilih.length > 0 ? "pb-24 lg:pb-0" : ""
+  const TitikPilih = ({ aktif }: { aktif: boolean }) => (
+    <span
+      aria-hidden="true"
+      className={`ml-auto mt-0.5 w-5 h-5 shrink-0 rounded-full border-2 flex items-center justify-center transition-colors ${
+        aktif ? "border-bata bg-bata" : "border-krem-gelap bg-white"
       }`}
     >
+      {aktif && <span className="w-2 h-2 rounded-full bg-white anim-masuk-skala" />}
+    </span>
+  );
+
+  if (!siap) {
+    return (
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]" aria-busy="true" aria-label="Memuat formulir pesanan">
+        <div className="space-y-5">
+          <div className="kerangka h-48" />
+          <div className="kerangka h-64" />
+        </div>
+        <div className="kerangka h-72 hidden lg:block" />
+      </div>
+    );
+  }
+
+  return (
+    <form action={action} noValidate className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8 items-start">
       <input type="hidden" name="itemsJson" value={itemsJson} />
       <input type="hidden" name="kodeVoucher" value={kodeTerpakai ?? ""} />
 
-      <div className="space-y-6 min-w-0">
-        {/* 1. Menu */}
-        <section aria-labelledby="judul-menu" className="kartu kartu-isi">
-          <h2 id="judul-menu" className="judul-bagian">
-            1. Pilih menu
-          </h2>
+      <div className="space-y-5 min-w-0">
+        {dibuang.length > 0 && (
+          <p role="status" className="kotak-peringatan">
+            <strong>{dibuang.join(", ")}</strong> sudah tidak dijual, jadi kami keluarkan dari pesanan.
+          </p>
+        )}
 
-          <div className="mt-4 relative">
-            <label htmlFor="cari-menu" className="sr-only">
-              Cari menu
-            </label>
-            <IkonCari className="w-4 h-4 text-kayu-sedang absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            <input
-              id="cari-menu"
-              type="search"
-              value={cari}
-              onChange={(e) => setCari(e.target.value)}
-              placeholder="Cari menu"
-              autoComplete="off"
-              className="isian pl-10"
-            />
-          </div>
+        {/* 1. Pesananmu */}
+        <section aria-labelledby="judul-menu" id="bagian-menu" className="kartu kartu-isi scroll-mt-24">
+          <JudulBagian nomor={1} judul="Pesananmu" Ikon={IkonKeranjang} id="judul-menu" />
 
-          {kategoriTersedia.length > 1 && (
-            <div className="mt-3 -mx-5 px-5 sm:mx-0 sm:px-0 flex gap-2 overflow-x-auto tanpa-scrollbar">
-              {(["SEMUA", ...kategoriTersedia] as const).map((k) => {
-                const aktif = kategoriAktif === k;
-                return (
-                  <button
-                    key={k}
-                    type="button"
-                    onClick={() => setKategoriAktif(k)}
-                    aria-pressed={aktif}
-                    className={`pil cursor-pointer ${aktif ? "pil-aktif" : ""}`}
-                  >
-                    {k === "SEMUA" ? "Semua" : LABEL_KATEGORI[k]}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
-          <ul className="mt-4 divide-y divide-krem-gelap border-y border-krem-gelap">
-            {menuTampil.map((m) => {
-              const jml = jumlahMenu[m.id] ?? 0;
-              return (
-                <li
-                  key={m.id}
-                  className={`flex items-center gap-4 py-4 ${jml > 0 ? "bg-bata-lembut/30 -mx-5 px-5 sm:-mx-6 sm:px-6" : ""}`}
-                >
+          {itemTerpilih.length > 0 && (
+            <ul className="mt-4 divide-y divide-krem-gelap">
+              {itemTerpilih.map((it) => (
+                <li key={it.id} className="py-3.5 flex gap-3 items-center anim-masuk">
+                  <GambarMini url={it.fotoUrl} nama={it.nama} ukuran="w-14 h-14" />
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium text-kayu">{m.nama}</p>
-                    <p className="text-sm text-kayu-sedang mt-0.5">
-                      <span className="text-kayu angka-tabel">{rupiah(m.harga)}</span> / {m.satuan}
-                      <span aria-hidden="true"> · </span>
-                      min. {m.minPesan}
-                      {m.preorderHari > 0 && (
-                        <>
-                          <span aria-hidden="true"> · </span>H-{m.preorderHari}
-                        </>
-                      )}
+                    <p className="font-semibold text-kayu leading-snug line-clamp-2">{it.nama}</p>
+                    <p className="text-[13.5px] text-kayu-sedang">
+                      <span className="angka-tabel">{rupiah(it.harga)}</span> / {it.satuan}
+                      {it.preorderHari > 0 && ` · H-${it.preorderHari}`}
                     </p>
+                    <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                      <KontrolJumlah
+                        ukuran="kecil"
+                        jumlah={it.jumlah}
+                        min={it.minPesan}
+                        satuan={it.satuan}
+                        nama={it.nama}
+                        onUbah={(n) => ubahJumlah(it, n)}
+                      />
+                      <span className="font-bold text-kayu angka-tabel">{rupiah(it.subtotal)}</span>
+                    </div>
                   </div>
-                  {jml > 0 ? (
-                    <KontrolJumlah
-                      jumlah={jml}
-                      min={m.minPesan}
-                      satuan={m.satuan}
-                      nama={m.nama}
-                      onUbah={(n) => ubahJumlah(m.id, n)}
-                    />
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => ubahJumlah(m.id, m.minPesan)}
-                      className="tombol-kedua tombol-kecil"
-                      aria-label={`Tambah ${m.nama}`}
-                    >
-                      <IkonTambah className="w-3.5 h-3.5" />
-                      Tambah
-                    </button>
-                  )}
                 </li>
-              );
-            })}
-          </ul>
-
-          {menuTersaring.length === 0 && (
-            <p className="py-6 text-center teks-redup">Tidak ada menu yang cocok.</p>
+              ))}
+            </ul>
           )}
 
-          {menuTersaring.length > menuTampil.length && (
+          {itemTerpilih.length === 0 && (
+            <p className="mt-3 kotak-info bg-krem-tua border-krem-gelap text-kayu">
+              Keranjangmu kosong. Pilih menu di bawah ini, atau{" "}
+              <Link href="/menu" className="font-semibold text-bata underline">
+                lihat katalog lengkap
+              </Link>
+              .
+            </p>
+          )}
+
+          {!pemilihTampil ? (
             <button
               type="button"
-              onClick={() => setBatasTampil((n) => n + TAMPIL_AWAL * 2)}
-              className="tombol-hantu w-full mt-3"
+              onClick={() => setPemilihTerbuka(true)}
+              className="mt-3 w-full tombol-kedua border-dashed text-bata-tua"
             >
-              Tampilkan {menuTersaring.length - menuTampil.length} menu lainnya
+              <IkonTambah className="w-4 h-4" strokeWidth={2.5} />
+              Tambah menu lain
             </button>
+          ) : (
+            <div className="mt-4 rounded-2xl bg-krem-tua/60 p-3 sm:p-4 anim-masuk">
+              <div className="relative">
+                <label htmlFor="cari-menu" className="sr-only">
+                  Cari menu
+                </label>
+                <IkonCari className="w-[18px] h-[18px] text-kayu-sedang absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  id="cari-menu"
+                  type="search"
+                  value={cari}
+                  onChange={(e) => setCari(e.target.value)}
+                  placeholder="Cari menu untuk ditambahkan"
+                  autoComplete="off"
+                  className="isian pl-10"
+                />
+              </div>
+
+              {kategoriTersedia.length > 1 && (
+                <div className="mt-3 -mx-3 px-3 sm:mx-0 sm:px-0 flex gap-2 overflow-x-auto tanpa-scrollbar">
+                  {(["SEMUA", ...kategoriTersedia] as const).map((k) => {
+                    const aktif = kategoriAktif === k;
+                    return (
+                      <button
+                        key={k}
+                        type="button"
+                        onClick={() => setKategoriAktif(k)}
+                        aria-pressed={aktif}
+                        className={`pil shrink-0 cursor-pointer ${aktif ? "pil-aktif" : ""}`}
+                      >
+                        {k === "SEMUA" ? "Semua" : LABEL_KATEGORI[k]}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              <ul className="mt-3 divide-y divide-krem-gelap rounded-xl bg-white border border-krem-gelap overflow-hidden">
+                {menuTampil.map((m) => (
+                  <li key={m.id} className="flex items-center gap-3 px-3 py-3">
+                    <GambarMini url={m.foto[0]?.url ?? null} nama={m.nama} ukuran="w-12 h-12" />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-kayu leading-snug line-clamp-2">{m.nama}</p>
+                      <p className="text-[13px] text-kayu-sedang">
+                        <span className="text-kayu font-semibold angka-tabel">{rupiah(m.harga)}</span> / {m.satuan} · min.{" "}
+                        {m.minPesan}
+                        {m.preorderHari > 0 && ` · H-${m.preorderHari}`}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        ubahJumlah(m, m.minPesan);
+                        kabari(`${m.nama} ditambahkan`);
+                      }}
+                      className="tombol-garis tombol-kecil shrink-0"
+                      aria-label={`Tambah ${m.nama}`}
+                    >
+                      <IkonTambah className="w-4 h-4" strokeWidth={2.5} />
+                      Tambah
+                    </button>
+                  </li>
+                ))}
+                {menuTersaring.length === 0 && (
+                  <li className="py-6 text-center teks-redup">Tidak ada menu yang cocok.</li>
+                )}
+              </ul>
+
+              {menuTersaring.length > menuTampil.length && (
+                <button
+                  type="button"
+                  onClick={() => setBatasTampil((n) => n + TAMPIL_AWAL * 2)}
+                  className="tombol-hantu w-full mt-2"
+                >
+                  Tampilkan {menuTersaring.length - menuTampil.length} menu lainnya
+                </button>
+              )}
+              {itemTerpilih.length > 0 && (
+                <button type="button" onClick={() => setPemilihTerbuka(false)} className="tombol-hantu tombol-kecil w-full mt-1">
+                  Tutup daftar menu
+                </button>
+              )}
+            </div>
           )}
           <GalatField id="galat-items" pesan={galat.items?.[0]} />
         </section>
 
         {/* 2. Jadwal */}
-        <section aria-labelledby="judul-jadwal" className="kartu kartu-isi">
-          <h2 id="judul-jadwal" className="judul-bagian">
-            2. Jadwal &amp; pengambilan
-          </h2>
-
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <div>
-              <label htmlFor="tanggalAcara" className="label">
-                Tanggal acara
-              </label>
-              <input
-                type="date"
-                id="tanggalAcara"
-                name="tanggalAcara"
-                required
-                min={minTanggal}
-                value={tanggalAcara}
-                onChange={(e) => setTanggalAcara(e.target.value)}
-                aria-invalid={isTanggalLibur || tanggalTerlaluCepat || Boolean(galat.tanggalAcara)}
-                aria-describedby="petunjuk-tanggal"
-                className={`isian ${isTanggalLibur || tanggalTerlaluCepat || galat.tanggalAcara ? "isian-galat" : ""}`}
-              />
-              {isTanggalLibur ? (
-                <p id="petunjuk-tanggal" className="pesan-galat">Dapur tutup di tanggal ini.</p>
-              ) : tanggalTerlaluCepat ? (
-                <p id="petunjuk-tanggal" className="pesan-galat">Paling cepat {minTanggal.split("-").reverse().join("/")}.</p>
-              ) : galat.tanggalAcara ? (
-                <p id="petunjuk-tanggal" className="pesan-galat">{galat.tanggalAcara[0]}</p>
-              ) : (
-                <p id="petunjuk-tanggal" className="petunjuk">
-                  {maxPreorder > 0 ? `Menu pilihanmu perlu dipesan H-${maxPreorder}.` : "Bisa untuk hari ini."}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="jamAcara" className="label">
-                Jam siap (WIB)
-              </label>
-              <input
-                type="time"
-                id="jamAcara"
-                name="jamAcara"
-                required
-                value={jamAcara}
-                onChange={(e) => setJamAcara(e.target.value)}
-                aria-invalid={jamSudahLewat || Boolean(galat.jamAcara)}
-                aria-describedby="petunjuk-jam"
-                className={`isian ${jamSudahLewat || galat.jamAcara ? "isian-galat" : ""}`}
-              />
-              <p id="petunjuk-jam" className={jamSudahLewat || galat.jamAcara ? "pesan-galat" : "petunjuk"}>
-                {jamSudahLewat
-                  ? "Jam ini sudah lewat hari ini."
-                  : galat.jamAcara?.[0] ?? "Sebaiknya 30–45 menit sebelum acara."}
-              </p>
-            </div>
-          </div>
+        <section aria-labelledby="judul-jadwal" id="bagian-jadwal" className="kartu kartu-isi scroll-mt-24">
+          <JudulBagian nomor={2} judul="Kapan & ke mana?" Ikon={IkonKalender} id="judul-jadwal" />
 
           <fieldset className="mt-5">
+            <legend className="label">Tanggal acara</legend>
+            <div className="flex flex-wrap gap-2">
+              {tanggalCepat.map((t) => (
+                <button
+                  key={t.nilai}
+                  type="button"
+                  onClick={() => setTanggalAcara(t.nilai)}
+                  aria-pressed={tanggalAcara === t.nilai}
+                  className={`pil cursor-pointer ${tanggalAcara === t.nilai ? "pil-aktif" : ""}`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+            <label htmlFor="tanggalAcara" className="sr-only">
+              Pilih tanggal lain
+            </label>
+            <input
+              type="date"
+              id="tanggalAcara"
+              name="tanggalAcara"
+              required
+              min={minTanggal}
+              value={tanggalAcara}
+              onChange={(e) => setTanggalAcara(e.target.value)}
+              aria-invalid={isTanggalLibur || tanggalTerlaluCepat || Boolean(galat.tanggalAcara)}
+              aria-describedby="petunjuk-tanggal"
+              className={`isian mt-2.5 sm:max-w-xs ${isTanggalLibur || tanggalTerlaluCepat || galat.tanggalAcara ? "isian-galat" : ""}`}
+            />
+            {isTanggalLibur ? (
+              <p id="petunjuk-tanggal" className="pesan-galat">Dapur tutup di tanggal ini.</p>
+            ) : tanggalTerlaluCepat ? (
+              <p id="petunjuk-tanggal" className="pesan-galat">Paling cepat {minTanggal.split("-").reverse().join("/")}.</p>
+            ) : galat.tanggalAcara ? (
+              <p id="petunjuk-tanggal" className="pesan-galat">{galat.tanggalAcara[0]}</p>
+            ) : (
+              <p id="petunjuk-tanggal" className="petunjuk">
+                {maxPreorder > 0 ? `Menu pilihanmu perlu dipesan H-${maxPreorder}.` : "Bisa untuk hari ini. Atau pilih tanggal lain di kalender."}
+              </p>
+            )}
+          </fieldset>
+
+          <fieldset className="mt-5">
+            <legend className="label">Jam siap (WIB)</legend>
+            <div className="flex flex-wrap gap-2">
+              {JAM_CEPAT.map((j) => (
+                <button
+                  key={j.jam}
+                  type="button"
+                  onClick={() => setJamAcara(j.jam)}
+                  aria-pressed={jamAcara === j.jam}
+                  className={`pil cursor-pointer ${jamAcara === j.jam ? "pil-aktif" : ""}`}
+                >
+                  {jamTampil(j.jam)} <span className="opacity-70 font-normal">{j.label}</span>
+                </button>
+              ))}
+            </div>
+            <label htmlFor="jamAcara" className="sr-only">
+              Atau ketik jam lain
+            </label>
+            <input
+              type="time"
+              id="jamAcara"
+              name="jamAcara"
+              required
+              value={jamAcara}
+              onChange={(e) => setJamAcara(e.target.value)}
+              aria-invalid={jamSudahLewat || Boolean(galat.jamAcara)}
+              aria-describedby="petunjuk-jam"
+              className={`isian mt-2.5 sm:max-w-xs ${jamSudahLewat || galat.jamAcara ? "isian-galat" : ""}`}
+            />
+            <p id="petunjuk-jam" className={jamSudahLewat || galat.jamAcara ? "pesan-galat" : "petunjuk"}>
+              {jamSudahLewat
+                ? "Jam ini sudah lewat hari ini."
+                : galat.jamAcara?.[0] ?? "Sebaiknya 30–45 menit sebelum acara dimulai."}
+            </p>
+          </fieldset>
+
+          <fieldset className="mt-6">
             <legend className="label">Cara pengambilan</legend>
             <div className="grid gap-3 sm:grid-cols-2">
               <label className={kelasPilihan(caraAmbil === "AMBIL_SENDIRI")}>
@@ -537,11 +599,12 @@ export function FormPemesanan({
                   onChange={() => setCaraAmbil("AMBIL_SENDIRI")}
                   className="sr-only"
                 />
-                <IkonToko className="w-5 h-5 mt-0.5 text-kayu-sedang shrink-0" />
+                <IkonToko className="w-6 h-6 mt-0.5 text-bata-tua shrink-0" />
                 <span>
-                  <span className="block font-medium text-kayu">Ambil sendiri</span>
-                  <span className="block text-sm text-kayu-sedang mt-0.5">Gratis, di dapur kami</span>
+                  <span className="block font-semibold text-kayu">Ambil sendiri</span>
+                  <span className="block text-[14px] text-kayu-sedang mt-0.5">Gratis, di dapur kami</span>
                 </span>
+                <TitikPilih aktif={caraAmbil === "AMBIL_SENDIRI"} />
               </label>
               <label className={kelasPilihan(caraAmbil === "DIANTAR")}>
                 <input
@@ -552,27 +615,26 @@ export function FormPemesanan({
                   onChange={() => setCaraAmbil("DIANTAR")}
                   className="sr-only"
                 />
-                <IkonTruk className="w-5 h-5 mt-0.5 text-kayu-sedang shrink-0" />
+                <IkonTruk className="w-6 h-6 mt-0.5 text-bata-tua shrink-0" />
                 <span>
-                  <span className="block font-medium text-kayu">Diantar</span>
-                  <span className="block text-sm text-kayu-sedang mt-0.5">
+                  <span className="block font-semibold text-kayu">Diantar</span>
+                  <span className="block text-[14px] text-kayu-sedang mt-0.5">
                     {pengaturan.ongkirDefault === 0
                       ? "Gratis ongkir"
                       : gratisOngkir
                       ? "Gratis ongkir untuk pesanan ini"
                       : `Ongkir ${rupiah(pengaturan.ongkirDefault)}${
-                          pengaturan.minOrderAntar > 0
-                            ? `, gratis di atas ${rupiah(pengaturan.minOrderAntar)}`
-                            : ""
+                          pengaturan.minOrderAntar > 0 ? `, gratis di atas ${rupiah(pengaturan.minOrderAntar)}` : ""
                         }`}
                   </span>
                 </span>
+                <TitikPilih aktif={caraAmbil === "DIANTAR"} />
               </label>
             </div>
           </fieldset>
 
           {caraAmbil === "DIANTAR" && (
-            <div className="mt-5 space-y-4">
+            <div className="mt-5 space-y-4 anim-masuk">
               <div>
                 <label htmlFor="alamatAntar" className="label">
                   Alamat lengkap
@@ -583,11 +645,12 @@ export function FormPemesanan({
                   rows={3}
                   required
                   maxLength={500}
+                  autoComplete="street-address"
                   value={alamatAntar}
                   onChange={(e) => setAlamatAntar(e.target.value)}
-                  placeholder="Nama gedung/komplek, jalan, nomor, RT/RW, patokan"
+                  placeholder="Nama gedung/komplek, jalan, nomor rumah, RT/RW, patokan"
                   aria-invalid={Boolean(galat.alamatAntar)}
-                  className={`isian py-2.5 ${galat.alamatAntar ? "isian-galat" : ""}`}
+                  className={`isian py-3 ${galat.alamatAntar ? "isian-galat" : ""}`}
                 />
                 <GalatField id="galat-alamat" pesan={galat.alamatAntar?.[0]} />
               </div>
@@ -606,10 +669,18 @@ export function FormPemesanan({
         </section>
 
         {/* 3. Data pemesan */}
-        <section aria-labelledby="judul-data" className="kartu kartu-isi">
-          <h2 id="judul-data" className="judul-bagian">
-            3. Data pemesan &amp; pembayaran
-          </h2>
+        <section aria-labelledby="judul-data" id="bagian-data" className="kartu kartu-isi scroll-mt-24">
+          <JudulBagian nomor={3} judul="Data pemesan" Ikon={IkonKartuNama} id="judul-data" />
+
+          {!pengguna && (
+            <p className="mt-3 text-[14px] text-kayu-sedang">
+              Sudah punya akun?{" "}
+              <Link href="/masuk?ke=/pesan" className="font-semibold text-bata hover:underline">
+                Masuk
+              </Link>{" "}
+              supaya data terisi otomatis. Tanpa akun juga boleh.
+            </p>
+          )}
 
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div>
@@ -625,6 +696,7 @@ export function FormPemesanan({
                 autoComplete="name"
                 value={namaPemesan}
                 onChange={(e) => setNamaPemesan(e.target.value)}
+                placeholder="Mis. Ibu Ratna"
                 aria-invalid={Boolean(galat.namaPemesan)}
                 className={`isian ${galat.namaPemesan ? "isian-galat" : ""}`}
               />
@@ -644,7 +716,7 @@ export function FormPemesanan({
                 maxLength={20}
                 value={teleponPemesan}
                 onChange={(e) => setTeleponPemesan(e.target.value)}
-                placeholder="08xxxxxxxxxx"
+                placeholder="0812 3456 7890"
                 aria-invalid={Boolean(galat.teleponPemesan)}
                 aria-describedby="petunjuk-telepon"
                 className={`isian ${galat.teleponPemesan ? "isian-galat" : ""}`}
@@ -652,13 +724,33 @@ export function FormPemesanan({
               {galat.teleponPemesan ? (
                 <GalatField id="petunjuk-telepon" pesan={galat.teleponPemesan[0]} />
               ) : (
-                <p id="petunjuk-telepon" className="petunjuk">Dipakai dapur untuk konfirmasi & melacak pesanan.</p>
+                <p id="petunjuk-telepon" className="petunjuk">Dapur akan konfirmasi lewat nomor ini. Juga dipakai untuk melacak pesanan.</p>
               )}
             </div>
           </div>
 
-          <fieldset className="mt-5">
-            <legend className="label">Pembayaran</legend>
+          <div className="mt-5">
+            <label htmlFor="catatanPesanan" className="label">
+              Catatan untuk dapur <span className="font-normal text-kayu-sedang">(boleh dikosongkan)</span>
+            </label>
+            <textarea
+              id="catatanPesanan"
+              name="catatanPesanan"
+              rows={2}
+              maxLength={1000}
+              value={catatan}
+              onChange={(e) => setCatatan(e.target.value)}
+              placeholder="Mis. sambal dipisah, tidak pedas, label nama peserta"
+              className="isian py-3"
+            />
+          </div>
+        </section>
+
+        {/* 4. Pembayaran */}
+        <section aria-labelledby="judul-bayar" id="bagian-bayar" className="kartu kartu-isi scroll-mt-24">
+          <JudulBagian nomor={4} judul="Cara bayar" Ikon={IkonDompet} id="judul-bayar" />
+          <fieldset className="mt-4">
+            <legend className="sr-only">Pilih cara bayar</legend>
             <div className="grid gap-3 sm:grid-cols-2">
               <label className={kelasPilihan(caraBayar === "TRANSFER", !rekeningTersedia)}>
                 <input
@@ -671,11 +763,12 @@ export function FormPemesanan({
                   className="sr-only"
                 />
                 <span>
-                  <span className="block font-medium text-kayu">Transfer bank</span>
-                  <span className="block text-sm text-kayu-sedang mt-0.5">
-                    {rekeningTersedia ? `${pengaturan.namaBank}, unggah bukti setelah pesan` : "Belum tersedia"}
+                  <span className="block font-semibold text-kayu">Transfer bank</span>
+                  <span className="block text-[14px] text-kayu-sedang mt-0.5">
+                    {rekeningTersedia ? `${pengaturan.namaBank} · unggah bukti setelah pesan` : "Belum tersedia"}
                   </span>
                 </span>
+                <TitikPilih aktif={caraBayar === "TRANSFER"} />
               </label>
               <label className={kelasPilihan(caraBayar === "TUNAI")}>
                 <input
@@ -687,51 +780,32 @@ export function FormPemesanan({
                   className="sr-only"
                 />
                 <span>
-                  <span className="block font-medium text-kayu">Tunai</span>
-                  <span className="block text-sm text-kayu-sedang mt-0.5">Bayar saat pesanan diterima</span>
+                  <span className="block font-semibold text-kayu">Tunai (COD)</span>
+                  <span className="block text-[14px] text-kayu-sedang mt-0.5">Bayar saat pesanan diterima</span>
                 </span>
+                <TitikPilih aktif={caraBayar === "TUNAI"} />
               </label>
             </div>
             <GalatField id="galat-bayar" pesan={galat.caraBayar?.[0]} />
           </fieldset>
-
-          <div className="mt-5">
-            <label htmlFor="catatanPesanan" className="label">
-              Catatan untuk dapur <span className="font-normal text-kayu-sedang">(opsional)</span>
-            </label>
-            <textarea
-              id="catatanPesanan"
-              name="catatanPesanan"
-              rows={2}
-              maxLength={1000}
-              value={catatan}
-              onChange={(e) => setCatatan(e.target.value)}
-              placeholder="Mis. sambal dipisah, tidak pedas, label nama peserta"
-              className="isian py-2.5"
-            />
-          </div>
         </section>
       </div>
 
       {/* Ringkasan */}
-      <aside
-        ref={ringkasanRef}
-        aria-labelledby="judul-ringkasan"
-        className="kartu kartu-isi lg:sticky lg:top-24 scroll-mt-24"
-      >
+      <aside aria-labelledby="judul-ringkasan" className="kartu kartu-isi lg:sticky lg:top-24">
         <h2 id="judul-ringkasan" className="judul-bagian">
-          Ringkasan
+          Ringkasan pesanan
         </h2>
 
         {itemTerpilih.length === 0 ? (
           <p className="mt-3 teks-redup">Belum ada menu dipilih.</p>
         ) : (
-          <ul className="mt-4 space-y-3 text-sm">
+          <ul className="mt-4 space-y-3 text-[15px]">
             {itemTerpilih.map((it) => (
               <li key={it.id} className="flex justify-between gap-3">
                 <span className="text-kayu min-w-0">
                   {it.nama}
-                  <span className="block text-xs text-kayu-sedang angka-tabel">
+                  <span className="block text-[13px] text-kayu-sedang angka-tabel">
                     {it.jumlah} {it.satuan} × {rupiah(it.harga)}
                   </span>
                 </span>
@@ -741,37 +815,15 @@ export function FormPemesanan({
           </ul>
         )}
 
-        <dl className="mt-4 pt-4 border-t border-krem-gelap space-y-2 text-sm">
-          <div className="flex justify-between">
-            <dt className="text-kayu-sedang">Subtotal</dt>
-            <dd className="angka-tabel">{rupiah(subtotal)}</dd>
-          </div>
-          {potongan > 0 && kodeTerpakai && (
-            <div className="flex justify-between text-daun-tua">
-              <dt>Voucher {kodeTerpakai}</dt>
-              <dd className="angka-tabel">−{rupiah(potongan)}</dd>
-            </div>
-          )}
-          <div className="flex justify-between">
-            <dt className="text-kayu-sedang">Ongkir</dt>
-            <dd className="angka-tabel">
-              {caraAmbil === "AMBIL_SENDIRI" ? "—" : ongkir === 0 ? "Gratis" : rupiah(ongkir)}
-            </dd>
-          </div>
-          <div className="flex justify-between items-baseline pt-3 border-t border-krem-gelap">
-            <dt className="font-semibold text-kayu">Total</dt>
-            <dd className="text-xl font-bold text-kayu angka-tabel">{rupiah(total)}</dd>
-          </div>
-        </dl>
-
         {/* Voucher */}
         <div className="mt-4">
           {kodeTerpakai ? (
-            <div className="flex items-center justify-between gap-3 rounded-xl bg-daun-lembut px-3 py-2 text-sm text-daun-tua">
-              <span className="min-w-0 truncate">
-                <span className="font-semibold">{kodeTerpakai}</span> terpakai
+            <div className="flex items-center justify-between gap-3 rounded-xl bg-daun-lembut border border-daun/20 px-3 py-2.5 text-[15px] text-daun-tua anim-masuk-skala">
+              <span className="min-w-0 truncate flex items-center gap-2">
+                <IkonTiket className="w-5 h-5 shrink-0" />
+                <span className="font-bold">{kodeTerpakai}</span> terpakai
               </span>
-              <button type="button" onClick={lepasVoucher} className="font-medium underline cursor-pointer shrink-0">
+              <button type="button" onClick={lepasVoucher} className="font-semibold underline cursor-pointer shrink-0 min-h-[40px]">
                 Lepas
               </button>
             </div>
@@ -799,24 +851,48 @@ export function FormPemesanan({
                 className="isian flex-1 min-w-0 uppercase"
               />
               <button type="button" onClick={cekVoucher} disabled={sedangCek} className="tombol-kedua px-4">
-                {sedangCek ? "..." : "Pakai"}
+                {sedangCek ? "…" : "Pakai"}
               </button>
             </div>
           ) : (
             <button
               type="button"
               onClick={() => setVoucherTerbuka(true)}
-              className="text-sm font-medium text-bata hover:text-bata-tua cursor-pointer"
+              className="w-full flex items-center gap-2 rounded-xl border-[1.5px] border-dashed border-kunyit/60 bg-kunyit-lembut/50 px-3 py-3 text-[15px] font-semibold text-kunyit-tua hover:bg-kunyit-lembut cursor-pointer"
             >
+              <IkonTiket className="w-5 h-5" />
               Punya kode voucher?
             </button>
           )}
           {pesanVoucher && !kodeTerpakai && (
-            <p role="status" className={`mt-2 text-xs ${pesanVoucher.ok ? "text-daun-tua" : "text-bahaya"}`}>
+            <p role="status" className={`mt-2 text-[13px] ${pesanVoucher.ok ? "text-daun-tua" : "text-bahaya"}`}>
               {pesanVoucher.teks}
             </p>
           )}
         </div>
+
+        <dl className="mt-4 pt-4 border-t border-krem-gelap space-y-2 text-[15px]">
+          <div className="flex justify-between">
+            <dt className="text-kayu-sedang">Subtotal</dt>
+            <dd className="angka-tabel">{rupiah(subtotal)}</dd>
+          </div>
+          {potongan > 0 && kodeTerpakai && (
+            <div className="flex justify-between text-daun-tua font-medium">
+              <dt>Voucher {kodeTerpakai}</dt>
+              <dd className="angka-tabel">−{rupiah(potongan)}</dd>
+            </div>
+          )}
+          <div className="flex justify-between">
+            <dt className="text-kayu-sedang">Ongkir</dt>
+            <dd className="angka-tabel">
+              {caraAmbil === "AMBIL_SENDIRI" ? "—" : ongkir === 0 ? <span className="text-daun-tua font-medium">Gratis</span> : rupiah(ongkir)}
+            </dd>
+          </div>
+          <div className="flex justify-between items-baseline pt-3 border-t border-krem-gelap">
+            <dt className="font-semibold text-kayu">Total bayar</dt>
+            <dd className="text-2xl font-bold text-bata-tua angka-tabel">{rupiah(total)}</dd>
+          </div>
+        </dl>
 
         {state && !state.sukses && state.pesan && (
           <div ref={galatRef} tabIndex={-1} role="alert" className="mt-5 kotak-galat focus:outline-none">
@@ -826,38 +902,38 @@ export function FormPemesanan({
 
         <button
           type="submit"
-          disabled={isPending || alasanTerkunci !== null}
+          disabled={isPending || halangan !== null}
           aria-describedby="alasan-kunci"
-          className="tombol-utama tombol-besar w-full mt-5"
+          className="hidden md:inline-flex tombol-utama tombol-besar w-full mt-5"
         >
-          {isPending ? "Mengirim pesanan..." : "Kirim pesanan"}
+          {isPending ? "Mengirim pesanan…" : "Buat pesanan"}
         </button>
-        <p id="alasan-kunci" className="mt-2 text-xs text-center text-kayu-sedang min-h-[1rem]">
-          {alasanTerkunci ?? `Dapur buka ${jamTampil(pengaturan.jamBuka)}–${jamTampil(pengaturan.jamTutup)} WIB.`}
+        <p id="alasan-kunci" className="mt-2 text-[13px] text-center text-kayu-sedang min-h-[1rem]">
+          {halangan?.pesan ?? `Dapur buka ${jamTampil(pengaturan.jamBuka)}–${jamTampil(pengaturan.jamTutup)} WIB. Pesanan bisa dibatalkan selama belum diproses.`}
         </p>
       </aside>
 
-      {/* Bar total mengambang di ponsel */}
-      {itemTerpilih.length > 0 && (
-        <div className="fixed bottom-0 inset-x-0 z-30 bg-white/95 backdrop-blur border-t border-krem-gelap lg:hidden">
-          <div
-            className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between gap-3"
-            style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}
-          >
-            <div className="min-w-0">
-              <p className="text-xs text-kayu-sedang">{itemTerpilih.length} menu</p>
-              <p className="font-bold text-kayu angka-tabel">{rupiah(total)}</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => ringkasanRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })}
-              className="tombol-utama"
-            >
-              Lanjut ke ringkasan
-            </button>
+      {/* Bar "Total | Buat pesanan" menempel di bawah — ponsel */}
+      <div aria-hidden="true" className="md:hidden h-20" />
+      <div className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/97 backdrop-blur-md border-t border-krem-gelap shadow-[var(--shadow-mengambang)] aman-bawah">
+        <div className="px-4 pt-3 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[13px] text-kayu-sedang">Total bayar</p>
+            <p className="text-lg font-bold text-bata-tua angka-tabel leading-tight">{rupiah(total)}</p>
           </div>
+          {halangan ? (
+            // Bukan tombol mati: menekannya menjelaskan apa yang kurang dan
+            // membawa pembeli ke bagian itu.
+            <button type="button" onClick={tunjukkanHalangan} className="tombol-utama opacity-60">
+              Buat pesanan
+            </button>
+          ) : (
+            <button type="submit" disabled={isPending} className="tombol-utama">
+              {isPending ? "Mengirim…" : "Buat pesanan"}
+            </button>
+          )}
         </div>
-      )}
+      </div>
     </form>
   );
 }

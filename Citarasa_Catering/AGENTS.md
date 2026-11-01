@@ -1,6 +1,6 @@
 <!-- BEGIN:nextjs-agent-rules -->
 
-# This is NOT the Next.js you know
+## This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
 
@@ -36,8 +36,9 @@ Jangan usulkan/menambahkan library yang menduplikasi hal di atas (mis. NextAuth,
 
 ```
 src/app/
-  (toko)/        halaman publik pembeli (home, /menu, /pesan, /pesanan/[kode], /lacak, /riwayat, /masuk, /daftar)
+  (toko)/        halaman publik pembeli (home, /menu, /keranjang, /pesan = checkout, /pesanan/[kode], /lacak, /riwayat, /akun, /masuk, /daftar)
   admin/         dashboard pemilik, dijaga terpusat di admin/layout.tsx
+                 (/admin = beranda ringkasan, /admin/papan = kanban, /admin/produksi = rekap masak)
   aksi/          SEMUA Server Actions ("use server"): auth.ts, pesanan.ts, menu.ts, kas.ts, pengaturan.ts
 src/components/
   toko/          komponen khusus halaman publik
@@ -51,7 +52,11 @@ src/lib/
   analitik.ts        statistik kunjungan (menulis ke DB); analitik-path.ts memuat logika murninya
   situs.ts           satu-satunya sumber alamat publik situs (metadataBase, sitemap, robots)
   foto-menu.ts       konstanta & tipe galeri foto (TIDAK boleh ditaruh di berkas "use server")
-  akses-pesanan.ts   cookie "pesanan_saya" (guest tracking, maks 25 kode, 180 hari)
+  akses-pesanan.ts   cookie "pesanan_saya" (guest tracking, maks 25 kode, 180 hari) + klaim pesanan tamu ke akun
+  kepemilikan.ts     aturan murni: pesanan milik akun siapa, tujuan redirect ?ke= yang aman
+  keranjang.ts       keranjang belanja di localStorage (KLIEN saja; tidak pernah dipercaya server)
+  pesan-wa.ts        templat WhatsApp dapur → pembeli per status pesanan
+  denyut.ts          angka ringkas dashboard (pesanan baru, cek bayar) untuk notifikasi
   pesanan.ts         alur status pesanan, generator kode, label kategori
   format.ts          helper tanggal/jam WIB, format rupiah, normalisasi telepon, link WhatsApp
   laporan.ts         agregasi kas per hari/bulan (WIB-aware)
@@ -72,7 +77,7 @@ Ini adalah aturan bisnis yang sudah didesain sengaja. Kalau perubahanmu menyentu
 2. **Isi pesanan adalah snapshot.** `ItemPesanan.namaMenu`/`hargaSatuan` dibekukan saat order dibuat (bukan referensi live ke `Menu`) supaya struk lama tetap benar walau menu berubah/dihapus.
 3. **Satu pesanan maksimal satu baris kas.** `CatatanKas.pesananId` unique — mencegah pencatatan ganda saat "Tandai Lunas" diklik lebih dari sekali.
 4. **Semua tanggal dihitung dalam WIB** (Asia/Jakarta), terlepas dari timezone server. Selalu pakai helper di `src/lib/format.ts`, jangan `new Date()`/`Date.now()` mentah untuk logika tanggal bisnis.
-5. **Kode pesanan bukan kunci akses.** Untuk melihat detail pesanan, pengunjung harus: memesan dari device itu (cookie `pesanan_saya`), ATAU login sebagai pemilik, ATAU nomor teleponnya cocok di halaman lacak. Jangan buat route yang expose detail pesanan hanya lewat kode di URL tanpa salah satu dari tiga syarat itu.
+5. **Kode pesanan bukan kunci akses.** Untuk melihat detail pesanan, pengunjung harus: memesan/melacak dari device itu (cookie `pesanan_saya` bertanda tangan — halaman lacak mewajibkan kode + nomor HP cocok), ATAU login sebagai akun yang **memiliki** pesanan itu (`Pesanan.penggunaId`), ATAU login sebagai dapur. **Jangan pernah memberi akses karena `sesi.telepon === pesanan.teleponPemesan`**: nomor HP saat mendaftar tidak diverifikasi (belum ada OTP), jadi siapa pun bisa mendaftar dengan nomor orang lain. Pesanan tamu baru tersambung ke akun lewat `klaimPesananTamu()` (cookie perangkat + nomor sama). Pakai helper di `src/lib/kepemilikan.ts`.
 6. **Nomor telepon adalah identitas login**, bukan email (email di `Pengguna` opsional).
 7. **Menu yang pernah dipesan tidak boleh dihapus**, hanya di-nonaktifkan (`Menu.aktif = false`), supaya riwayat pesanan tidak korup (relasi `ItemPesanan.menuId` — `onDelete: SetNull`, jangan diubah jadi cascade delete).
 8. **Statistik tidak boleh bisa dibongkar menjadi identitas.** Alamat IP tidak pernah disimpan; pengunjung unik dihitung dari SHA-256 atas (IP + user agent + garam harian acak yang hanya hidup di memori dan berganti tiap hari). Semua tabel analitik menyimpan angka teragregasi per hari, bukan baris per kunjungan, dan `rapikanPath()` menyamarkan kode pesanan sebelum disimpan. Jangan menambahkan penyimpanan IP mentah, cookie pelacak, atau layanan analitik pihak ketiga — begitu salah satunya masuk, situs ini wajib memasang banner persetujuan cookie dan janji di halaman kebijakan privasi jadi tidak benar.
@@ -113,7 +118,10 @@ Kode ini sengaja memakai istilah domain berbahasa Indonesia untuk model, variabe
 - `src/lib/auth.ts` dan `src/app/aksi/auth.ts`: logika sesi, hashing password, cookie signing. Perubahan di sini berdampak langsung ke keamanan login.
 - `SESSION_SECRET` (env var): jangan pernah di-hardcode, log, atau expose ke client.
 - Berkas unggahan disimpan di `DIREKTORI_UNGGAHAN` (bawaan `data/unggahan`), **di luar `public/`**, dan hanya dilayani lewat `src/app/unggahan/[nama]/route.ts` yang memeriksa wewenang: foto menu terbuka untuk umum, bukti transfer hanya untuk dapur dan pemilik pesanannya. Jangan memindahkan berkas unggahan kembali ke `public/` — apa pun di sana dilayani kepada siapa saja yang tahu URL-nya, tanpa pemeriksaan. Jika menambah fitur upload, validasi tipe/ukuran file di server.
-- Middleware/guard akses admin ada terpusat di `src/app/admin/layout.tsx` — jangan buat halaman admin baru yang melewati layout ini.
+- Middleware/guard akses admin ada terpusat di `src/app/admin/layout.tsx` — jangan buat halaman admin baru yang melewati layout ini. Route handler di `src/app/api/admin/**` TIDAK terlindungi layout — periksa sesi sendiri (lihat `api/admin/denyut`).
+- Jangan mengoper objek `Pengguna` utuh ke komponen klien: ia memuat `sandiHash`. Selalu `select` bidang yang dibutuhkan.
+- Parameter `?ke=` (tujuan setelah login) wajib lewat `tujuanAman()` — mencegah open redirect ke situs tiruan.
+- Staf dapur tidak boleh melihat angka uang: templat WA untuk staf dibuat dengan `{ tanpaNominal: true }`.
 
 ## 8. Yang TIDAK ada saat ini (jangan berasumsi)
 
@@ -128,8 +136,23 @@ Kode ini sengaja memakai istilah domain berbahasa Indonesia untuk model, variabe
   `tombol-kedua`, `tombol-hantu`, `kartu`, `isian`, `label`, `lencana`, `tabel`,
   `pil`, `kotak-sukses/galat/peringatan`. Pakai kelas ini, jangan menulis ulang
   deretan utilitas untuk tombol/isian.
-- Teks di atas latar `*-lembut` memakai varian `*-tua` (kontras AA). Tidak ada
-  blok latar gelap; `kayu` adalah warna teks, bukan latar.
+- Teks di atas latar `*-lembut` memakai varian `*-tua` (kontras AA). Latar gelap
+  (`bg-kayu`) hanya untuk dua hal: toast dan satu pita ajakan di beranda —
+  jangan dijadikan latar bagian konten biasa.
+- Isian formulir minimal 16px (`.isian` sudah begitu): di bawah itu Safari
+  iPhone memperbesar halaman setiap kolom disentuh.
+- Ilustrasi = komponen SVG di `src/components/ilustrasi/Ilustrasi.tsx` (bukan
+  PNG), dekoratif (`aria-hidden`), memakai palet token. Tambah ilustrasi baru
+  di berkas itu.
+- Gerak: kelas `anim-*` di `globals.css`; muncul-saat-digulir pakai komponen
+  `<Muncul>` (jangan menempel class/atribut ke DOM dari skrip luar — memicu
+  hydration mismatch). Semua gerak otomatis mati saat `prefers-reduced-motion`.
+- Pola marketplace yang sudah dipakai pembeli (jangan diubah tanpa alasan kuat):
+  kolom cari di kepala, bar navigasi bawah 5 tab di ponsel, keranjang dengan
+  lencana, tombol "+ Tambah" yang berubah jadi stepper, bar beli/checkout yang
+  menempel di bawah layar, tab status di "Pesanan saya".
+- Mode "Teks besar" (`html[data-teks="besar"]`) menskalakan semua ukuran rem —
+  jangan memakai ukuran px tetap untuk teks utama.
 - Jangan pakai `alert()`/`confirm()`: konfirmasi dilakukan di tempat (dua langkah).
 - Isian formulir yang bisa ditolak server harus terkendali (atau dikirim lewat
   `onSubmit` + `startTransition`), karena React 19 mengosongkan isian

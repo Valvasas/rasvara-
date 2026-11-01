@@ -5,7 +5,12 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { bacaSesi, wajibPemilik, wajibStafAtauPemilik } from "@/lib/auth";
-import { punyaAksesPesanan, tandaiPesananMilikSaya } from "@/lib/akses-pesanan";
+import {
+  klaimPesananTamu,
+  punyaAksesPesanan,
+  tandaiPesananMilikSaya,
+} from "@/lib/akses-pesanan";
+import { pesananMilikAkun, sesiDapur } from "@/lib/kepemilikan";
 import { bolehPindahStatus } from "@/lib/pesanan";
 import { buatKodePesanan } from "@/lib/kode-pesanan";
 import {
@@ -456,24 +461,30 @@ export async function aksiLacakPesanan(
   const nomorNorm = normalkanTelepon(telepon);
   const pesanan = await db.pesanan.findUnique({
     where: { kode },
+    select: { kode: true, teleponPemesan: true },
   });
 
-  if (!pesanan) {
+  // Satu pesan untuk dua kegagalan. Kalau "kode tidak ditemukan" dibedakan dari
+  // "nomor tidak cocok", balasan pertama memberi tahu penebak bahwa sebuah kode
+  // memang ada — separuh pekerjaannya selesai.
+  if (!pesanan || pesanan.teleponPemesan !== nomorNorm) {
     return {
       sukses: false,
-      pesan: "Pesanan dengan kode tersebut tidak ditemukan.",
-    };
-  }
-
-  if (pesanan.teleponPemesan !== nomorNorm) {
-    return {
-      sukses: false,
-      pesan: "Nomor telepon tidak cocok dengan data pemesan.",
+      pesan:
+        "Kode pesanan dan nomor WhatsApp tidak cocok. Periksa lagi keduanya — nomor harus sama dengan yang dipakai saat memesan.",
     };
   }
 
   // Berikan akses cookie
   await tandaiPesananMilikSaya(kode);
+
+  // Pelanggan yang sedang login dengan nomor yang sama: pesanan tamu ini
+  // sekalian tersambung ke akunnya (kode + nomor sudah terbukti cocok).
+  const sesi = await bacaSesi();
+  if (sesi && sesi.peran === "PELANGGAN" && sesi.telepon === nomorNorm) {
+    await klaimPesananTamu(sesi);
+  }
+
   await catatPeristiwa("LACAK_DIPAKAI");
   redirect(`/pesanan/${kode}`);
 }
@@ -484,16 +495,10 @@ export async function aksiKonfirmasiBayar(kode: string): Promise<HasilAksiPesana
     return { sukses: false, pesan: "Pesanan tidak ditemukan." };
   }
 
-  // Otorisasi: pemanggil harus memiliki cookie akses pesanan atau nomor telepon cocok / staf / pemilik
+  // Otorisasi: cookie akses perangkat ini, akun pemiliknya, atau dapur.
   const sesi = await bacaSesi();
   const punyaAkses =
-    (await punyaAksesPesanan(kode)) ||
-    Boolean(
-      sesi &&
-        (sesi.peran === "PEMILIK" ||
-          sesi.peran === "STAF_DAPUR" ||
-          sesi.telepon === pesanan.teleponPemesan)
-    );
+    (await punyaAksesPesanan(kode)) || pesananMilikAkun(sesi, pesanan) || sesiDapur(sesi);
 
   if (!punyaAkses) {
     return {
@@ -504,6 +509,11 @@ export async function aksiKonfirmasiBayar(kode: string): Promise<HasilAksiPesana
 
   if (pesanan.statusBayar === "LUNAS") {
     return { sukses: true, pesan: "Pesanan ini sudah lunas." };
+  }
+
+  // Pesanan batal tidak boleh kembali muncul di antrean "cek pembayaran".
+  if (pesanan.status === "DIBATALKAN") {
+    return { sukses: false, pesan: "Pesanan ini sudah dibatalkan." };
   }
 
   await db.pesanan.update({
@@ -554,13 +564,7 @@ export async function aksiUnggahBuktiBayar(
   // Otorisasi: hanya pemegang akses pesanan sah yang dapat mengunggah bukti bayar
   const sesi = await bacaSesi();
   const punyaAkses =
-    (await punyaAksesPesanan(kode)) ||
-    Boolean(
-      sesi &&
-        (sesi.peran === "PEMILIK" ||
-          sesi.peran === "STAF_DAPUR" ||
-          sesi.telepon === pesanan.teleponPemesan)
-    );
+    (await punyaAksesPesanan(kode)) || pesananMilikAkun(sesi, pesanan) || sesiDapur(sesi);
 
   if (!punyaAkses) {
     return {
@@ -571,6 +575,12 @@ export async function aksiUnggahBuktiBayar(
 
   if (pesanan.statusBayar === "LUNAS") {
     return { sukses: false, pesan: "Pesanan ini sudah dinyatakan lunas oleh dapur." };
+  }
+
+  // Bukti untuk pesanan batal hanya mengotori antrean verifikasi dapur dan
+  // menyimpan data rekening pembeli tanpa guna.
+  if (pesanan.status === "DIBATALKAN") {
+    return { sukses: false, pesan: "Pesanan ini sudah dibatalkan, jadi tidak perlu dibayar." };
   }
 
   const hasilValidasi = await validasiBerkasUnggahan(berkas);
@@ -597,6 +607,8 @@ export async function aksiUnggahBuktiBayar(
 
     revalidatePath(`/pesanan/${kode}`);
     revalidatePath("/admin");
+    revalidatePath("/admin/papan");
+    revalidatePath("/admin/produksi");
     revalidatePath("/admin/pesanan");
 
     return {
@@ -690,6 +702,8 @@ export async function aksiPindahStatus(
   revalidatePath(`/pesanan/${kode}`);
   revalidatePath("/admin/pesanan");
   revalidatePath("/admin");
+  revalidatePath("/admin/papan");
+  revalidatePath("/admin/produksi");
   return hasil;
 }
 
@@ -779,6 +793,8 @@ export async function aksiBatalkanPesanan(
 
   revalidatePath(`/pesanan/${kode}`);
   revalidatePath("/admin");
+  revalidatePath("/admin/papan");
+  revalidatePath("/admin/produksi");
   revalidatePath("/admin/pesanan");
   return hasil;
 }
@@ -850,6 +866,8 @@ export async function aksiTandaiLunas(
   revalidatePath("/admin/pesanan");
   revalidatePath("/admin/keuangan");
   revalidatePath("/admin");
+  revalidatePath("/admin/papan");
+  revalidatePath("/admin/produksi");
   return hasil;
 }
 
