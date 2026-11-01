@@ -95,6 +95,7 @@ Ini adalah aturan bisnis yang sudah didesain sengaja. Kalau perubahanmu menyentu
 - **Jangan commit** `src/generated/prisma/`, berkas `.env*` (kecuali `*.example`), atau isi `data/` (sudah di `.gitignore`).
 - Repo git ada di root `rasvara-/` (aplikasi ini di subfolder `Citarasa_Catering/`, yang juga jadi Root Directory di Vercel). Kerja lewat branch + PR ke `main`; `main` otomatis dideploy ke produksi.
 - Migrasi baru yang membuat tabel: RLS sudah otomatis tertutup bagi `anon` (default privileges), tetapi tetap tambahkan `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` dan cek Supabase Advisors.
+- Produksi (Vercel) terhubung sebagai peran `rasvara_app` (DML saja, `BYPASSRLS`). Migrasi WAJIB dijalankan sebagai `postgres` lewat `DIRECT_URL` — hanya dengan begitu `ALTER DEFAULT PRIVILEGES FOR ROLE postgres` memberi `rasvara_app` akses ke tabel baru. Jangan memberi `rasvara_app` hak DDL.
 
 ## 6. Konvensi penamaan (Bahasa Indonesia domain, kode konsisten)
 

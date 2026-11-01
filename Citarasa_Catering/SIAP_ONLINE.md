@@ -17,7 +17,7 @@ Legenda: 🔴 **Wajib** (tanpa ini data hilang / fitur rusak / tidak aman) ·
 | Penyimpanan foto & bukti transfer | 🔴 Tinggal 1 kunci | Kode & bucket siap; isi `SUPABASE_SERVICE_ROLE_KEY` (bagian 3) |
 | Pembatas laju (rate limit) | ✅ Bersama di Postgres | Tabel `BatasLaju`, berlaku lintas instans serverless |
 | Proyek Vercel `rasvara` | ✅ Dikonfigurasi | Root directory, region `hnd1`, proteksi preview (bagian 5) |
-| `DATABASE_URL` di Vercel | 🔴 Sandi salah | Bentuk URL sudah benar (pooler transaksi), tetapi Supabase menolak sandinya (bagian 2) |
+| `DATABASE_URL` di Vercel | ✅ Terhubung | Peran `rasvara_app` lewat pooler transaksi `aws-0-ap-northeast-1`; diverifikasi di preview (`/api/health`, `/menu`, detail menu) |
 | Isi profil usaha (WA, alamat, rekening) | 🔴 Dilakukan pemilik | Bagian 6 |
 | Backup | 🔴 Putuskan | Paket gratis Supabase **tidak** punya backup otomatis (bagian 9) |
 
@@ -39,14 +39,24 @@ Sudah dikerjakan di proyek `rasvara-` (ref `ldqzazvhvlmbgvnigqcb`, region Tokyo)
   migrasi baru). Skema diverifikasi identik dengan hasil migrasi asli (sidik md5 atas
   222 kolom/indeks/constraint/enum).
 - Satu sisa yang disengaja: kolom lama `Menu.fotoUrl` (kosong, nullable, tidak dipakai
-  aplikasi) belum dihapus karena perintah `DROP COLUMN` menunggu persetujuan pemilik.
+  aplikasi) belum dihapus: pemilik sudah setuju, tetapi popup konfirmasi Supabase tidak sampai
+  ke aplikasinya, jadi jalankan sendiri di dashboard.
   Aman dihapus kapan saja lewat *SQL Editor*: `ALTER TABLE "Menu" DROP COLUMN "fotoUrl";`
 - **RLS aktif di semua tabel** tanpa policy, dan hak `anon`/`authenticated` dicabut —
   termasuk untuk tabel yang dibuat migrasi mendatang (`ALTER DEFAULT PRIVILEGES`).
   Aplikasi tidak memakai Data API Supabase; ia terhubung sebagai pemilik tabel.
 - Akun pemilik, pengaturan awal, dan 13 menu contoh sudah diisi.
 
-Menjalankan migrasi baru di masa depan (dari laptop, **bukan** dari Vercel):
+**Peran database aplikasi.** Vercel terhubung sebagai `rasvara_app`, bukan `postgres`:
+hanya `SELECT/INSERT/UPDATE/DELETE` di tabel aplikasi; tidak bisa DDL, `TRUNCATE`,
+membaca `_prisma_migrations`, maupun skema `auth`/`storage`. Ia punya `BYPASSRLS`
+karena tabel sengaja ditutup RLS tanpa policy (Data API terkunci). Tabel dari migrasi
+mendatang otomatis bisa diakses lewat `ALTER DEFAULT PRIVILEGES FOR ROLE postgres` —
+**syaratnya migrasi dijalankan sebagai `postgres`** (lihat di bawah). Ganti sandinya:
+SQL Editor → `ALTER ROLE rasvara_app PASSWORD '<baru>';` lalu perbarui `DATABASE_URL`.
+
+Menjalankan migrasi baru di masa depan (dari laptop, **bukan** dari Vercel, dan
+**bukan** memakai `DATABASE_URL` aplikasi — `rasvara_app` sengaja tidak bisa DDL):
 
 ```bash
 cd Citarasa_Catering
@@ -65,7 +75,7 @@ Setelah migrasi yang membuat tabel baru, cek *Advisors → Security* di dashboar
 
 | Variabel | Isi | Status |
 | --- | --- | --- |
-| `DATABASE_URL` | String **Transaction pooler** Supabase: host `aws-…pooler.supabase.com`, **port 6543**, user `postgres.ldqzazvhvlmbgvnigqcb` | 🔴 Periksa |
+| `DATABASE_URL` | **Transaction pooler** Supabase (port 6543) dengan peran khusus aplikasi `rasvara_app.ldqzazvhvlmbgvnigqcb` (dibuat 2026-11-01) | ✅ |
 | `SESSION_SECRET` | Acak ≥ 32 karakter (sudah dibuat baru 2026-11-01) | ✅ |
 | `NEXT_PUBLIC_BASE_URL` | `https://rasvara-valvasas-projects.vercel.app` (ganti saat pakai domain sendiri) | ✅ |
 | `PROXY_TEPERCAYA` | `1` — Vercel menimpa `X-Forwarded-For`, jadi tidak bisa dipalsukan | ✅ |
