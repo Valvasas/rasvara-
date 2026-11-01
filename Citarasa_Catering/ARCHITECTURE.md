@@ -173,7 +173,7 @@ Aplikasi ini **memerlukan server Node.js yang hidup** (SSR + Server Actions), bu
 - Env var: `DATABASE_URL`, `SESSION_SECRET` (acak, ≥32 karakter, kebocoran = penyerang bisa memalsukan sesi), `NEXT_PUBLIC_BASE_URL` (dipakai untuk link WhatsApp).
 - `npm run db:deploy` dijalankan setiap ada migrasi baru, sebelum `npm run build && npm start`.
 
-Tidak ada konfigurasi CI/CD (`.github/workflows`), `Dockerfile`, atau `vercel.json` di repo ini saat ini — lihat [TASKS.md](TASKS.md).
+CI GitHub Actions ada di `.github/workflows/ci.yml` pada root repo (typecheck, lint, unit test, migrasi ke postgres:17 kosong, tes integrasi, build). Deploy: `vercel.json` (Vercel + Supabase, lihat [SIAP_ONLINE.md](SIAP_ONLINE.md)) atau `Dockerfile` (VPS, lihat [DEPLOYMENT.md](DEPLOYMENT.md)).
 
 ## 9. Folder `legacy/`
 

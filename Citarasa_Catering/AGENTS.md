@@ -91,7 +91,7 @@ Ini adalah aturan bisnis yang sudah didesain sengaja. Kalau perubahanmu menyentu
   npm run typecheck
   npm run build
   ```
-  ditambah `npm run lint` dan `npm test`. CI (`.github/workflows/ci.yml`) menjalankan semuanya plus tes integrasi pada postgres:17.
+  ditambah `npm run lint` dan `npm test`. CI (`.github/workflows/ci.yml` di **root repo** `rasvara-/`, bukan di folder ini — GitHub hanya membaca workflow di root) menjalankan semuanya plus tes integrasi pada postgres:17.
 - **Jangan commit** `src/generated/prisma/`, berkas `.env*` (kecuali `*.example`), atau isi `data/` (sudah di `.gitignore`).
 - Repo git ada di root `rasvara-/` (aplikasi ini di subfolder `Citarasa_Catering/`, yang juga jadi Root Directory di Vercel). Kerja lewat branch + PR ke `main`; `main` otomatis dideploy ke produksi.
 - Migrasi baru yang membuat tabel: RLS sudah otomatis tertutup bagi `anon` (default privileges), tetapi tetap tambahkan `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` dan cek Supabase Advisors.
@@ -162,7 +162,7 @@ Kode ini sengaja memakai istilah domain berbahasa Indonesia untuk model, variabe
   database (`skip`/`take`) memakai `KomponenPaginasi`.
 
 Yang **sudah** ada (jangan dibangun ulang): test runner bawaan Node + `tsx` (`npm test`),
-CI di `.github/workflows/ci.yml`, `eslint.config.mjs` (flat config), Dockerfile,
+CI di `.github/workflows/ci.yml` (root repo), `eslint.config.mjs` (flat config), Dockerfile,
 rate limiting, validasi unggahan berbasis magic bytes, dan pemesanan berbasis
 tanggal + jam lengkap dengan lead time preorder, tanggal libur, serta kuota harian per menu.
 
