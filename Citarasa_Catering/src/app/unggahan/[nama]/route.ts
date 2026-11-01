@@ -82,9 +82,11 @@ export async function GET(
       // Nama berkas mengandung angka acak dan tidak pernah dipakai ulang, jadi
       // foto menu aman disimpan lama di peramban maupun di CDN. Bukti transfer
       // tidak boleh menginap di mana pun kecuali di peramban pemiliknya.
+      // s-maxage: CDN Vercel ikut menyimpan foto menu, jadi foto katalog
+      // tidak perlu diambil dari Supabase Storage pada setiap kunjungan.
       "Cache-Control": adalahBukti
         ? "private, no-store"
-        : "public, max-age=31536000, immutable",
+        : "public, max-age=31536000, s-maxage=31536000, immutable",
     },
   });
 }

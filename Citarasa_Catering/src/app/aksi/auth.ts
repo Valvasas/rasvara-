@@ -67,7 +67,7 @@ export async function aksiMasuk(
   formData: FormData
 ): Promise<HasilAuth> {
   const ip = await ambilIpKlien();
-  const cekLaju = periksaBatasLaju({
+  const cekLaju = await periksaBatasLaju({
     kunci: `masuk:${ip}`,
     maksimal: 5,
     jendelaDetik: 60,
@@ -100,7 +100,7 @@ export async function aksiMasuk(
   // beberapa alamat IP tetap bisa menggilir tebakan ke nomor yang sama. Batas
   // kedua ini mengikat ke akunnya, dan dilepas begitu login berhasil.
   const kunciAkun = `masuk-akun:${nomorNorm}`;
-  const cekAkun = periksaBatasLaju({
+  const cekAkun = await periksaBatasLaju({
     kunci: kunciAkun,
     maksimal: 10,
     jendelaDetik: 15 * 60,
@@ -127,7 +127,7 @@ export async function aksiMasuk(
     };
   }
 
-  resetBatasLaju(kunciAkun);
+  await resetBatasLaju(kunciAkun);
 
   await buatSesi({
     id: pengguna.id,
@@ -152,7 +152,7 @@ export async function aksiDaftar(
   formData: FormData
 ): Promise<HasilAuth> {
   const ip = await ambilIpKlien();
-  const cekLaju = periksaBatasLaju({
+  const cekLaju = await periksaBatasLaju({
     kunci: `daftar:${ip}`,
     maksimal: 5,
     jendelaDetik: 120,
@@ -269,7 +269,7 @@ export async function aksiGantiSandi(
     return { sukses: false, pesan: "Sesi Anda sudah berakhir. Silakan masuk lagi." };
   }
 
-  const cekLaju = periksaBatasLaju({
+  const cekLaju = await periksaBatasLaju({
     kunci: `ganti-sandi:${sesi.id}`,
     maksimal: 5,
     jendelaDetik: 15 * 60,
@@ -348,7 +348,7 @@ export async function aksiUbahProfil(
     return { sukses: false, pesan: "Sesi Anda sudah berakhir. Silakan masuk lagi." };
   }
 
-  const cekLaju = periksaBatasLaju({ kunci: `profil:${sesi.id}`, maksimal: 10, jendelaDetik: 5 * 60 });
+  const cekLaju = await periksaBatasLaju({ kunci: `profil:${sesi.id}`, maksimal: 10, jendelaDetik: 5 * 60 });
   if (!cekLaju.diizinkan) {
     return { sukses: false, pesan: `Terlalu sering. Coba lagi dalam ${cekLaju.tungguDetik} detik.` };
   }

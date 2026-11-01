@@ -15,6 +15,7 @@ const BAWAAN: Pengaturan = {
   namaRekening: "",
   ongkirDefault: 0,
   minOrderAntar: 0,
+  jedaMinimumMenit: 0,
   diubahPada: new Date(),
 };
 
@@ -43,7 +44,19 @@ export function lupakanSinggahanPengaturan(): void {
  * selesai, dan kalau gagal yang dipakai adalah nilai terakhir yang benar-benar
  * pernah terbaca dari database.
  */
-export async function ambilPengaturan(): Promise<Pengaturan> {
+export async function ambilPengaturan(opsi: { segar?: boolean } = {}): Promise<Pengaturan> {
+  // `segar`: lewati singgahan. Di serverless ada banyak instans, masing-masing
+  // dengan singgahannya sendiri; setelah pemilik menyimpan pengaturan, instans
+  // lain masih memegang nilai lama sampai kedaluwarsa. Halaman pengaturan
+  // dashboard harus menampilkan yang benar-benar tersimpan, kalau tidak pemilik
+  // mengira simpannya gagal. Halaman toko cukup memakai singgahan.
+  if (opsi.segar) {
+    const tersimpan = await db.pengaturan.findUnique({ where: { id: "utama" } });
+    const nilai = tersimpan ?? BAWAAN;
+    singgahan = { nilai, kedaluwarsa: Date.now() + UMUR_SINGGAHAN_MS };
+    return nilai;
+  }
+
   if (singgahan && singgahan.kedaluwarsa > Date.now()) {
     return singgahan.nilai;
   }

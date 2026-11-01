@@ -43,9 +43,10 @@ export async function GET() {
         lingkungan: process.env.NODE_ENV ?? "unknown",
         uptimeDetik: Math.floor(process.uptime()),
         timestamp: new Date().toISOString(),
+        // Pesan galat mentah hanya di log server: isinya bisa memuat nama
+        // host, pengguna, atau struktur database, dan endpoint ini publik.
         database: {
           status: "terputus",
-          error: pesanError,
         },
       },
       {

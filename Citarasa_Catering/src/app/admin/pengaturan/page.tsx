@@ -18,7 +18,7 @@ export default async function HalamanAdminPengaturan() {
 
   const hariIni = hariIniWib();
   const [pengaturan, daftarStaf, tanggalTutup] = await Promise.all([
-    ambilPengaturan(),
+    ambilPengaturan({ segar: true }),
     db.pengguna.findMany({
       where: { peran: "STAF_DAPUR" },
       select: { id: true, nama: true, telepon: true, dibuatPada: true },

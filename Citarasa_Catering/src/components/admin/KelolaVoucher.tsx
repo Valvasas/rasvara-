@@ -23,6 +23,7 @@ export interface VoucherRingkas {
   kuota: number | null;
   terpakai: number;
   berakhirPada: Date | null;
+  sekaliPerNomor: boolean;
   aktif: boolean;
 }
 
@@ -214,6 +215,17 @@ export function KelolaVoucher({ daftar }: { daftar: VoucherRingkas[] }) {
                 Berlaku sampai akhir hari itu.
               </p>
             </div>
+
+            <label className="sm:col-span-2 flex items-start gap-3 rounded-xl border border-krem-gelap bg-krem-tua/50 p-3 cursor-pointer has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-bata/20">
+              <input type="checkbox" name="sekaliPerNomor" className="mt-1 w-5 h-5 accent-bata shrink-0" />
+              <span>
+                <span className="block font-semibold text-kayu">Sekali per nomor HP</span>
+                <span className="block text-[13px] text-kayu-sedang">
+                  Satu nomor WhatsApp hanya bisa memakai voucher ini sekali (pesanan batal tidak dihitung). Cocok untuk
+                  promo pelanggan baru.
+                </span>
+              </span>
+            </label>
           </div>
 
           {state && (
@@ -303,6 +315,7 @@ export function KelolaVoucher({ daftar }: { daftar: VoucherRingkas[] }) {
                         ? `Potong ${v.nilai}%${v.maksPotongan ? ` (maks ${rupiah(v.maksPotongan)})` : ""}`
                         : `Potong ${rupiah(v.nilai)}`}
                       {v.minBelanja > 0 && ` • min. belanja ${rupiah(v.minBelanja)}`}
+                      {v.sekaliPerNomor && " • sekali per nomor HP"}
                     </p>
 
                     <p className="text-xs text-kayu-sedang">

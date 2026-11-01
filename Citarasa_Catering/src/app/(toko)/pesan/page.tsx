@@ -6,6 +6,7 @@ import { ambilMenuUntukPemesanan } from "@/lib/menu";
 import { kunciHari, linkWhatsapp } from "@/lib/format";
 import { catatPeristiwa } from "@/lib/analitik";
 import { FormPemesanan } from "@/components/toko/FormPemesanan";
+import { buatTokenFormulir } from "@/lib/anti-bot";
 import { LangkahPesan } from "@/components/toko/LangkahPesan";
 
 export const metadata: Metadata = {
@@ -78,6 +79,7 @@ export default async function HalamanPesan({ searchParams }: HalamanPesanProps) 
         tanggalLibur={tutup.map((t) => kunciHari(t.tanggal))}
         pengguna={pengguna}
         rekeningTersedia={rekeningLengkap(pengaturan)}
+        tokenFormulir={buatTokenFormulir(Date.now(), process.env.SESSION_SECRET ?? "")}
       />
     </div>
   );

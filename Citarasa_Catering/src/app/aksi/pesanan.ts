@@ -21,6 +21,8 @@ import {
   selisihHari,
 } from "@/lib/format";
 import { ambilPengaturan, rekeningLengkap } from "@/lib/pengaturan";
+import { alasanJamDitolak } from "@/lib/jadwal";
+import { NAMA_HONEYPOT, NAMA_TOKEN, honeypotTerisi, periksaTokenFormulir } from "@/lib/anti-bot";
 import { catatPeristiwa } from "@/lib/analitik";
 import { hitungPotongan, normalkanKodeVoucher, pesanTolak } from "@/lib/voucher";
 import { ambilIpKlien, periksaBatasLaju } from "@/lib/pembatas-laju";
@@ -112,7 +114,7 @@ export async function aksiBuatPesanan(
   formData: FormData
 ): Promise<HasilAksiPesanan> {
   const ip = await ambilIpKlien();
-  const cekLaju = periksaBatasLaju({
+  const cekLaju = await periksaBatasLaju({
     kunci: `pesan:${ip}`,
     maksimal: 10,
     jendelaDetik: 60,
@@ -122,6 +124,22 @@ export async function aksiBuatPesanan(
     return {
       sukses: false,
       pesan: `Terlalu banyak permintaan. Silakan tunggu ${cekLaju.tungguDetik} detik.`,
+    };
+  }
+
+  // Anti-bot (lib/anti-bot.ts). Pesannya sengaja umum: tidak memberi tahu
+  // bot bagian mana yang membuatnya ketahuan.
+  if (honeypotTerisi(formData.get(NAMA_HONEYPOT))) {
+    return { sukses: false, pesan: "Pesanan tidak dapat diproses. Muat ulang halaman lalu coba lagi." };
+  }
+  const token = periksaTokenFormulir(formData.get(NAMA_TOKEN), Date.now(), process.env.SESSION_SECRET ?? "");
+  if (token === "terlalu-cepat") {
+    return { sukses: false, pesan: "Tunggu sebentar, lalu tekan Buat pesanan sekali lagi." };
+  }
+  if (token !== "ok") {
+    return {
+      sukses: false,
+      pesan: "Halaman ini sudah terlalu lama terbuka. Muat ulang halaman (isi keranjangmu tetap aman), lalu kirim lagi.",
     };
   }
 
@@ -175,17 +193,24 @@ export async function aksiBuatPesanan(
     };
   }
 
+  // Segar: ongkir, rekening, dan jeda persiapan menentukan sah/tidaknya
+  // pesanan & total tagihan — jangan pakai nilai singgahan instans lain.
+  const pengaturan = await ambilPengaturan({ segar: true });
+
   // Tanggal hari ini saja tidak cukup: tanpa cek jam, pesanan untuk pukul 08.00
   // masih bisa masuk pada pukul 20.00 dan dapur menerima pesanan yang waktunya
-  // sudah lewat. Batas jam operasional sengaja TIDAK dipakai di sini karena
+  // sudah lewat. Pemilik juga bisa menetapkan jeda persiapan minimum (mis.
+  // 3 jam). Batas jam operasional sengaja TIDAK dipakai di sini karena
   // jamBuka/jamTutup adalah jam layanan, bukan jam antar — pesanan pagi memang
   // lazim dimasak dini hari.
-  if (selisihHariAcara === 0 && menitDariJam(data.jamAcara) <= menitSekarangWib()) {
-    return {
-      sukses: false,
-      pesan:
-        "Jam acara untuk hari ini sudah lewat. Pilih jam yang lebih malam, atau ganti ke tanggal berikutnya.",
-    };
+  const alasanJam = alasanJamDitolak({
+    selisihHari: selisihHariAcara,
+    menitAcara: menitDariJam(data.jamAcara),
+    menitSekarang: menitSekarangWib(),
+    jedaMenit: pengaturan.jedaMinimumMenit,
+  });
+  if (alasanJam) {
+    return { sukses: false, kesalahan: { jamAcara: [alasanJam] }, pesan: alasanJam };
   }
 
   // 1. Cek tanggal libur toko
@@ -229,9 +254,6 @@ export async function aksiBuatPesanan(
       };
     }
   }
-
-  // Ambil pengaturan ongkir
-  const pengaturan = await ambilPengaturan();
 
   // Pembeli yang memilih transfer saat rekening usaha belum diisi akan
   // menerima instruksi bayar tanpa nomor rekening — pesanannya pasti macet.
@@ -330,6 +352,20 @@ export async function aksiBuatPesanan(
         const hasilVoucher = hitungPotongan(voucher, subtotal);
         if (!hasilVoucher.berlaku) {
           throw new Error(hasilVoucher.pesan);
+        }
+
+        if (voucher.sekaliPerNomor) {
+          // Kunci per (voucher, nomor) selama transaksi ini: dua pesanan
+          // serentak dari nomor yang sama tidak bisa sama-sama lolos hitungan.
+          await tx.$queryRaw`SELECT 1 AS ok FROM (SELECT pg_advisory_xact_lock(hashtext(${`${voucher.id}:${nomorNorm}`}))) AS kunci`;
+          const pernahPakai = await tx.pesanan.count({
+            where: { voucherId: voucher.id, teleponPemesan: nomorNorm, status: { not: "DIBATALKAN" } },
+          });
+          if (pernahPakai > 0) {
+            throw new Error(
+              `Voucher ${voucher.kode} hanya bisa dipakai sekali per nomor HP, dan nomor ini sudah memakainya. Lepas voucher untuk melanjutkan.`
+            );
+          }
         }
 
         // Kunci optimistis: pemakaian hanya bertambah bila `terpakai` masih sama
@@ -435,7 +471,7 @@ export async function aksiLacakPesanan(
   formData: FormData
 ): Promise<HasilAksiPesanan> {
   const ip = await ambilIpKlien();
-  const cekLaju = periksaBatasLaju({
+  const cekLaju = await periksaBatasLaju({
     kunci: `lacak:${ip}`,
     maksimal: 10,
     jendelaDetik: 60,
@@ -536,7 +572,7 @@ export async function aksiUnggahBuktiBayar(
   formData: FormData
 ): Promise<HasilAksiPesanan> {
   const ip = await ambilIpKlien();
-  const cekLaju = periksaBatasLaju({
+  const cekLaju = await periksaBatasLaju({
     kunci: `unggah:${ip}`,
     maksimal: 5,
     jendelaDetik: 300,

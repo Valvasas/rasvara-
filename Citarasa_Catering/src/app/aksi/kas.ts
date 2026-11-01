@@ -33,7 +33,7 @@ export async function aksiTambahKas(
   const sesi = await wajibPemilik();
 
   const ip = await ambilIpKlien();
-  const cekLaju = periksaBatasLaju({
+  const cekLaju = await periksaBatasLaju({
     kunci: `kas:${sesi.id}:${ip}`,
     maksimal: 10,
     jendelaDetik: 60,

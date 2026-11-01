@@ -2,13 +2,20 @@ import "dotenv/config";
 import { randomBytes, scrypt } from "node:crypto";
 import { promisify } from "node:util";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
 import { PrismaClient } from "../src/generated/prisma/client";
 import type { KategoriMenu } from "../src/generated/prisma/client";
+import { konfigurasiKoneksi } from "../src/lib/db";
 
 const scryptAsync = promisify(scrypt);
 
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL belum diisi.");
+}
+
+// Pengaturan SSL sama dengan aplikasi (penting untuk Supabase, lihat lib/db.ts).
 const db = new PrismaClient({
-  adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
+  adapter: new PrismaPg(new Pool({ ...konfigurasiKoneksi(process.env.DATABASE_URL), max: 2 })),
 });
 
 async function hashSandi(sandi: string): Promise<string> {

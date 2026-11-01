@@ -63,7 +63,7 @@ interface HalamanPapanDapurProps {
 }
 
 export default async function HalamanPapanDapur({ searchParams }: HalamanPapanDapurProps) {
-  const [params, sesi, pengaturan] = await Promise.all([searchParams, bacaSesi(), ambilPengaturan()]);
+  const [params, sesi, pengaturan] = await Promise.all([searchParams, bacaSesi(), ambilPengaturan({ segar: true })]);
   const adalahPemilik = sesi?.peran === "PEMILIK";
 
   const kataKunci = (params.q ?? "").trim().slice(0, 60);

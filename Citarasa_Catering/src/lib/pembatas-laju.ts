@@ -1,4 +1,6 @@
+import { createHmac } from "node:crypto";
 import { headers } from "next/headers";
+import { db } from "@/lib/db";
 
 type CatatanLaju = {
   hitungan: number;
@@ -127,16 +129,17 @@ export type OpsiBatasan = {
   jendelaDetik: number;
 };
 
+export type HasilBatasan = { diizinkan: boolean; tungguDetik: number };
+
 /**
- * Memeriksa apakah aksi tertentu melewati batas laju (rate limit).
- * Mengembalikan { diizinkan: true } jika masih dalam batas,
- * atau { diizinkan: false, tungguDetik: number } jika terlampaui.
+ * Pembatas laju di memori proses ini saja. Dipakai sebagai cadangan saat
+ * database tidak terjangkau, dan oleh unit test.
  */
-export function periksaBatasLaju({
+export function periksaBatasLajuMemori({
   kunci,
   maksimal,
   jendelaDetik,
-}: OpsiBatasan): { diizinkan: boolean; tungguDetik: number } {
+}: OpsiBatasan): HasilBatasan {
   const sekarang = Date.now();
   const durasiMs = jendelaDetik * 1000;
   const entri = tokoLaju.get(kunci);
@@ -162,9 +165,69 @@ export function periksaBatasLaju({
   return { diizinkan: true, tungguDetik: 0 };
 }
 
-/**
- * Reset catatan laju jika aksi berhasil (mis. login sukses, tidak perlu menghitung percobaan).
- */
-export function resetBatasLaju(kunci: string): void {
+export function resetBatasLajuMemori(kunci: string): void {
   tokoLaju.delete(kunci);
+}
+
+/* ============ Pembatas laju bersama (PostgreSQL) ============ */
+
+/**
+ * Di Vercel, setiap permintaan bisa dilayani instans server yang berbeda dan
+ * instans bisa didaur ulang kapan saja. Hitungan di memori jadi mudah
+ * dilewati: penyerang cukup terus mencoba sampai jatuh ke instans yang
+ * hitungannya masih nol. Karena itu hitungan disimpan di database yang sama
+ * untuk semua instans.
+ *
+ * Kunci memuat alamat IP dan nomor HP, padahal kebijakan privasi berjanji
+ * alamat IP tidak pernah disimpan — jadi yang ditulis ke tabel hanyalah
+ * HMAC-nya, dan barisnya kedaluwarsa dalam hitungan menit.
+ */
+function sidikKunci(kunci: string): string {
+  const rahasia = process.env.SESSION_SECRET || "citarasa-pembatas-laju";
+  return createHmac("sha256", rahasia).update(kunci).digest("hex");
+}
+
+let galatDbTerlapor = false;
+
+export async function periksaBatasLaju(opsi: OpsiBatasan): Promise<HasilBatasan> {
+  const jendela = Math.max(1, Math.floor(opsi.jendelaDetik));
+  try {
+    // Satu pernyataan atomik: dua permintaan serentak tidak bisa sama-sama
+    // membaca "hitungan 4 dari 5" lalu sama-sama lolos.
+    const baris = await db.$queryRaw<{ hitungan: number; sisa_ms: number }[]>`
+      INSERT INTO "BatasLaju" ("kunci", "hitungan", "kedaluwarsa")
+      VALUES (${sidikKunci(opsi.kunci)}, 1, timezone('utc', now()) + (${jendela}::int * interval '1 second'))
+      ON CONFLICT ("kunci") DO UPDATE SET
+        "hitungan" = CASE WHEN "BatasLaju"."kedaluwarsa" < timezone('utc', now()) THEN 1 ELSE "BatasLaju"."hitungan" + 1 END,
+        "kedaluwarsa" = CASE WHEN "BatasLaju"."kedaluwarsa" < timezone('utc', now()) THEN EXCLUDED."kedaluwarsa" ELSE "BatasLaju"."kedaluwarsa" END
+      RETURNING "hitungan", GREATEST(0, EXTRACT(EPOCH FROM ("kedaluwarsa" - timezone('utc', now()))) * 1000)::int AS sisa_ms`;
+
+    // Sesekali sapu baris lama supaya tabel tidak tumbuh tanpa batas.
+    if (Math.random() < 0.02) {
+      await db.$executeRaw`DELETE FROM "BatasLaju" WHERE "kedaluwarsa" < timezone('utc', now()) - interval '1 hour'`;
+    }
+
+    const { hitungan, sisa_ms } = baris[0];
+    return hitungan <= opsi.maksimal
+      ? { diizinkan: true, tungguDetik: 0 }
+      : { diizinkan: false, tungguDetik: Math.max(1, Math.ceil(sisa_ms / 1000)) };
+  } catch (err) {
+    // Database sedang bermasalah: tetap batasi per instans daripada membuka
+    // pintu lebar-lebar (atau menolak semua orang masuk).
+    if (!galatDbTerlapor) {
+      galatDbTerlapor = true;
+      console.error("[pembatas-laju] memakai cadangan memori:", err instanceof Error ? err.message : err);
+    }
+    return periksaBatasLajuMemori(opsi);
+  }
+}
+
+/** Reset catatan laju jika aksi berhasil (mis. login sukses). */
+export async function resetBatasLaju(kunci: string): Promise<void> {
+  resetBatasLajuMemori(kunci);
+  try {
+    await db.$executeRaw`DELETE FROM "BatasLaju" WHERE "kunci" = ${sidikKunci(kunci)}`;
+  } catch {
+    // Tidak kritis: baris itu kedaluwarsa sendiri.
+  }
 }

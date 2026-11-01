@@ -2,7 +2,14 @@ import crypto from "crypto";
 import path from "path";
 import fs from "fs/promises";
 
-export const BATAS_UKURAN_GAMBAR = 5 * 1024 * 1024; // 5 MB
+/**
+ * 4 MB, bukan 5: Vercel menolak badan permintaan di atas 4,5 MB sebelum kode
+ * kita sempat berjalan (galat mentah 413), dan unggahan multipart menambah
+ * sedikit ukuran. Foto dari kamera ponsel dikecilkan dulu di peramban
+ * (`lib/kompres-gambar.ts`), jadi batas ini praktis hanya mengenai berkas
+ * yang dikirim tanpa lewat formulir.
+ */
+export const BATAS_UKURAN_GAMBAR = 4 * 1024 * 1024;
 
 /**
  * Berkas unggahan sengaja TIDAK disimpan di `public/`.
@@ -140,7 +147,7 @@ export async function validasiBerkasUnggahan(
   if (berkas.size > BATAS_UKURAN_GAMBAR) {
     return {
       sukses: false,
-      pesan: "Ukuran file terlalu besar. Maksimal ukuran adalah 5 MB.",
+      pesan: "Ukuran file terlalu besar. Maksimal 4 MB — coba kirim screenshot atau foto dengan resolusi lebih kecil.",
     };
   }
 
@@ -163,12 +170,81 @@ export async function validasiBerkasUnggahan(
   };
 }
 
+/* ===================== Tempat penyimpanan ===================== */
+
 /**
- * Menyimpan buffer unggahan ke direktori data (di luar `public/`).
+ * Dua tempat penyimpanan, dipilih otomatis:
  *
- * Yang dikembalikan tetap URL `/unggahan/<nama>` seperti sebelumnya, karena itu
- * yang tersimpan di database dan dipakai di halaman — bedanya sekarang URL itu
- * dilayani oleh route yang memeriksa wewenang, bukan oleh server berkas statis.
+ * - **Supabase Storage** bila `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`
+ *   terisi. Wajib di Vercel: disk fungsi serverless bersifat sementara, jadi
+ *   berkas yang ditulis ke sana hilang begitu instansnya didaur ulang —
+ *   pembeli "berhasil" mengunggah bukti yang beberapa menit kemudian lenyap.
+ * - **Disk lokal** (`DIREKTORI_UNGGAHAN`) untuk komputer pengembang dan
+ *   VPS/Docker yang memasang volume.
+ *
+ * Bucket dipisah menurut sifatnya: `menu` (foto katalog) dan
+ * `bukti-transfer` (memuat nama, nomor rekening, nominal — WAJIB privat).
+ * Aplikasi selalu membaca lewat kunci server, dan berkas hanya sampai ke
+ * peramban lewat route `/unggahan/[nama]` yang memeriksa wewenang; kunci
+ * rahasia tidak pernah meninggalkan server.
+ */
+type Penyimpanan = "supabase" | "lokal";
+
+function konfigurasiSupabase(): { url: string; kunci: string } | null {
+  const url = process.env.SUPABASE_URL?.trim().replace(/\/+$/, "");
+  const kunci = (process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SECRET_KEY)?.trim();
+  return url && kunci ? { url, kunci } : null;
+}
+
+export function jenisPenyimpanan(): Penyimpanan {
+  return konfigurasiSupabase() ? "supabase" : "lokal";
+}
+
+/** Di Vercel, disk lokal bukan penyimpanan — lebih baik menolak dengan jujur. */
+function pastikanPenyimpananLayak(): void {
+  if (jenisPenyimpanan() === "lokal" && process.env.VERCEL) {
+    throw new Error(
+      "Penyimpanan foto belum disiapkan di server. Hubungi pemilik toko (SUPABASE_URL & SUPABASE_SERVICE_ROLE_KEY belum diisi)."
+    );
+  }
+}
+
+export function bucketUntuk(nama: string): "menu" | "bukti-transfer" {
+  return nama.startsWith("menu-") ? "menu" : "bukti-transfer";
+}
+
+async function permintaanStorage(
+  metode: "POST" | "GET" | "DELETE",
+  nama: string,
+  badan?: { isi: Buffer; tipe: string }
+): Promise<Response> {
+  const cfg = konfigurasiSupabase();
+  if (!cfg) throw new Error("Supabase Storage belum dikonfigurasi.");
+  // Kunci rahasia baru (sb_secret_…) maupun service_role lama diterima lewat
+  // pasangan header yang sama.
+  const header: Record<string, string> = {
+    apikey: cfg.kunci,
+    Authorization: `Bearer ${cfg.kunci}`,
+  };
+  if (badan) {
+    header["Content-Type"] = badan.tipe;
+    header["x-upsert"] = "false";
+    header["cache-control"] = "31536000";
+  }
+  return fetch(`${cfg.url}/storage/v1/object/${bucketUntuk(nama)}/${encodeURIComponent(nama)}`, {
+    method: metode,
+    headers: header,
+    body: badan ? new Uint8Array(badan.isi) : undefined,
+    cache: "no-store",
+    signal: AbortSignal.timeout(15_000),
+  });
+}
+
+/**
+ * Menyimpan berkas yang sudah divalidasi.
+ *
+ * Yang dikembalikan tetap URL `/unggahan/<nama>` — itu yang tersimpan di
+ * database dan dipakai halaman, apa pun tempat penyimpanannya.
  */
 export async function simpanBerkasUnggahan(
   buffer: Buffer,
@@ -176,13 +252,27 @@ export async function simpanBerkasUnggahan(
 ): Promise<string> {
   // Hanya ambil nama file tanpa path untuk mencegah directory traversal
   const namaAman = path.basename(namaFile);
+  if (!POLA_NAMA_BERKAS.test(namaAman)) {
+    throw new Error("Nama berkas tidak sah.");
+  }
+  pastikanPenyimpananLayak();
+
+  if (jenisPenyimpanan() === "supabase") {
+    const res = await permintaanStorage("POST", namaAman, {
+      isi: buffer,
+      tipe: tipeMimeDariNama(namaAman) ?? "application/octet-stream",
+    });
+    if (!res.ok) {
+      // Detail galat Storage hanya untuk log server; pembeli cukup tahu gagal.
+      console.error("[unggah] Supabase Storage menolak:", res.status, (await res.text()).slice(0, 300));
+      throw new Error("Gagal menyimpan foto. Coba lagi sebentar.");
+    }
+    return `/unggahan/${namaAman}`;
+  }
+
   const direktoriUnggah = direktoriUnggahan();
-
   await fs.mkdir(direktoriUnggah, { recursive: true });
-
-  const pathTujuan = path.join(direktoriUnggah, namaAman);
-  await fs.writeFile(pathTujuan, buffer);
-
+  await fs.writeFile(path.join(direktoriUnggah, namaAman), buffer);
   return `/unggahan/${namaAman}`;
 }
 
@@ -194,6 +284,11 @@ export async function bacaBerkasUnggahan(nama: string): Promise<Buffer | null> {
   if (!POLA_NAMA_BERKAS.test(nama)) return null;
 
   try {
+    if (jenisPenyimpanan() === "supabase") {
+      const res = await permintaanStorage("GET", nama);
+      if (!res.ok) return null;
+      return Buffer.from(await res.arrayBuffer());
+    }
     return await fs.readFile(path.join(direktoriUnggahan(), nama));
   } catch {
     return null;
@@ -201,15 +296,22 @@ export async function bacaBerkasUnggahan(nama: string): Promise<Buffer | null> {
 }
 
 /**
- * Menghapus file lama jika ada saat pengguna mengunggah ulang bukti baru.
+ * Menghapus berkas lama (bukti diganti, foto menu dihapus). Gagal menghapus
+ * tidak menggagalkan aksi pengguna — paling buruk tersisa berkas yatim.
  */
 export async function hapusBerkasLama(urlRelatif: string | null | undefined): Promise<void> {
   if (!urlRelatif || !urlRelatif.startsWith("/unggahan/")) {
     return;
   }
 
+  const namaAman = path.basename(urlRelatif);
+  if (!POLA_NAMA_BERKAS.test(namaAman)) return;
+
   try {
-    const namaAman = path.basename(urlRelatif);
+    if (jenisPenyimpanan() === "supabase") {
+      await permintaanStorage("DELETE", namaAman);
+      return;
+    }
     await fs.unlink(path.join(direktoriUnggahan(), namaAman));
   } catch {
     // Abaikan jika file tidak ditemukan

@@ -27,6 +27,7 @@ export default async function HalamanAdminVoucher() {
       kuota: true,
       terpakai: true,
       berakhirPada: true,
+      sekaliPerNomor: true,
       aktif: true,
     },
   });

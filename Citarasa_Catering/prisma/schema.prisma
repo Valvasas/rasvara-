@@ -272,6 +272,9 @@ model Voucher {
   terpakai     Int           @default(0)
   mulaiPada    DateTime?
   berakhirPada DateTime?
+  /// Satu nomor HP hanya boleh memakai voucher ini sekali (pesanan batal
+  /// tidak dihitung). Untuk promo "pelanggan baru" atau "sekali per orang".
+  sekaliPerNomor Boolean     @default(false)
   aktif        Boolean       @default(true)
   dibuatPada   DateTime      @default(now())
   diubahPada   DateTime      @updatedAt
@@ -348,5 +351,30 @@ model Pengaturan {
   namaRekening   String  @default("")
   ongkirDefault  Int     @default(0)
   minOrderAntar  Int     @default(0)
+  /// Jeda minimum (menit) antara pesanan dibuat dan jam siap untuk pesanan
+  /// HARI INI. 0 = hanya menolak jam yang sudah lewat. Dapur yang butuh
+  /// 3 jam persiapan mengisi 180, sehingga pesanan pukul 19.00 untuk 19.30
+  /// tidak pernah masuk.
+  jedaMinimumMenit Int   @default(0)
   diubahPada     DateTime @updatedAt
+}
+
+/// Penghitung pembatas laju yang dibagi semua instans server (lihat
+/// lib/pembatas-laju.ts). `kunci` adalah HMAC, bukan IP/nomor mentah.
+model BatasLaju {
+  kunci       String   @id
+  hitungan    Int      @default(0)
+  kedaluwarsa DateTime
+
+  @@index([kedaluwarsa])
+}
+
+/// Garam harian untuk sidik pengunjung, dibagi semua instans server supaya
+/// satu pengunjung tidak terhitung berkali-kali. Baris hari sebelumnya
+/// dihapus begitu hari berganti: setelah itu sidik lama tidak bisa dicocokkan
+/// ulang dengan apa pun (lihat invarian #8).
+model GaramHarian {
+  /// "YYYY-MM-DD" menurut WIB.
+  tanggal String @id
+  nilai   String
 }
