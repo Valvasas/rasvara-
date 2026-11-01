@@ -5,6 +5,8 @@ import {
   bucketUntuk,
   hapusBerkasLama,
   jenisPenyimpanan,
+  periksaPenyimpanan,
+  resetStatusPenyimpanan,
   simpanBerkasUnggahan,
 } from "../src/lib/unggah";
 
@@ -88,5 +90,98 @@ describe("Penyimpanan Supabase Storage", () => {
       simpanBerkasUnggahan(Buffer.from([1]), "bukti-1780000000000-0123456789abcdef01234567.jpg"),
       /belum disiapkan/
     );
+  });
+});
+
+describe("Pemeriksaan kesehatan penyimpanan (/api/health)", () => {
+  const fetchAsli = globalThis.fetch;
+  let balasanPerBucket: Record<string, () => Response> = {};
+  let jumlahPanggilan = 0;
+
+  beforeEach(() => {
+    resetStatusPenyimpanan();
+    process.env.SUPABASE_URL = "https://contoh.supabase.co";
+    process.env.SUPABASE_SERVICE_ROLE_KEY = "sb_secret_uji";
+    jumlahPanggilan = 0;
+    balasanPerBucket = {
+      menu: () => Response.json({ id: "menu", public: false }),
+      "bukti-transfer": () => Response.json({ id: "bukti-transfer", public: false }),
+    };
+    globalThis.fetch = (async (masukan: RequestInfo | URL) => {
+      jumlahPanggilan++;
+      const bucket = String(masukan).split("/storage/v1/bucket/")[1];
+      return (balasanPerBucket[bucket] ?? (() => new Response("?", { status: 500 })))();
+    }) as typeof fetch;
+  });
+
+  afterEach(() => {
+    globalThis.fetch = fetchAsli;
+    delete process.env.SUPABASE_URL;
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    delete process.env.VERCEL;
+  });
+
+  it("sehat: kedua bucket ada dan bukti transfer privat", async () => {
+    assert.equal(await periksaPenyimpanan(), "supabase");
+  });
+
+  it("bucket bukti transfer yang publik dilaporkan (data rekening terbuka)", async () => {
+    balasanPerBucket["bukti-transfer"] = () => Response.json({ id: "bukti-transfer", public: true });
+    assert.equal(await periksaPenyimpanan(), "bucket-publik");
+  });
+
+  it("bucket menu publik tidak dianggap masalah keamanan", async () => {
+    balasanPerBucket.menu = () => Response.json({ id: "menu", public: true });
+    assert.equal(await periksaPenyimpanan(), "supabase");
+  });
+
+  it("kunci salah tempel → kunci-ditolak; bucket belum dibuat → bucket-hilang", async () => {
+    balasanPerBucket.menu = () =>
+      Response.json({ statusCode: "403", error: "Unauthorized", message: "signature verification failed" }, { status: 400 });
+    assert.equal(await periksaPenyimpanan(), "kunci-ditolak");
+
+    resetStatusPenyimpanan();
+    balasanPerBucket.menu = () => Response.json({ id: "menu", public: false });
+    balasanPerBucket["bukti-transfer"] = () =>
+      Response.json({ statusCode: "404", error: "Bucket not found", message: "Bucket not found" }, { status: 400 });
+    assert.equal(await periksaPenyimpanan(), "bucket-hilang");
+  });
+
+  it("kunci publik (publishable / anon JWT) yang salah tempel terdeteksi tanpa memanggil Storage", async () => {
+    process.env.SUPABASE_SERVICE_ROLE_KEY = "sb_publishable_abc123";
+    assert.equal(await periksaPenyimpanan(), "kunci-ditolak");
+
+    resetStatusPenyimpanan();
+    const jwt = (role: string) =>
+      ["eyJhbGciOiJIUzI1NiJ9", Buffer.from(JSON.stringify({ role })).toString("base64url"), "tandatangan"].join(".");
+    process.env.SUPABASE_SERVICE_ROLE_KEY = jwt("anon");
+    assert.equal(await periksaPenyimpanan(), "kunci-ditolak");
+    assert.equal(jumlahPanggilan, 0);
+
+    resetStatusPenyimpanan();
+    process.env.SUPABASE_SERVICE_ROLE_KEY = jwt("service_role");
+    assert.equal(await periksaPenyimpanan(), "supabase");
+  });
+
+  it("Supabase tak terjangkau → tak-terjangkau, bukan lempar galat", async () => {
+    globalThis.fetch = (async () => {
+      throw new TypeError("fetch failed");
+    }) as typeof fetch;
+    assert.equal(await periksaPenyimpanan(), "tak-terjangkau");
+  });
+
+  it("tanpa konfigurasi: lokal di komputer sendiri, belum-disiapkan di Vercel", async () => {
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    assert.equal(await periksaPenyimpanan(), "lokal");
+    process.env.VERCEL = "1";
+    assert.equal(await periksaPenyimpanan(), "belum-disiapkan");
+    assert.equal(jumlahPanggilan, 0);
+  });
+
+  it("hasil sehat di-cache: endpoint publik tidak bisa dipakai membanjiri Supabase", async () => {
+    await periksaPenyimpanan();
+    const setelahPertama = jumlahPanggilan;
+    for (let i = 0; i < 20; i++) await periksaPenyimpanan();
+    assert.equal(jumlahPanggilan, setelahPertama);
   });
 });

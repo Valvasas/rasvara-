@@ -213,6 +213,86 @@ export function bucketUntuk(nama: string): "menu" | "bukti-transfer" {
   return nama.startsWith("menu-") ? "menu" : "bukti-transfer";
 }
 
+export type StatusPenyimpanan =
+  | "supabase"
+  | "lokal"
+  | "belum-disiapkan"
+  | "kunci-ditolak"
+  | "bucket-hilang"
+  | "bucket-publik"
+  | "tak-terjangkau";
+
+let cacheStatusPenyimpanan: { nilai: StatusPenyimpanan; sampai: number } | null = null;
+
+/**
+ * Memastikan penyimpanan benar-benar bisa dipakai — dipanggil /api/health.
+ *
+ * Kunci rahasia yang salah tempel baru ketahuan saat pembeli pertama gagal
+ * mengunggah bukti transfer, momen terburuk untuk menemukan bug. Pemeriksaan
+ * ini juga menangkap salah konfigurasi berbahaya: bucket `bukti-transfer`
+ * yang tidak sengaja dijadikan publik (isinya nama, rekening, nominal).
+ *
+ * Hasilnya di-cache per instans (5 menit bila sehat, 30 detik bila tidak)
+ * supaya endpoint publik ini tidak bisa dipakai membanjiri Supabase.
+ */
+export async function periksaPenyimpanan(): Promise<StatusPenyimpanan> {
+  const cfg = konfigurasiSupabase();
+  if (!cfg) return process.env.VERCEL ? "belum-disiapkan" : "lokal";
+  // Salah tempel paling lazim: kunci publishable/anon (yang memang publik).
+  // Dengan kunci itu Storage menyembunyikan bucket privat dan menjawab "Bucket
+  // not found" — tanpa pemeriksaan ini pemilik akan mencari bucket yang hilang.
+  if (kunciTampakPublik(cfg.kunci)) return "kunci-ditolak";
+  if (cacheStatusPenyimpanan && cacheStatusPenyimpanan.sampai > Date.now()) {
+    return cacheStatusPenyimpanan.nilai;
+  }
+
+  let nilai: StatusPenyimpanan = "supabase";
+  try {
+    for (const bucket of ["menu", "bukti-transfer"] as const) {
+      const res = await fetch(`${cfg.url}/storage/v1/bucket/${bucket}`, {
+        headers: { apikey: cfg.kunci, Authorization: `Bearer ${cfg.kunci}` },
+        cache: "no-store",
+        signal: AbortSignal.timeout(5_000),
+      });
+      if (!res.ok) {
+        const teks = (await res.text().catch(() => "")).toLowerCase();
+        nilai = teks.includes("not found") ? "bucket-hilang" : "kunci-ditolak";
+        break;
+      }
+      const info = (await res.json().catch(() => null)) as { public?: unknown } | null;
+      if (bucket === "bukti-transfer" && info?.public === true) {
+        nilai = "bucket-publik";
+        break;
+      }
+    }
+  } catch {
+    nilai = "tak-terjangkau";
+  }
+
+  cacheStatusPenyimpanan = {
+    nilai,
+    sampai: Date.now() + (nilai === "supabase" ? 5 * 60_000 : 30_000),
+  };
+  return nilai;
+}
+
+function kunciTampakPublik(kunci: string): boolean {
+  if (kunci.startsWith("sb_publishable_")) return true;
+  const bagian = kunci.split(".");
+  if (bagian.length !== 3) return false;
+  try {
+    const muatan = JSON.parse(Buffer.from(bagian[1], "base64url").toString("utf8")) as { role?: unknown };
+    return muatan.role === "anon";
+  } catch {
+    return false;
+  }
+}
+
+/** Untuk test: lupakan hasil pemeriksaan sebelumnya. */
+export function resetStatusPenyimpanan(): void {
+  cacheStatusPenyimpanan = null;
+}
+
 async function permintaanStorage(
   metode: "POST" | "GET" | "DELETE",
   nama: string,

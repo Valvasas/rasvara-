@@ -4,19 +4,25 @@ Backlog perbaikan & pengembangan lanjutan, dikelompokkan per area. Ini bukan daf
 
 Cara pakai: sebelum mulai kerja, cek dulu apakah tugas terkait sudah ada di sini. Sebelum menutup sesi kerja, perbarui status di sini.
 
-## Sedang berjalan — persiapan rilis ke client
+## Sedang berjalan — go-live Vercel + Supabase
 
-Fase 1 (kematangan tampilan & kepercayaan) dan fase 2 (voucher & peta) sudah selesai; sisanya:
+Kode, database Supabase `rasvara-`, dan proyek Vercel sudah disiapkan (lihat Selesai, 2026-11-01). Sisa langkah yang **hanya bisa dilakukan pemilik** — rinciannya di [SIAP_ONLINE.md](SIAP_ONLINE.md):
 
-- [ ] **Rahasia produksi dirotasi di sisi server (hanya bisa dikerjakan pemilik/admin server)** — `.env` dan `.env.production` di repo sudah diisi nilai baru pada 2026-09-20, tetapi nilai lama sempat ikut terbagikan bersama folder proyek. Yang masih harus dilakukan di server: pakai sandi database baru saat membuat database, dan isi `SEED_TELEPON_PEMILIK` dengan nomor pemilik yang sebenarnya (`node scripts/verify-production.mjs` sengaja masih GAGAL sampai nomor itu diisi).
-- [ ] **Monitoring error terpusat (Sentry/APM)** — belum ada; lihat bagian "Fitur bisnis masa depan".
-- [ ] **Perlindungan anti-bot pada formulir pesanan** — pembeli tamu tidak perlu login dan nomor HP tidak diverifikasi. Batas laju per-IP (10 pesanan/menit) dan batas ukuran input sudah ada, tetapi belum ada CAPTCHA (mis. Cloudflare Turnstile) maupun verifikasi OTP. Pertimbangkan bila mulai ada pesanan palsu.
+- [ ] **Isi `SUPABASE_SERVICE_ROLE_KEY` di Vercel** — tanpa ini unggah foto menu & bukti transfer ditolak. Cek `/api/health` → `konfigurasi.penyimpanan: "supabase"`.
+- [ ] **Pastikan `DATABASE_URL` di Vercel = Transaction pooler (port 6543)** — koneksi langsung Supabase hanya IPv6 dan tidak terjangkau dari Vercel.
+- [ ] **Ganti sandi sementara pemilik** setelah login pertama, lalu lengkapi profil usaha & rekening.
+- [ ] **Putuskan backup** — paket gratis Supabase tanpa backup harian.
+- [ ] **Paket Vercel** — Hobby hanya untuk non-komersial; toko yang menerima pembayaran wajib Pro.
+- [ ] Hapus env sisa yang tidak dibaca aplikasi: `NODE_ENV`, `PROXY_TERPERCAYA`, `DIREKTORI_UNGGAH`, `SEED_DEMO`.
+
+## Backlog berikutnya
+
 - [ ] **Verifikasi nomor HP (OTP WhatsApp) saat daftar** — sampai ini ada, akses pesanan sengaja TIDAK memakai pencocokan nomor (lihat invarian #5). Begitu OTP ada, pesanan tamu dengan nomor yang sama bisa diklaim otomatis lintas perangkat.
 - [ ] **Lupa sandi (reset tanpa login)** — ganti sandi saat login sudah ada (lihat bagian Selesai), tetapi pengguna yang lupa sandinya belum punya jalur pemulihan; butuh OTP WhatsApp/SMS. Sesi *pelanggan* juga belum bisa dicabut dari server (sesi pemilik/staf sudah).
-
 - [ ] **Payment gateway (Midtrans Snap, sandbox dulu)** — butuh akun merchant terverifikasi milik pemilik usaha, jadi hanya bisa sampai tahap sandbox dari sisi pengembangan. Alur `StatusBayar` wajib dijaga: satu pesanan tetap maksimal satu `CatatanKas` (invarian #3), dan webhook harus idempotent.
-- [ ] **Jeda minimum pesanan hari-H** — saat ini pesanan untuk hari ini hanya ditolak bila jamnya sudah lewat. Perlu keputusan pemilik: berapa jam minimum dapur butuh persiapan (mis. 3 jam) sebelum jam acara.
-- [ ] **Batas pemakaian voucher per pelanggan** — sekarang kuota bersifat global. Bila nanti perlu "satu kali per nomor HP", tambahkan tabel pemakaian voucher per pelanggan; jangan andalkan kuota global.
+- [ ] **CAPTCHA (Cloudflare Turnstile)** — hanya bila honeypot + token waktu + batas laju ternyata tidak cukup menahan pesanan palsu. Sengaja belum dipasang: CAPTCHA menyulitkan pembeli lanjut usia.
+- [ ] **Sentry/APM untuk galat sisi klien** — galat server sudah tercatat terstruktur di log Vercel (lihat Selesai).
+- [ ] *(Jalur VPS saja)* **Rotasi rahasia di server** — bila suatu saat pindah ke VPS: pakai sandi database baru dan isi `SEED_TELEPON_PEMILIK` asli (`node scripts/verify-production.mjs` sengaja GAGAL sampai diisi).
 
 ## Fitur bisnis masa depan (tahap lanjutan)
 
@@ -26,6 +32,15 @@ Fase 1 (kematangan tampilan & kepercayaan) dan fase 2 (voucher & peta) sudah sel
 - [ ] **Monitoring & Sentry di produksi** — integrasi Sentry / APM untuk menangkap error runtime di sisi klien maupun Server Actions secara terpusat.
 
 ## Selesai
+
+- [x] **Siap produksi di Vercel + Supabase dan backlog rilis (2026-11-01)**
+  - *Serverless:* unggahan pindah ke Supabase Storage (bucket privat `menu` & `bukti-transfer`, diakses hanya dengan kunci server lewat route `/unggahan/[nama]`); foto dikecilkan di perangkat sebelum diunggah (batas body Vercel 4,5 MB); pembatas laju pindah ke tabel `BatasLaju` (atomik, berlaku lintas instans, kunci di-HMAC); garam harian analitik di tabel `GaramHarian` (baris hari lalu dihapus — invarian #8); pencatatan analitik lewat `after()`; pool koneksi kecil otomatis di Vercel; TLS Supabase; region `hnd1`.
+  - *Keamanan database:* RLS di semua tabel + hak `anon`/`authenticated` dicabut, termasuk untuk tabel di migrasi mendatang (`ALTER DEFAULT PRIVILEGES`) — sebelumnya Data API Supabase bisa menulis ke tabel `Pengguna` memakai kunci publik. Diuji di Postgres biasa (CI) dan skenario mirip Supabase.
+  - *Backlog bisnis:* **jeda minimum pesanan hari-H** (diatur pemilik di Pengaturan, divalidasi di server & formulir), **voucher sekali per nomor HP** (dikunci `pg_advisory_xact_lock` agar dua pesanan serentak tidak sama-sama lolos), **anti-bot formulir pesanan** tanpa CAPTCHA (honeypot + token waktu bertanda tangan).
+  - *Operasional:* `instrumentation.ts` mencatat galat server sebagai satu baris JSON (digest = "Kode galat" di layar pembeli, tanpa header/cookie); `/api/health` memeriksa database, rahasia sesi, dan penyimpanan (termasuk mendeteksi bucket bukti transfer yang tidak sengaja publik) tanpa membocorkan nilai; `vercel.json` memasang devDependencies walau `NODE_ENV` disetel.
+  - *Vercel:* root directory diperbaiki (`Citarasa Catering` → `Citarasa_Catering` — penyebab semua deployment merah), proteksi Standard (preview wajib login), env `SESSION_SECRET` baru, `PROXY_TEPERCAYA`, `SUPABASE_URL`.
+  - *Build tidak lagi bergantung database:* `sitemap`, `opengraph-image`, dan `manifest` dulu dibekukan saat build (menu baru tidak pernah masuk sitemap sampai deploy berikutnya, dan galat database saat build menggagalkan deploy) — kini ISR per jam dan sitemap tetap jadi walau database tak terjangkau (diuji dengan build ber-`DATABASE_URL` mati).
+  - *Verifikasi:* 130 unit test + 4 tes integrasi Postgres (pembatas laju: 20 permintaan serentak → tepat 5 lolos) di CI dengan layanan postgres:17.
 
 - [x] **Rombak UX/UI siap rilis: pola marketplace, ilustrasi & animasi, fitur penjual, audit keamanan (2026-11-01)**
   - *Keamanan (kritikal):* `next` 16.3.5 → 16.4.3 (RCE di `ImageResponse`, yang dipakai favicon & gambar OG), `zod` 4.6.7, `prisma` 7.10.1 — `npm audit` produksi kini 0 kerentanan. **Akses pesanan berbasis nomor HP dihapus**: dulu siapa pun bisa mendaftar memakai nomor orang lain (tanpa OTP) lalu membuka seluruh riwayat, alamat, titik peta, dan bukti transfernya; kini berbasis `penggunaId`, dengan klaim pesanan tamu lewat cookie perangkat bertanda tangan + nomor yang sama. `sandiHash` tidak lagi ikut terkirim ke peramban di halaman checkout. Login kini berwaktu tetap (hash tiruan) sehingga keberadaan nomor tidak bisa ditebak dari lama balasan; pesan galat lacak diseragamkan (anti tebak kode); `?ke=` disaring dari open redirect; bukti bayar ditolak untuk pesanan batal; syarat sandi (8+ karakter, ada angka, bukan nomor HP) ditegakkan di server. Dashboard yang sesinya dicabut langsung diarahkan ke halaman masuk.

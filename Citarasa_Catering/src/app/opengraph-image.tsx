@@ -4,6 +4,9 @@ import { ambilPengaturan } from "@/lib/pengaturan";
 export const alt = "Citarasa Catering — masakan hangat, siap tepat waktu";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
+/** Dibuat saat build lalu diperbarui tiap jam, supaya nama/tagline usaha yang
+ * diubah pemilik ikut tampil di pratinjau tanpa menunggu deploy berikutnya. */
+export const revalidate = 3600;
 
 /**
  * Gambar pratinjau saat tautan dibagikan di WhatsApp, Instagram, atau Facebook.
