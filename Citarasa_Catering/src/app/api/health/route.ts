@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { periksaPenyimpanan } from "@/lib/unggah";
+import { jenisKoneksiDatabase } from "@/lib/url-database";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -35,6 +36,9 @@ export async function GET() {
     database = { status: "terputus" };
   }
 
+  // Membantu pemilik memeriksa sendiri isian DATABASE_URL di dashboard hosting
+  // (kutip terbawa, koneksi langsung IPv6, pooler sesi) tanpa membuka nilainya.
+  const koneksiDatabase = jenisKoneksiDatabase(process.env.DATABASE_URL);
   const rahasiaSesi = (process.env.SESSION_SECRET?.length ?? 0) >= 32 ? "ok" : "kurang";
   const penyimpanan = await periksaPenyimpanan();
   const penyimpananSehat = penyimpanan === "supabase" || penyimpanan === "lokal";
@@ -51,7 +55,7 @@ export async function GET() {
       uptimeDetik: Math.floor(process.uptime()),
       timestamp: new Date().toISOString(),
       database,
-      konfigurasi: { rahasiaSesi, penyimpanan },
+      konfigurasi: { koneksiDatabase, rahasiaSesi, penyimpanan },
     },
     { status: sehat ? 200 : 503, headers: HEADER_TANPA_CACHE }
   );

@@ -2,6 +2,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
 
 import { Pool } from "pg";
+import { bersihkanUrlDatabase, urlDatabaseSah } from "@/lib/url-database";
 
 /**
  * Bawaan `pg` hanya 10 koneksi. Begitu pengunjung serentak melewati angka itu,
@@ -31,15 +32,13 @@ function angkaEnv(nama: string, bawaan: number): number {
  * - host lain (localhost, VPS): mengikuti connection string apa adanya.
  */
 export function konfigurasiKoneksi(mentah: string): { connectionString: string; ssl?: { ca?: string; rejectUnauthorized: boolean } } {
-  let url: URL;
-  try {
-    url = new URL(mentah);
-  } catch {
-    return { connectionString: mentah };
-  }
+  // Kutip/spasi hasil salin-tempel dibuang; URL yang tetap rusak dihentikan di
+  // sini dengan pesan yang menunjuk penyebabnya (lihat lib/url-database.ts).
+  const url = urlDatabaseSah(mentah);
+  const bersih = bersihkanUrlDatabase(mentah);
   const ca = process.env.DB_SSL_CA?.trim().replace(/\\n/g, "\n");
   const terkelola = /\.supabase\.(com|co)$/.test(url.hostname);
-  if (!ca && !terkelola) return { connectionString: mentah };
+  if (!ca && !terkelola) return { connectionString: bersih };
 
   url.searchParams.delete("sslmode");
   url.searchParams.delete("sslrootcert");

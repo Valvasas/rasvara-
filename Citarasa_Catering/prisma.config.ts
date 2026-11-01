@@ -1,6 +1,7 @@
 import "dotenv/config";
 import path from "node:path";
 import { defineConfig } from "prisma/config";
+import { bersihkanUrlDatabase } from "./src/lib/url-database";
 
 /**
  * Migrasi memakai DIRECT_URL bila ada. Di Supabase, DATABASE_URL aplikasi
@@ -20,6 +21,7 @@ export default defineConfig({
     seed: "tsx prisma/seed.ts",
   },
   datasource: {
-    url: process.env.DIRECT_URL || process.env.DATABASE_URL || "",
+    // Kutip/spasi hasil salin-tempel dari .env ikut dibuang di sini.
+    url: bersihkanUrlDatabase(process.env.DIRECT_URL || process.env.DATABASE_URL || ""),
   },
 });

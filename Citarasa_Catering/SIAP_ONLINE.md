@@ -68,6 +68,13 @@ Setelah migrasi yang membuat tabel baru, cek *Advisors → Security* di dashboar
 | `SUPABASE_SERVICE_ROLE_KEY` | Kunci **secret** Supabase (bagian 3) | 🔴 Isi |
 | `DB_SSL_CA` | Opsional: isi sertifikat CA Supabase (PEM) agar TLS memverifikasi server | 🟢 |
 
+Cara memeriksa isian `DATABASE_URL` tanpa membukanya: `/api/health` →
+`konfigurasi.koneksiDatabase` harus **`supabase-pooler-transaksi`**.
+- `rusak` = bukan URL yang sah. Paling sering: karakter khusus di sandi (`# ? / @ % :`)
+  belum di-encode (`#` → `%23`). Kutip & spasi di awal/akhir sudah dibuang otomatis.
+- `supabase-langsung` = masih koneksi langsung (IPv6) — ganti ke pooler transaksi.
+- `supabase-pooler-sesi` = port 5432 — ganti ke **6543**.
+
 Kenapa **wajib pooler**: koneksi langsung Supabase (`db.<ref>.supabase.co:5432`) hanya
 IPv6, sedangkan fungsi Vercel keluar lewat IPv4 — hasilnya database "terputus". Pooler
 transaksi juga mencegah ratusan instans serverless menghabiskan jatah koneksi. Aplikasi
