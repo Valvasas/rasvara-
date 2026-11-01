@@ -26,7 +26,7 @@ export async function aksiTambahStaf(
   await wajibPemilik();
 
   const ip = await ambilIpKlien();
-  const cekLaju = periksaBatasLaju({
+  const cekLaju = await periksaBatasLaju({
     kunci: `staf-tambah:${ip}`,
     maksimal: 5,
     jendelaDetik: 60,
@@ -92,7 +92,7 @@ export async function aksiHapusStaf(
   await wajibPemilik();
 
   const ip = await ambilIpKlien();
-  const cekLaju = periksaBatasLaju({
+  const cekLaju = await periksaBatasLaju({
     kunci: `staf-hapus:${ip}`,
     maksimal: 5,
     jendelaDetik: 60,

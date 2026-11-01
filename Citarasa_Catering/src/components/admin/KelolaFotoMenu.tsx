@@ -14,6 +14,7 @@ import {
   aksiUnggahFotoMenu,
 } from "@/app/aksi/menu";
 import { MAKS_FOTO_PER_MENU, type HasilFotoMenu } from "@/lib/foto-menu";
+import { kecilkanIsiInput } from "@/lib/kompres-gambar";
 
 export interface FotoMenuRingkas {
   id: string;
@@ -59,8 +60,15 @@ export function KelolaFotoMenu({ menuId, namaMenu, foto }: KelolaFotoMenuProps) 
 
   const penuh = foto.length >= MAKS_FOTO_PER_MENU;
 
-  function pilihGambar(e: ChangeEvent<HTMLInputElement>) {
-    const berkas = e.target.files?.[0];
+  const [menyiapkan, setMenyiapkan] = useState(false);
+
+  async function pilihGambar(e: ChangeEvent<HTMLInputElement>) {
+    const input = e.currentTarget;
+    if (!input.files?.[0]) return;
+    // Foto kamera dikecilkan dulu (batas unggah server 4 MB, katalog jadi ringan).
+    setMenyiapkan(true);
+    const berkas = await kecilkanIsiInput(input);
+    setMenyiapkan(false);
     if (!berkas) return;
     setPratinjau((lama) => {
       if (lama) URL.revokeObjectURL(lama);
@@ -196,7 +204,7 @@ export function KelolaFotoMenu({ menuId, namaMenu, foto }: KelolaFotoMenuProps) 
                 htmlFor={`foto-menu-${menuId}`}
                 className="tombol-kedua border-dashed has-[:focus-visible]:ring-2"
               >
-                {pratinjau ? "Ganti foto pilihan" : "Pilih foto menu"}
+                {menyiapkan ? "Menyiapkan foto…" : pratinjau ? "Ganti foto pilihan" : "Pilih foto menu"}
               </label>
 
               {pratinjau && (
@@ -219,7 +227,7 @@ export function KelolaFotoMenu({ menuId, namaMenu, foto }: KelolaFotoMenuProps) 
               )}
 
               <p className="text-xs text-kayu-sedang sm:ml-auto">
-                JPG, PNG, atau WebP. Maksimal 5 MB.
+                JPG, PNG, atau WebP. Foto besar otomatis dikecilkan.
               </p>
             </form>
           )}

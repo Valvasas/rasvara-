@@ -2,6 +2,13 @@ import type { MetadataRoute } from "next";
 import { ambilMenuAktif } from "@/lib/menu";
 import { alamatSitus } from "@/lib/situs";
 
+/**
+ * Tanpa ini sitemap dirender SEKALI saat build lalu dibekukan: menu yang
+ * ditambah pemilik sesudah deploy tidak pernah muncul di mesin pencari sampai
+ * deploy berikutnya. Diperbarui paling lambat tiap jam.
+ */
+export const revalidate = 3600;
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const dasar = alamatSitus();
 
@@ -15,9 +22,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ];
 
   // Menu ikut dipetakan supaya tiap halaman detail bisa ditemukan mesin
-  // pencari. `ambilMenuAktif` sudah punya fallback sendiri saat database
-  // belum siap, jadi sitemap tidak pernah menggagalkan build.
-  const menu = await ambilMenuAktif();
+  // pencari. `ambilMenuAktif` sengaja TIDAK punya katalog cadangan, jadi galat
+  // database ditangkap di sini: sitemap dirender juga saat build, dan database
+  // yang sesaat tak terjangkau (atau dijeda) tidak boleh menggagalkan deploy.
+  // Halaman tetap tetap dipetakan; menu menyusul pada revalidasi berikutnya.
+  let menu: Awaited<ReturnType<typeof ambilMenuAktif>> = [];
+  try {
+    menu = await ambilMenuAktif();
+  } catch (galat) {
+    console.error(
+      "[sitemap] Menu tidak bisa dimuat, sitemap memuat halaman tetap saja:",
+      galat instanceof Error ? galat.message || galat.name : String(galat)
+    );
+  }
 
   return [
     ...halamanTetap,

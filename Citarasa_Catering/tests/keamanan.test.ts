@@ -4,9 +4,9 @@ import { amankanCsv } from "../src/lib/format";
 import { bukaTandatangan, tandatangani } from "../src/lib/cookie-tertanda";
 import {
   IP_TAK_DIPERCAYA,
-  periksaBatasLaju,
+  periksaBatasLajuMemori,
   pilihIpKlien,
-  resetBatasLaju,
+  resetBatasLajuMemori,
 } from "../src/lib/pembatas-laju";
 
 describe("Keamanan & Pencegahan Injeksi", () => {
@@ -134,19 +134,19 @@ describe("Keamanan & Pencegahan Injeksi", () => {
     it("menolak setelah jatah dalam satu jendela habis", () => {
       const kunci = `uji-${Math.random()}`;
       for (let i = 0; i < 3; i++) {
-        assert.equal(periksaBatasLaju({ kunci, maksimal: 3, jendelaDetik: 60 }).diizinkan, true);
+        assert.equal(periksaBatasLajuMemori({ kunci, maksimal: 3, jendelaDetik: 60 }).diizinkan, true);
       }
-      const keempat = periksaBatasLaju({ kunci, maksimal: 3, jendelaDetik: 60 });
+      const keempat = periksaBatasLajuMemori({ kunci, maksimal: 3, jendelaDetik: 60 });
       assert.equal(keempat.diizinkan, false);
       assert.ok(keempat.tungguDetik > 0);
     });
 
     it("memberi jatah baru setelah direset", () => {
       const kunci = `uji-${Math.random()}`;
-      periksaBatasLaju({ kunci, maksimal: 1, jendelaDetik: 60 });
-      assert.equal(periksaBatasLaju({ kunci, maksimal: 1, jendelaDetik: 60 }).diizinkan, false);
-      resetBatasLaju(kunci);
-      assert.equal(periksaBatasLaju({ kunci, maksimal: 1, jendelaDetik: 60 }).diizinkan, true);
+      periksaBatasLajuMemori({ kunci, maksimal: 1, jendelaDetik: 60 });
+      assert.equal(periksaBatasLajuMemori({ kunci, maksimal: 1, jendelaDetik: 60 }).diizinkan, false);
+      resetBatasLajuMemori(kunci);
+      assert.equal(periksaBatasLajuMemori({ kunci, maksimal: 1, jendelaDetik: 60 }).diizinkan, true);
     });
   });
 });

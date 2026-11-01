@@ -3,6 +3,10 @@
 import { useActionState, useEffect, useState, useTransition, useRef, type ChangeEvent } from "react";
 import { aksiUnggahBuktiBayar, aksiKonfirmasiBayar, type HasilAksiPesanan } from "@/app/aksi/pesanan";
 import { IkonFoto, IkonLampiran } from "@/components/ikon/Ikon";
+import { kecilkanIsiInput, ukuranTerbaca } from "@/lib/kompres-gambar";
+
+/** Sama dengan batas server (lib/unggah.ts) — tidak diimpor karena berkas itu memakai fs. */
+const BATAS_BYTE = 4 * 1024 * 1024;
 
 interface FormUnggahBuktiProps {
   kode: string;
@@ -26,13 +30,29 @@ export function FormUnggahBukti({
 
   const [isPendingKonfirmasi, startTransition] = useTransition();
 
-  const handlePilihGambar = (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setNamaFile(file.name);
-      const url = URL.createObjectURL(file);
-      setPratinjau(url);
+  const [menyiapkan, setMenyiapkan] = useState(false);
+  const [galatLokal, setGalatLokal] = useState<string | null>(null);
+
+  const handlePilihGambar = async (e: ChangeEvent<HTMLInputElement>) => {
+    const input = e.currentTarget;
+    if (!input.files?.[0]) return;
+    setGalatLokal(null);
+    setMenyiapkan(true);
+    // Foto kamera (3–8 MB) dikecilkan dulu: lebih cepat terkirim lewat data
+    // seluler dan tidak ditolak batas ukuran server.
+    const file = await kecilkanIsiInput(input);
+    setMenyiapkan(false);
+    if (!file) return;
+    if (file.size > BATAS_BYTE) {
+      setGalatLokal(`Foto masih terlalu besar (${ukuranTerbaca(file.size)}). Coba kirim screenshot saja.`);
+      input.value = "";
+      return;
     }
+    setNamaFile(`${file.name} · ${ukuranTerbaca(file.size)}`);
+    setPratinjau((lama) => {
+      if (lama) URL.revokeObjectURL(lama);
+      return URL.createObjectURL(file);
+    });
   };
 
   const handleBatalPilih = () => {
@@ -108,7 +128,18 @@ export function FormUnggahBukti({
             disabled={isPendingUpload}
           />
 
-          {pratinjau ? (
+          {galatLokal && (
+            <p role="alert" className="kotak-galat">
+              {galatLokal}
+            </p>
+          )}
+
+          {menyiapkan ? (
+            <p role="status" className="flex items-center justify-center gap-2 min-h-[52px] rounded-xl border border-krem-gelap bg-krem-tua text-[15px] text-kayu-sedang">
+              <span className="w-4 h-4 rounded-full border-2 border-bata border-t-transparent animate-spin" aria-hidden="true" />
+              Menyiapkan foto…
+            </p>
+          ) : pratinjau ? (
             <div className="flex flex-wrap items-center gap-3 rounded-xl border border-krem-gelap p-3">
               <img src={pratinjau} alt="Pratinjau bukti" className="w-14 h-14 rounded-lg object-cover border border-krem-gelap" />
               <p className="flex-1 min-w-0 text-sm text-kayu truncate">{namaFile}</p>
@@ -130,7 +161,7 @@ export function FormUnggahBukti({
               Pilih foto / screenshot
             </label>
           )}
-          <p className="petunjuk mt-0">JPG, PNG, atau WebP, maksimal 5 MB.</p>
+          <p className="petunjuk mt-0">Foto atau screenshot (JPG, PNG, WebP). Foto besar otomatis dikecilkan.</p>
         </form>
       )}
 

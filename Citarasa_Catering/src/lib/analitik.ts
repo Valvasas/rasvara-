@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { headers } from "next/headers";
+import { after } from "next/server";
 import { db } from "@/lib/db";
 import { dariInputTanggal, hariIniWib, kunciHari } from "@/lib/format";
 import { rapikanPath } from "@/lib/analitik-path";
@@ -8,20 +9,38 @@ import type { JenisPeristiwa } from "@/generated/prisma/client";
 /**
  * Garam harian untuk menyidik pengunjung.
  *
- * Nilainya acak, hanya hidup di memori proses, dan tidak pernah ditulis ke
- * database maupun berkas. Begitu harinya berganti, garamnya diganti dan yang
- * lama hilang selamanya — sehingga sidik kemarin tidak bisa dicocokkan dengan
- * sidik hari ini, dan tidak ada jalan untuk mengembalikan sidik menjadi alamat
- * IP. Inilah yang membuat statistik ini tidak memerlukan persetujuan cookie.
+ * Nilainya acak dan hanya berlaku satu hari WIB. Begitu harinya berganti,
+ * garam lama dihapus dan hilang selamanya — sehingga sidik kemarin tidak bisa
+ * dicocokkan dengan sidik hari ini, dan tidak ada jalan untuk mengembalikan
+ * sidik menjadi alamat IP. Inilah yang membuat statistik ini tidak memerlukan
+ * persetujuan cookie.
+ *
+ * Garam hari berjalan disimpan di tabel `GaramHarian` supaya SEMUA instans
+ * server memakai garam yang sama. Di Vercel ada banyak instans yang hidup-mati
+ * sepanjang hari; kalau tiap instans membuat garamnya sendiri, satu pengunjung
+ * yang dilayani tiga instans terhitung tiga orang.
  */
 let garamCache: { tanggal: string; nilai: string } | null = null;
 
-function garamHarian(): string {
+async function garamHarian(): Promise<string> {
   const hariIni = hariIniWib();
-  if (!garamCache || garamCache.tanggal !== hariIni) {
-    garamCache = { tanggal: hariIni, nilai: randomBytes(32).toString("hex") };
+  if (garamCache?.tanggal === hariIni) return garamCache.nilai;
+
+  const kandidat = randomBytes(32).toString("hex");
+  let nilai = kandidat;
+  try {
+    // Instans pertama yang menulis menang; yang lain memakai garam itu.
+    await db.$executeRaw`INSERT INTO "GaramHarian" ("tanggal", "nilai") VALUES (${hariIni}, ${kandidat}) ON CONFLICT ("tanggal") DO NOTHING`;
+    const baris = await db.garamHarian.findUnique({ where: { tanggal: hariIni } });
+    nilai = baris?.nilai ?? kandidat;
+    // Garam hari-hari sebelumnya dimusnahkan.
+    await db.garamHarian.deleteMany({ where: { tanggal: { lt: hariIni } } });
+  } catch {
+    // Database belum siap: garam lokal tetap aman, hanya hitungan unik yang
+    // bisa sedikit berlebih.
   }
-  return garamCache.nilai;
+  garamCache = { tanggal: hariIni, nilai };
+  return nilai;
 }
 
 /*
@@ -126,6 +145,22 @@ function tambah(penampung: Map<string, number>, kunci: string): void {
   jadwalkanSetor();
 }
 
+/**
+ * Di Vercel, proses "dibekukan" begitu balasan terkirim — timer setor di atas
+ * belum tentu sempat berjalan, dan instansnya bisa dimusnahkan bersama isi
+ * penampung. Di sana setiap permintaan menyetor hitungannya sendiri lewat
+ * `after()`: dijalankan SETELAH halaman terkirim, jadi pembeli tidak ikut
+ * menunggu, dan platform menjaga fungsi tetap hidup sampai setoran selesai.
+ */
+function setorSetelahBalasan(): void {
+  if (!process.env.VERCEL) return;
+  try {
+    after(setorAnalitik);
+  } catch {
+    // Di luar konteks permintaan: biarkan timer yang menangani.
+  }
+}
+
 // Setor sisa hitungan saat proses diberhentikan dengan tertib (mis. `docker stop`).
 if (typeof process !== "undefined" && typeof process.once === "function") {
   for (const sinyal of ["SIGTERM", "SIGINT", "beforeExit"] as const) {
@@ -158,7 +193,7 @@ export async function catatKunjungan(): Promise<void> {
     const agen = daftarHeader.get("user-agent") ?? "tanpa-agen";
 
     const sidik = createHash("sha256")
-      .update(`${ip}|${agen}|${garamHarian()}`)
+      .update(`${ip}|${agen}|${await garamHarian()}`)
       .digest("hex");
 
     tambah(penampungTampilan, `${hari}|${path}`);
@@ -167,6 +202,7 @@ export async function catatKunjungan(): Promise<void> {
       penampungPengunjung.add(`${hari}|${sidik}`);
       jadwalkanSetor();
     }
+    setorSetelahBalasan();
   } catch {
     // Di luar konteks request: lewati pencatatan tanpa mengganggu halaman.
   }
@@ -175,6 +211,7 @@ export async function catatKunjungan(): Promise<void> {
 /** Menambah hitungan satu peristiwa corong pemesanan. */
 export async function catatPeristiwa(jenis: JenisPeristiwa): Promise<void> {
   tambah(penampungPeristiwa, `${hariIniWib()}|${jenis}`);
+  setorSetelahBalasan();
 }
 
 export interface BarisHarian {

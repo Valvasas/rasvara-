@@ -1,6 +1,9 @@
 import type { MetadataRoute } from "next";
 import { ambilPengaturan } from "@/lib/pengaturan";
 
+/** Nama usaha diambil dari Pengaturan: perbarui tiap jam, jangan dibekukan saat build. */
+export const revalidate = 3600;
+
 /**
  * Manifest PWA supaya pemilik dan staf dapur bisa memasang dashboard ke layar
  * utama HP dan membukanya seperti aplikasi — tanpa bilah alamat browser yang

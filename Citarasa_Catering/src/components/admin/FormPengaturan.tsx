@@ -74,6 +74,31 @@ export function FormPengaturan({ awal }: { awal: Pengaturan }) {
             <input id="minOrderAntar" name="minOrderAntar" type="number" inputMode="numeric" min={0} defaultValue={awal.minOrderAntar} className={kelas("minOrderAntar")} />
             {g.minOrderAntar ? <Galat k="minOrderAntar" /> : <p className="petunjuk">0 = tidak ada</p>}
           </div>
+          <div className="col-span-2 lg:col-span-4 sm:max-w-md">
+            <label htmlFor="jedaMinimumJam" className="label">Waktu persiapan minimum untuk pesanan hari ini</label>
+            <div className="flex items-center gap-2">
+              <input
+                id="jedaMinimumJam"
+                name="jedaMinimumJam"
+                type="number"
+                inputMode="decimal"
+                min={0}
+                max={24}
+                step={0.5}
+                defaultValue={awal.jedaMinimumMenit / 60}
+                className={`${kelas("jedaMinimumMenit")} !w-28`}
+              />
+              <span className="text-[15px] text-kayu-sedang">jam sebelum jam siap</span>
+            </div>
+            {g.jedaMinimumMenit ? (
+              <Galat k="jedaMinimumMenit" />
+            ) : (
+              <p className="petunjuk">
+                Mis. 3 = pesanan untuk hari ini baru diterima bila jam siapnya minimal 3 jam dari sekarang.
+                0 = hanya menolak jam yang sudah lewat. Menu besar tetap diatur lewat H-n per menu.
+              </p>
+            )}
+          </div>
         </div>
       </section>
 

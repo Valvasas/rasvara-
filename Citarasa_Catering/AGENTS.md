@@ -27,7 +27,7 @@ Website satu-atap untuk usaha katering rumahan (snack box, nasi kotak, tumpeng, 
 | Auth | Custom: cookie `sesi_citarasa` (httpOnly, JWT HS256 via `jose`), password di-hash dengan `scrypt` bawaan Node (format `salt:hash`), login pakai **nomor telepon** |
 | Validasi | Zod, dijalankan di server di dalam file `"use server"` |
 | State | Tidak ada state management client global — mengandalkan Server Components + Server Actions + `revalidatePath` |
-| Test runner | **Tidak ada** (belum dikonfigurasi — lihat TASKS.md) |
+| Test runner | Node test runner + `tsx`: `npm test` (unit), `npm run test:integrasi` (butuh PostgreSQL) |
 | Package manager | npm (`package-lock.json`) |
 
 Jangan usulkan/menambahkan library yang menduplikasi hal di atas (mis. NextAuth, Redux, styled-components) tanpa diminta eksplisit oleh user — arsitektur ini sengaja diminimalkan.
@@ -80,7 +80,7 @@ Ini adalah aturan bisnis yang sudah didesain sengaja. Kalau perubahanmu menyentu
 5. **Kode pesanan bukan kunci akses.** Untuk melihat detail pesanan, pengunjung harus: memesan/melacak dari device itu (cookie `pesanan_saya` bertanda tangan — halaman lacak mewajibkan kode + nomor HP cocok), ATAU login sebagai akun yang **memiliki** pesanan itu (`Pesanan.penggunaId`), ATAU login sebagai dapur. **Jangan pernah memberi akses karena `sesi.telepon === pesanan.teleponPemesan`**: nomor HP saat mendaftar tidak diverifikasi (belum ada OTP), jadi siapa pun bisa mendaftar dengan nomor orang lain. Pesanan tamu baru tersambung ke akun lewat `klaimPesananTamu()` (cookie perangkat + nomor sama). Pakai helper di `src/lib/kepemilikan.ts`.
 6. **Nomor telepon adalah identitas login**, bukan email (email di `Pengguna` opsional).
 7. **Menu yang pernah dipesan tidak boleh dihapus**, hanya di-nonaktifkan (`Menu.aktif = false`), supaya riwayat pesanan tidak korup (relasi `ItemPesanan.menuId` — `onDelete: SetNull`, jangan diubah jadi cascade delete).
-8. **Statistik tidak boleh bisa dibongkar menjadi identitas.** Alamat IP tidak pernah disimpan; pengunjung unik dihitung dari SHA-256 atas (IP + user agent + garam harian acak yang hanya hidup di memori dan berganti tiap hari). Semua tabel analitik menyimpan angka teragregasi per hari, bukan baris per kunjungan, dan `rapikanPath()` menyamarkan kode pesanan sebelum disimpan. Jangan menambahkan penyimpanan IP mentah, cookie pelacak, atau layanan analitik pihak ketiga — begitu salah satunya masuk, situs ini wajib memasang banner persetujuan cookie dan janji di halaman kebijakan privasi jadi tidak benar.
+8. **Statistik tidak boleh bisa dibongkar menjadi identitas.** Alamat IP tidak pernah disimpan; pengunjung unik dihitung dari SHA-256 atas (IP + user agent + garam harian acak). Garam hari berjalan disimpan di tabel `GaramHarian` (supaya semua instans serverless memakai garam yang sama) dan baris hari sebelumnya **dihapus** begitu hari berganti — jangan pernah menyimpan garam lama atau menurunkannya dari rahasia tetap. Tabel `BatasLaju` hanya menyimpan HMAC kunci, bukan IP/nomor mentah. Semua tabel analitik menyimpan angka teragregasi per hari, bukan baris per kunjungan, dan `rapikanPath()` menyamarkan kode pesanan sebelum disimpan. Jangan menambahkan penyimpanan IP mentah, cookie pelacak, atau layanan analitik pihak ketiga — begitu salah satunya masuk, situs ini wajib memasang banner persetujuan cookie dan janji di halaman kebijakan privasi jadi tidak benar.
 
 ## 5. Alur kerja umum
 
@@ -91,9 +91,11 @@ Ini adalah aturan bisnis yang sudah didesain sengaja. Kalau perubahanmu menyentu
   npm run typecheck
   npm run build
   ```
-  (belum ada test suite — build + typecheck adalah baris pertahanan utama saat ini, lihat TASKS.md untuk rencana menambah test).
+  ditambah `npm run lint` dan `npm test`. CI (`.github/workflows/ci.yml` di **root repo** `rasvara-/`, bukan di folder ini — GitHub hanya membaca workflow di root) menjalankan semuanya plus tes integrasi pada postgres:17.
 - **Jangan commit** `src/generated/prisma/`, berkas `.env*` (kecuali `*.example`), atau isi `data/` (sudah di `.gitignore`).
-- Proyek ini **belum berupa git repository** (tidak ada folder `.git`). Jangan asumsikan riwayat git ada; jika perlu menjalankan operasi git, cek dulu apakah user sudah `git init`.
+- Repo git ada di root `rasvara-/` (aplikasi ini di subfolder `Citarasa_Catering/`, yang juga jadi Root Directory di Vercel). Kerja lewat branch + PR ke `main`; `main` otomatis dideploy ke produksi.
+- Migrasi baru yang membuat tabel: RLS sudah otomatis tertutup bagi `anon` (default privileges), tetapi tetap tambahkan `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` dan cek Supabase Advisors.
+- Produksi (Vercel) terhubung sebagai peran `rasvara_app` (DML saja, `BYPASSRLS`). Migrasi WAJIB dijalankan sebagai `postgres` lewat `DIRECT_URL` — hanya dengan begitu `ALTER DEFAULT PRIVILEGES FOR ROLE postgres` memberi `rasvara_app` akses ke tabel baru. Jangan memberi `rasvara_app` hak DDL.
 
 ## 6. Konvensi penamaan (Bahasa Indonesia domain, kode konsisten)
 
@@ -117,7 +119,7 @@ Kode ini sengaja memakai istilah domain berbahasa Indonesia untuk model, variabe
 
 - `src/lib/auth.ts` dan `src/app/aksi/auth.ts`: logika sesi, hashing password, cookie signing. Perubahan di sini berdampak langsung ke keamanan login.
 - `SESSION_SECRET` (env var): jangan pernah di-hardcode, log, atau expose ke client.
-- Berkas unggahan disimpan di `DIREKTORI_UNGGAHAN` (bawaan `data/unggahan`), **di luar `public/`**, dan hanya dilayani lewat `src/app/unggahan/[nama]/route.ts` yang memeriksa wewenang: foto menu terbuka untuk umum, bukti transfer hanya untuk dapur dan pemilik pesanannya. Jangan memindahkan berkas unggahan kembali ke `public/` — apa pun di sana dilayani kepada siapa saja yang tahu URL-nya, tanpa pemeriksaan. Jika menambah fitur upload, validasi tipe/ukuran file di server.
+- Berkas unggahan disimpan di Supabase Storage (bucket privat `menu` & `bukti-transfer`, bila `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY` terisi — wajib di Vercel) atau di `DIREKTORI_UNGGAHAN` (bawaan `data/unggahan`, untuk lokal/VPS), **tidak pernah di `public/`**, dan hanya dilayani lewat `src/app/unggahan/[nama]/route.ts` yang memeriksa wewenang: foto menu terbuka untuk umum, bukti transfer hanya untuk dapur dan pemilik pesanannya. Jangan memindahkan berkas unggahan kembali ke `public/` — apa pun di sana dilayani kepada siapa saja yang tahu URL-nya, tanpa pemeriksaan. Jika menambah fitur upload, validasi tipe/ukuran file di server.
 - Middleware/guard akses admin ada terpusat di `src/app/admin/layout.tsx` — jangan buat halaman admin baru yang melewati layout ini. Route handler di `src/app/api/admin/**` TIDAK terlindungi layout — periksa sesi sendiri (lihat `api/admin/denyut`).
 - Jangan mengoper objek `Pengguna` utuh ke komponen klien: ia memuat `sandiHash`. Selalu `select` bidang yang dibutuhkan.
 - Parameter `?ke=` (tujuan setelah login) wajib lewat `tujuanAman()` — mencegah open redirect ke situs tiruan.
@@ -161,7 +163,7 @@ Kode ini sengaja memakai istilah domain berbahasa Indonesia untuk model, variabe
   database (`skip`/`take`) memakai `KomponenPaginasi`.
 
 Yang **sudah** ada (jangan dibangun ulang): test runner bawaan Node + `tsx` (`npm test`),
-CI di `.github/workflows/ci.yml`, `eslint.config.mjs` (flat config), Dockerfile,
+CI di `.github/workflows/ci.yml` (root repo), `eslint.config.mjs` (flat config), Dockerfile,
 rate limiting, validasi unggahan berbasis magic bytes, dan pemesanan berbasis
 tanggal + jam lengkap dengan lead time preorder, tanggal libur, serta kuota harian per menu.
 

@@ -51,7 +51,7 @@ function selisihPersen(sekarang: number, kemarin: number): number | null {
 const NAMA_HARI_PENDEK = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
 
 export default async function BerandaDapur() {
-  const [sesi, pengaturan] = await Promise.all([bacaSesi(), ambilPengaturan()]);
+  const [sesi, pengaturan] = await Promise.all([bacaSesi(), ambilPengaturan({ segar: true })]);
   const pemilik = sesi?.peran === "PEMILIK";
   const hariIni = hariIniWib();
   const besok = geser(hariIni, 1);

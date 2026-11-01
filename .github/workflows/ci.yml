@@ -11,6 +11,21 @@ jobs:
     name: Typecheck, Test, and Build
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: citarasa
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -44,6 +59,21 @@ jobs:
       - name: Run unit tests
         working-directory: "Citarasa_Catering"
         run: npm test
+
+      # Migrasi dijalankan ke database kosong sungguhan: menangkap migrasi
+      # yang rusak (mis. RLS, urutan migrasi) sebelum sampai ke Supabase.
+      - name: Apply migrations to fresh PostgreSQL
+        working-directory: "Citarasa_Catering"
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/citarasa?schema=public"
+        run: npm run db:deploy
+
+      - name: Run integration tests (PostgreSQL)
+        working-directory: "Citarasa_Catering"
+        env:
+          DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/citarasa?schema=public"
+          SESSION_SECRET: "ci-dummy-session-secret-for-build-step-minimal-32-chars"
+        run: npm run test:integrasi
 
       - name: Build Next.js application
         working-directory: "Citarasa_Catering"

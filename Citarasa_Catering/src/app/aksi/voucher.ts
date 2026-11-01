@@ -24,7 +24,7 @@ export async function aksiCekVoucher(
   subtotal: number
 ): Promise<HasilCekVoucher> {
   const ip = await ambilIpKlien();
-  const cekLaju = periksaBatasLaju({
+  const cekLaju = await periksaBatasLaju({
     kunci: `cek-voucher:${ip}`,
     maksimal: 15,
     jendelaDetik: 60,
@@ -57,7 +57,11 @@ export async function aksiCekVoucher(
     berlaku: true,
     kode: voucher.kode,
     potongan: hasil.potongan,
-    deskripsi: voucher.deskripsi,
+    // Aturan sekali-per-nomor diperiksa saat pesanan dibuat (nomornya baru
+    // pasti di situ); di sini cukup diberi tahu sejak awal.
+    deskripsi: voucher.sekaliPerNomor
+      ? `${voucher.deskripsi ?? "Voucher terpakai"} · berlaku sekali per nomor HP`
+      : voucher.deskripsi,
     pesan: "Voucher berhasil dipakai.",
   };
 }
@@ -75,6 +79,7 @@ const SkemaVoucher = z.object({
   minBelanja: z.coerce.number().int().min(0).default(0),
   kuota: z.coerce.number().int().positive().optional(),
   berakhirPada: z.string().optional(),
+  sekaliPerNomor: z.boolean().default(false),
 });
 
 export async function aksiBuatVoucher(
@@ -92,6 +97,7 @@ export async function aksiBuatVoucher(
     minBelanja: formData.get("minBelanja") || 0,
     kuota: formData.get("kuota") || undefined,
     berakhirPada: formData.get("berakhirPada") || undefined,
+    sekaliPerNomor: formData.get("sekaliPerNomor") === "on",
   });
 
   if (!hasil.success) {
@@ -121,6 +127,7 @@ export async function aksiBuatVoucher(
       maksPotongan: data.jenis === "PERSEN" ? data.maksPotongan ?? null : null,
       minBelanja: data.minBelanja,
       kuota: data.kuota ?? null,
+      sekaliPerNomor: data.sekaliPerNomor,
       // Voucher berlaku sampai akhir hari tanggal yang dipilih, bukan sampai
       // tengah malam awal harinya.
       berakhirPada: data.berakhirPada

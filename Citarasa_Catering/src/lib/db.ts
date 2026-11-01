@@ -2,6 +2,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "@/generated/prisma/client";
 
 import { Pool } from "pg";
+import { bersihkanUrlDatabase, urlDatabaseSah } from "@/lib/url-database";
 
 /**
  * Bawaan `pg` hanya 10 koneksi. Begitu pengunjung serentak melewati angka itu,
@@ -15,19 +16,57 @@ function angkaEnv(nama: string, bawaan: number): number {
   return Number.isFinite(nilai) && nilai > 0 ? nilai : bawaan;
 }
 
+/**
+ * Pengaturan SSL untuk database terkelola (Supabase).
+ *
+ * `pg` versi baru memperlakukan `sslmode=require` di connection string sebagai
+ * verifikasi sertifikat penuh, sedangkan sertifikat pooler Supabase ditandatangani
+ * CA milik Supabase yang tidak ada di daftar CA bawaan Node — hasilnya galat
+ * "self-signed certificate in certificate chain" dan seluruh situs mati.
+ * Nilai `sslmode` di URL juga MENIMPA opsi `ssl` yang diberikan ke Pool,
+ * jadi parameter itu dilepas dari URL dan SSL diatur di sini:
+ *
+ * - `DB_SSL_CA` diisi (isi sertifikat CA Supabase, format PEM): koneksi
+ *   terenkripsi DAN sertifikat diverifikasi penuh. Paling aman.
+ * - host Supabase tanpa `DB_SSL_CA`: tetap terenkripsi, tanpa verifikasi CA.
+ * - host lain (localhost, VPS): mengikuti connection string apa adanya.
+ */
+export function konfigurasiKoneksi(mentah: string): { connectionString: string; ssl?: { ca?: string; rejectUnauthorized: boolean } } {
+  // Kutip/spasi hasil salin-tempel dibuang; URL yang tetap rusak dihentikan di
+  // sini dengan pesan yang menunjuk penyebabnya (lihat lib/url-database.ts).
+  const url = urlDatabaseSah(mentah);
+  const bersih = bersihkanUrlDatabase(mentah);
+  const ca = process.env.DB_SSL_CA?.trim().replace(/\\n/g, "\n");
+  const terkelola = /\.supabase\.(com|co)$/.test(url.hostname);
+  if (!ca && !terkelola) return { connectionString: bersih };
+
+  url.searchParams.delete("sslmode");
+  url.searchParams.delete("sslrootcert");
+  // Parameter khusus Prisma lama; tidak dipakai driver `pg`.
+  url.searchParams.delete("pgbouncer");
+  return {
+    connectionString: url.toString(),
+    ssl: ca ? { ca, rejectUnauthorized: true } : { rejectUnauthorized: false },
+  };
+}
+
 function buatClient() {
-  const connectionString = process.env.DATABASE_URL;
-  if (!connectionString) {
+  const mentah = process.env.DATABASE_URL;
+  if (!mentah) {
     throw new Error(
       "DATABASE_URL belum diisi. Salin .env.example menjadi .env lalu isi koneksi database."
     );
   }
 
+  // Serverless (Vercel): banyak instans kecil yang hidup-mati, masing-masing
+  // memegang pool sendiri. Pool kecil + koneksi menganggur cepat ditutup
+  // supaya jatah klien pooler Supabase tidak habis saat pengunjung ramai.
+  const serverless = Boolean(process.env.VERCEL);
   const pool = new Pool({
-    connectionString,
-    max: angkaEnv("DB_POOL_MAX", 20),
-    connectionTimeoutMillis: angkaEnv("DB_CONNECT_TIMEOUT_MS", 5000),
-    idleTimeoutMillis: 30_000,
+    ...konfigurasiKoneksi(mentah),
+    max: angkaEnv("DB_POOL_MAX", serverless ? 5 : 20),
+    connectionTimeoutMillis: angkaEnv("DB_CONNECT_TIMEOUT_MS", serverless ? 10_000 : 5000),
+    idleTimeoutMillis: serverless ? 10_000 : 30_000,
   });
   return new PrismaClient({
     adapter: new PrismaPg(pool),

@@ -41,6 +41,9 @@ const nextConfig: NextConfig = {
        * berkas kebesaran adalah pemeriksaan kita — lengkap dengan pesan yang
        * bisa dibaca pembeli — bukan galat mentah dari Next.js.
        */
+      // Di Vercel batas keras platform 4,5 MB tetap berlaku di depan angka ini;
+      // foto dikecilkan di peramban (lib/kompres-gambar.ts) dan server menolak
+      // di atas 4 MB dengan pesan yang bisa dibaca.
       bodySizeLimit: "6mb",
     },
   },

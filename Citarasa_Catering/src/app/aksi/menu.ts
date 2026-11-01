@@ -32,7 +32,7 @@ export async function aksiUnggahFotoMenu(
   await wajibPemilik();
 
   const ip = await ambilIpKlien();
-  const cekLaju = periksaBatasLaju({
+  const cekLaju = await periksaBatasLaju({
     kunci: `unggah-foto-menu:${ip}`,
     maksimal: 20,
     jendelaDetik: 60,
@@ -73,7 +73,13 @@ export async function aksiUnggahFotoMenu(
   }
 
   const namaFile = buatNamaFileAman(hasil.tipe, "menu");
-  const url = await simpanBerkasUnggahan(hasil.buffer, namaFile);
+  let url: string;
+  try {
+    url = await simpanBerkasUnggahan(hasil.buffer, namaFile);
+  } catch (err) {
+    // Penyimpanan sedang bermasalah: tampilkan pesan, jangan halaman galat.
+    return { sukses: false, pesan: err instanceof Error ? err.message : "Gagal menyimpan foto." };
+  }
 
   const fotoTerakhir = await db.fotoMenu.findFirst({
     where: { menuId },

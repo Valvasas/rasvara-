@@ -29,6 +29,9 @@ const SkemaPengaturan = z.object({
   namaRekening: teksOpsional(80),
   ongkirDefault: z.number({ message: "Isi angka" }).int().min(0, "Tidak boleh negatif").max(10_000_000),
   minOrderAntar: z.number({ message: "Isi angka" }).int().min(0, "Tidak boleh negatif").max(1_000_000_000),
+  // Maksimal 24 jam: lebih dari itu artinya "tidak menerima pesanan hari ini",
+  // dan itu lebih tepat diatur lewat H-n per menu.
+  jedaMinimumMenit: z.number({ message: "Isi angka" }).int().min(0, "Tidak boleh negatif").max(24 * 60, "Maksimal 24 jam"),
 });
 
 export type HasilPengaturan = {
@@ -55,6 +58,8 @@ export async function aksiSimpanPengaturan(
     namaRekening: formData.get("namaRekening") || undefined,
     ongkirDefault: Number(formData.get("ongkirDefault") || 0),
     minOrderAntar: Number(formData.get("minOrderAntar") || 0),
+    // Diisi dalam jam di formulir (lebih mudah dipahami pemilik), disimpan menit.
+    jedaMinimumMenit: Math.round(Number(formData.get("jedaMinimumJam") || 0) * 60),
   };
 
   const parsed = SkemaPengaturan.safeParse(raw);
@@ -83,6 +88,7 @@ export async function aksiSimpanPengaturan(
       namaRekening: d.namaRekening?.trim() || "",
       ongkirDefault: d.ongkirDefault,
       minOrderAntar: d.minOrderAntar,
+      jedaMinimumMenit: d.jedaMinimumMenit,
     },
     update: {
       namaUsaha: d.namaUsaha.trim(),
@@ -96,6 +102,7 @@ export async function aksiSimpanPengaturan(
       namaRekening: d.namaRekening?.trim() || "",
       ongkirDefault: d.ongkirDefault,
       minOrderAntar: d.minOrderAntar,
+      jedaMinimumMenit: d.jedaMinimumMenit,
     },
   });
 

@@ -23,6 +23,8 @@ import {
   tanggalPendek,
 } from "@/lib/format";
 import { LABEL_KATEGORI, URUTAN_KATEGORI } from "@/lib/pesanan";
+import { alasanJamDitolak, labelDurasi } from "@/lib/jadwal";
+import { NAMA_HONEYPOT, NAMA_TOKEN } from "@/lib/anti-bot-nama";
 import {
   pastikanDiKeranjang,
   selaraskanKeranjang,
@@ -65,6 +67,8 @@ interface FormPemesananProps {
   tanggalLibur: string[];
   pengguna: Pick<Pengguna, "nama" | "telepon" | "alamat"> | null;
   rekeningTersedia: boolean;
+  /** Waktu muat bertanda tangan server (lib/anti-bot.ts). */
+  tokenFormulir: string;
 }
 
 /** Berapa baris katalog tampil di pemilih "tambah menu" sebelum "tampilkan lainnya". */
@@ -121,6 +125,7 @@ export function FormPemesanan({
   tanggalLibur,
   pengguna,
   rekeningTersedia,
+  tokenFormulir,
 }: FormPemesananProps) {
   const [state, action, isPending] = useActionState(aksiBuatPesanan, null);
   const galat = state?.kesalahan ?? {};
@@ -228,8 +233,17 @@ export function FormPemesanan({
     return hasil;
   }, [maxPreorder, tanggalLibur]);
 
-  const jamSudahLewat =
-    Boolean(tanggalAcara) && tanggalAcara === hariIniWib() && menitDariJam(jamAcara) <= menitSekarangWib();
+  // Aturan yang sama persis dengan server (lib/jadwal.ts): jam yang lewat dan
+  // jeda persiapan minimum yang ditetapkan pemilik.
+  const alasanJam = tanggalAcara
+    ? alasanJamDitolak({
+        selisihHari: tanggalAcara === hariIniWib() ? 0 : 1,
+        menitAcara: menitDariJam(jamAcara),
+        menitSekarang: menitSekarangWib(),
+        jedaMenit: pengaturan.jedaMinimumMenit,
+      })
+    : null;
+  const jamSudahLewat = alasanJam !== null;
   const tanggalTerlaluCepat = Boolean(tanggalAcara) && tanggalAcara < minTanggal;
   const isTanggalLibur = tanggalLibur.includes(tanggalAcara);
 
@@ -308,7 +322,7 @@ export function FormPemesanan({
     if (tanggalTerlaluCepat)
       return { pesan: `Menu pilihanmu perlu dipesan paling lambat H-${maxPreorder}. Pilih tanggal yang lebih jauh.`, ke: "bagian-jadwal" };
     if (isTanggalLibur) return { pesan: "Dapur tutup pada tanggal itu. Pilih tanggal lain.", ke: "bagian-jadwal" };
-    if (jamSudahLewat) return { pesan: "Jam itu sudah lewat untuk hari ini.", ke: "bagian-jadwal" };
+    if (alasanJam) return { pesan: alasanJam, ke: "bagian-jadwal" };
     if (caraAmbil === "DIANTAR" && alamatAntar.trim().length < 10)
       return { pesan: "Lengkapi alamat pengantaran.", ke: "bagian-jadwal" };
     if (namaPemesan.trim().length < 2) return { pesan: "Isi nama pemesan.", ke: "bagian-data" };
@@ -358,6 +372,15 @@ export function FormPemesanan({
     <form action={action} noValidate className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-8 items-start">
       <input type="hidden" name="itemsJson" value={itemsJson} />
       <input type="hidden" name="kodeVoucher" value={kodeTerpakai ?? ""} />
+      <input type="hidden" name={NAMA_TOKEN} value={tokenFormulir} />
+      {/* Honeypot: tidak terlihat & tidak bisa dijangkau manusia (juga pembaca
+          layar), hanya bot pengisi semua kolom yang mengisinya. */}
+      <div aria-hidden="true" className="absolute -left-[9999px] w-px h-px overflow-hidden">
+        <label>
+          Kosongkan kolom ini
+          <input type="text" name={NAMA_HONEYPOT} tabIndex={-1} autoComplete="off" defaultValue="" />
+        </label>
+      </div>
 
       <div className="space-y-5 min-w-0">
         {dibuang.length > 0 && (
@@ -581,9 +604,11 @@ export function FormPemesanan({
               className={`isian mt-2.5 sm:max-w-xs ${jamSudahLewat || galat.jamAcara ? "isian-galat" : ""}`}
             />
             <p id="petunjuk-jam" className={jamSudahLewat || galat.jamAcara ? "pesan-galat" : "petunjuk"}>
-              {jamSudahLewat
-                ? "Jam ini sudah lewat hari ini."
-                : galat.jamAcara?.[0] ?? "Sebaiknya 30–45 menit sebelum acara dimulai."}
+              {alasanJam ??
+                galat.jamAcara?.[0] ??
+                (pengaturan.jedaMinimumMenit > 0
+                  ? `Sebaiknya 30–45 menit sebelum acara. Untuk hari ini, dapur butuh minimal ${labelDurasi(pengaturan.jedaMinimumMenit)} persiapan.`
+                  : "Sebaiknya 30–45 menit sebelum acara dimulai.")}
             </p>
           </fieldset>
 

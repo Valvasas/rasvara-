@@ -137,10 +137,17 @@ export default async function HalamanKebijakanPrivasi() {
         <p>
           Alamat IP Anda tidak pernah disimpan. IP dan jenis browser hanya
           dipakai sesaat untuk membuat sidik acak satu arah, dicampur dengan
-          kunci acak yang berganti setiap hari dan tidak pernah disimpan. Karena
-          kuncinya berganti tiap hari, kunjungan Anda hari ini tidak bisa
-          dihubungkan dengan kunjungan Anda besok, dan sidik itu tidak bisa
-          dikembalikan menjadi alamat IP.
+          kunci acak yang berlaku satu hari saja dan dimusnahkan begitu harinya
+          berganti. Karena kuncinya berganti tiap hari, kunjungan Anda hari ini
+          tidak bisa dihubungkan dengan kunjungan Anda besok, dan setelah
+          kuncinya dimusnahkan sidik itu tidak bisa dikembalikan menjadi alamat
+          IP oleh siapa pun.
+        </p>
+        <p>
+          Untuk mencegah percobaan masuk berulang (menebak kata sandi), kami
+          juga mencatat jumlah percobaan per perangkat selama beberapa menit.
+          Yang dicatat hanya sidik satu arah, bukan alamat IP atau nomor HP Anda,
+          dan catatan itu terhapus sendiri.
         </p>
         <p>
           Tidak ada Google Analytics, Meta Pixel, atau layanan pelacak lain di

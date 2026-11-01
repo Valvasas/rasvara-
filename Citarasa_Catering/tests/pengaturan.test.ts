@@ -17,6 +17,7 @@ const dasar: Pengaturan = {
   namaRekening: "Citarasa",
   ongkirDefault: 0,
   minOrderAntar: 0,
+  jedaMinimumMenit: 0,
   diubahPada: new Date(),
 };
 
