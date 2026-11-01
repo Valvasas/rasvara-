@@ -16,7 +16,7 @@ Sebelum mempublikasikan website ke domain publik, pastikan poin-poin berikut tel
 - [ ] **Sandi Database Kuat**: `POSTGRES_PASSWORD` dan sandi di `DATABASE_URL` sama, acak, dan berbeda dari `SESSION_SECRET`.
 - [ ] **Database PostgreSQL Siap**: Database terhubung dan migrasi skema telah diterapkan (`npm run db:deploy`).
 - [ ] **Akun Pemilik Dibuat**: Akun pemilik telah diisi via `npm run db:seed` dengan nomor HP dan sandi kuat.
-- [ ] **Data Demo Dimatikan**: `SEED_DEMO="0"` di `.env.production` agar pesanan dummy tidak masuk ke sistem kas riil.
+- [ ] **Data Uji Dimatikan**: `SEED_DATA_UJI="0"` di `.env.production` agar pesanan uji tidak masuk ke sistem kas riil.
 - [ ] **Domain & HTTPS Aktif**: `NEXT_PUBLIC_BASE_URL` mengarah ke URL berprotokol `https://` (misal: `https://citarasacatering.com`).
 - [ ] **Folder Unggahan Memiliki Izin Tulis**: Folder `DIREKTORI_UNGGAHAN` (bawaan `data/unggahan`) dapat ditulis oleh proses server. Folder ini **di luar `public/`** — bukti transfer hanya dilayani lewat route ber-otorisasi.
 - [ ] **Unggah Foto Diuji di Staging**: Unggah bukti transfer berukuran 3–5 MB dari ponsel benar-benar berhasil (batas Server Action disetel 6 MB di `next.config.ts`, batas validasi aplikasi 5 MB, `client_max_body_size` Nginx 10 MB).
@@ -45,7 +45,7 @@ Sebelum mempublikasikan website ke domain publik, pastikan poin-poin berikut tel
    SEED_TELEPON_PEMILIK="6281234567890" \
    SEED_SANDI_PEMILIK="SandiKuatPemilik123!" \
    SEED_NAMA_PEMILIK="Ibu Citarasa" \
-   SEED_DEMO="0" \
+   SEED_DATA_UJI="0" \
    npm run db:seed
    ```
 

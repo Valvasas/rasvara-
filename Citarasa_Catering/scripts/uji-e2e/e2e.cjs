@@ -1,5 +1,5 @@
 // Uji menyeluruh sebelum rilis. Jalankan terhadap database UJI yang sudah
-// diisi `SEED_DEMO=1 npm run db:seed` + data-stres.sql — JANGAN ke produksi:
+// diisi `SEED_DATA_UJI=1 npm run db:seed` + data-stres.sql — JANGAN ke produksi:
 // skrip ini membuat pesanan, mengganti sandi pemilik, dan menghapus data.
 // Lihat README.md di folder ini.
 const path = require('node:path');

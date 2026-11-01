@@ -54,7 +54,7 @@ Buka `http://localhost:3000` untuk halaman pelanggan dan
 | -------------- | ------------- |
 | `081234567890` | `citarasa123` |
 
-Sandi bawaan ini hanya untuk komputer pengembang. Di produksi
+Sandi bawaan ini hanya untuk komputer pengembang dan wajib diganti. Di produksi
 (`NODE_ENV=production`) seed **menolak berjalan** tanpa `SEED_SANDI_PEMILIK`:
 
 ```bash
@@ -68,11 +68,11 @@ Seed produksi sengaja **tidak** mengisi alamat & rekening contoh dan **tidak**
 membuat akun staf. Dashboard akan menagih pemilik melengkapi WhatsApp, alamat,
 dan rekening; selama rekening kosong, pembeli hanya bisa memilih bayar tunai.
 
-Untuk mencoba tampilan dengan data contoh (pesanan, catatan kas, alamat &
-rekening contoh, akun staf `081234567891` / `dapur123`):
+Khusus pengembangan lokal (jangan di produksi), data uji berisi pesanan, catatan kas,
+alamat & rekening uji, dan akun staf bisa diisi dengan:
 
 ```bash
-SEED_DEMO=1 npm run db:seed
+SEED_DATA_UJI=1 npm run db:seed
 ```
 
 ### Uji menyeluruh sebelum rilis

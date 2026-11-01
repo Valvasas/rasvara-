@@ -19,14 +19,14 @@ async function hashSandi(sandi: string): Promise<string> {
 
 const TELEPON_PEMILIK = process.env.SEED_TELEPON_PEMILIK ?? "6281234567890";
 const NAMA_PEMILIK = process.env.SEED_NAMA_PEMILIK ?? "Pemilik Citarasa";
-const MODE_DEMO = process.env.SEED_DEMO === "1";
+const MODE_DATA_UJI = process.env.SEED_DATA_UJI === "1";
 const PRODUKSI = process.env.NODE_ENV === "production";
 const SANDI_PEMILIK = process.env.SEED_SANDI_PEMILIK ?? "citarasa123";
 const TELEPON_STAF_DAPUR = process.env.SEED_TELEPON_STAF ?? "6281234567891";
-// Akun staf hanya dibuat untuk demo atau bila sandinya sengaja diberikan.
+// Akun staf hanya dibuat untuk data uji lokal atau bila sandinya sengaja diberikan.
 // Dulu akun ini selalu dibuat dengan sandi "dapur123" — di produksi itu pintu
 // belakang ke papan dapur yang diketahui siapa pun yang membaca repo ini.
-const SANDI_STAF_DAPUR = process.env.SEED_SANDI_STAF ?? (MODE_DEMO ? "dapur123" : null);
+const SANDI_STAF_DAPUR = process.env.SEED_SANDI_STAF ?? (MODE_DATA_UJI ? "dapur123" : null);
 
 type BenihMenu = {
   nama: string;
@@ -228,8 +228,8 @@ async function main() {
       "SEED_SANDI_PEMILIK wajib diisi di produksi. Sandi bawaan tertulis di repo dan tidak boleh dipakai."
     );
   }
-  if (PRODUKSI && MODE_DEMO) {
-    throw new Error("SEED_DEMO=1 tidak boleh dipakai di produksi: pesanan contoh akan merusak laporan kas.");
+  if (PRODUKSI && MODE_DATA_UJI) {
+    throw new Error("SEED_DATA_UJI=1 tidak boleh dipakai di produksi: pesanan contoh akan merusak laporan kas.");
   }
 
   const pemilik = await db.pengguna.upsert({
@@ -267,15 +267,15 @@ async function main() {
       tagline: "Masakan hangat, siap tepat waktu.",
       cerita: CERITA,
       whatsapp: TELEPON_PEMILIK,
-      // Alamat & rekening contoh hanya untuk demo. Di produksi dibiarkan kosong
+      // Alamat & rekening uji hanya untuk lingkungan lokal/staging. Di produksi dibiarkan kosong
       // supaya dashboard menagih pemilik mengisinya — rekening palsu yang
       // tampil ke pembeli berarti uang ditransfer ke nomor yang tidak ada.
-      alamat: MODE_DEMO ? "Jl. Melati No. 17, Sukamaju" : "",
+      alamat: MODE_DATA_UJI ? "Jl. Melati No. 17, Sukamaju" : "",
       jamBuka: "16:00",
       jamTutup: "23:00",
-      namaBank: MODE_DEMO ? "BCA" : "",
-      nomorRekening: MODE_DEMO ? "1234567890" : "",
-      namaRekening: MODE_DEMO ? "Citarasa Catering" : "",
+      namaBank: MODE_DATA_UJI ? "BCA" : "",
+      nomorRekening: MODE_DATA_UJI ? "1234567890" : "",
+      namaRekening: MODE_DATA_UJI ? "Citarasa Catering" : "",
       ongkirDefault: 15000,
       minOrderAntar: 100000,
     },
@@ -291,7 +291,7 @@ async function main() {
   }
   console.log(`  Menu terisi        : ${MENU.length} item`);
 
-  if (MODE_DEMO) {
+  if (MODE_DATA_UJI) {
     await isiContohPesanan(pemilik.id);
   }
 
@@ -305,11 +305,11 @@ async function main() {
   console.log("\nGanti sandi ini sebelum website dipakai sungguhan.\n");
 }
 
-/** Contoh pesanan & catatan kas supaya tampilan admin tidak kosong saat dicoba. */
+/** Pesanan & catatan kas uji untuk pengembangan lokal. Tidak pernah dijalankan di produksi. */
 async function isiContohPesanan(pemilikId: string) {
   const jumlahAda = await db.pesanan.count();
   if (jumlahAda > 0) {
-    console.log("  Contoh pesanan     : dilewati (sudah ada data)");
+    console.log("  Pesanan uji        : dilewati (sudah ada data)");
     return;
   }
 
@@ -331,7 +331,7 @@ async function isiContohPesanan(pemilikId: string) {
 
   const contoh = [
     {
-      kode: "CR-DEMO-A1",
+      kode: "CR-UJI-A1",
       nama: "Ibu Sri Wahyuni",
       telepon: "628111111111",
       status: "BARU" as const,
@@ -343,7 +343,7 @@ async function isiContohPesanan(pemilikId: string) {
       catatan: "Sambalnya dipisah ya, ada yang tidak bisa pedas.",
     },
     {
-      kode: "CR-DEMO-B2",
+      kode: "CR-UJI-B2",
       nama: "Pak Hendra (Kantor Maju Jaya)",
       telepon: "628222222222",
       status: "DIPROSES" as const,
@@ -355,7 +355,7 @@ async function isiContohPesanan(pemilikId: string) {
       catatan: null,
     },
     {
-      kode: "CR-DEMO-C3",
+      kode: "CR-UJI-C3",
       nama: "Keluarga Bapak Joko",
       telepon: "628333333333",
       status: "SELESAI" as const,
@@ -400,7 +400,7 @@ async function isiContohPesanan(pemilikId: string) {
           },
         },
         riwayat: {
-          create: { ke: c.status, catatan: "Data contoh", olehId: pemilikId },
+          create: { ke: c.status, catatan: "Data uji", olehId: pemilikId },
         },
       },
     });
@@ -444,7 +444,7 @@ async function isiContohPesanan(pemilikId: string) {
     ],
   });
 
-  console.log("  Contoh pesanan     : 3 pesanan + catatan kas");
+  console.log("  Pesanan uji        : 3 pesanan + catatan kas");
 }
 
 main()

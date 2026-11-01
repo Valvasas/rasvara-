@@ -8,7 +8,7 @@ menghapus data.
 ```bash
 # 1. Database uji kosong
 npm run db:deploy
-SEED_DEMO=1 npm run db:seed
+SEED_DATA_UJI=1 npm run db:seed
 psql "$DATABASE_URL" -f scripts/uji-e2e/data-stres.sql   # 150 menu, 1.200 pesanan, 1.600 kas
 
 # 2. Jalankan aplikasi (build produksi)

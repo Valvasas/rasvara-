@@ -180,12 +180,12 @@ cek(
   `Nomor pemilik terisi.`
 );
 
-// 9. Cek Data Demo
+// 9. Cek Data Uji
 cek(
-  "SEED_DEMO",
-  process.env.SEED_DEMO === "0",
-  "SEED_DEMO belum '0'. Pesanan dummy akan masuk ke buku kas dan merusak laporan omzet.",
-  "Data demo dimatikan."
+  "SEED_DATA_UJI",
+  process.env.SEED_DATA_UJI === "0",
+  "SEED_DATA_UJI belum '0'. Pesanan uji akan masuk ke buku kas dan merusak laporan omzet.",
+  "Data uji dimatikan."
 );
 
 // 10. Cek Kredensial Database untuk Docker Compose

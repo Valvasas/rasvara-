@@ -14,7 +14,7 @@ npm run db:seed
 npm run dev
 ```
 
-Toko: `http://localhost:3000` — Admin: `http://localhost:3000/admin` (akun seed: telepon `081234567890`, sandi `citarasa123` — **ganti sebelum live**).
+Toko: `http://localhost:3000` — Admin: `http://localhost:3000/admin` (akun seed lokal; lihat README. Di produksi sandi diisi lewat `SEED_SANDI_PEMILIK`).
 
 ## Git (jika sudah di-`git init`)
 
