@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { dariInputTanggal, hariIniWib } from "@/lib/format";
 import type { FotoMenu, KategoriMenu, Menu } from "@/generated/prisma/client";
 
 /** Menu beserta galerinya, sudah urut dari sampul. Bentuk ini yang dipakai seluruh katalog. */
@@ -306,6 +307,74 @@ export async function ambilPetaTerjual(): Promise<Map<string, number>> {
       muatTerjual = null;
     });
   return muatTerjual;
+}
+
+export type KuotaHariIni = {
+  nama: string;
+  slug: string;
+  satuan: string;
+  kapasitas: number;
+  sisa: number;
+};
+
+export type JadwalDapurHariIni = {
+  /** Menu berkuota yang bisa dipesan untuk hari ini, maks. 3 teratas katalog. */
+  kuota: KuotaHariIni[];
+  /** Jumlah menu aktif yang bisa dipesan untuk hari ini juga (tanpa pre-order). */
+  bisaHariIni: number;
+  /** Pre-order terpanjang di katalog (hari), 0 bila semua bisa hari-H. */
+  preorderTerlama: number;
+};
+
+/**
+ * Ringkasan "papan jadwal dapur" untuk beranda: sisa kuota hari ini per menu.
+ *
+ * Aturan hitungnya sama persis dengan pemeriksaan kuota saat pesanan dibuat
+ * (aksi/pesanan.ts): dijumlahkan per menu untuk tanggal acara hari ini (WIB),
+ * pesanan batal tidak dihitung. Jadi angka "sisa" di beranda tidak pernah
+ * menjanjikan porsi yang kemudian ditolak di checkout.
+ */
+export async function ambilJadwalDapurHariIni(): Promise<JadwalDapurHariIni> {
+  const hariIni = hariIniWib();
+  return denganSinggahan(`jadwal-dapur:${hariIni}`, async () => {
+    const [berkuota, ringkas] = await Promise.all([
+      db.menu.findMany({
+        where: { aktif: true, preorderHari: 0, kapasitasHarian: { gt: 0 } },
+        select: { id: true, nama: true, slug: true, satuan: true, kapasitasHarian: true },
+        orderBy: URUTAN_KATALOG,
+        take: 3,
+      }),
+      db.menu.aggregate({
+        where: { aktif: true },
+        _max: { preorderHari: true },
+      }),
+    ]);
+    const bisaHariIni = await db.menu.count({ where: { aktif: true, preorderHari: 0 } });
+
+    const terpakai = berkuota.length
+      ? await db.itemPesanan.groupBy({
+          by: ["menuId"],
+          _sum: { jumlah: true },
+          where: {
+            menuId: { in: berkuota.map((m) => m.id) },
+            pesanan: { tanggalAcara: dariInputTanggal(hariIni), status: { not: "DIBATALKAN" } },
+          },
+        })
+      : [];
+    const peta = new Map(terpakai.map((b) => [b.menuId, b._sum.jumlah ?? 0]));
+
+    return {
+      kuota: berkuota.map((m) => ({
+        nama: m.nama,
+        slug: m.slug,
+        satuan: m.satuan,
+        kapasitas: m.kapasitasHarian!,
+        sisa: Math.max(0, m.kapasitasHarian! - (peta.get(m.id) ?? 0)),
+      })),
+      bisaHariIni,
+      preorderTerlama: ringkas._max.preorderHari ?? 0,
+    };
+  });
 }
 
 /** Data ringkas yang dibutuhkan keranjang di peramban. */

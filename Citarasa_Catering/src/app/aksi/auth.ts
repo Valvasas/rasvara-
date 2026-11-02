@@ -12,8 +12,12 @@ import {
   hapusSesi,
   hashSandi,
   lupakanSinggahanPeran,
+  perbaruiSesi,
+  tandaiSandiLemah,
 } from "@/lib/auth";
-import { normalkanTelepon } from "@/lib/format";
+import { sandiContohUmum, sandiLemah } from "@/lib/kesiapan";
+import { namaPanggilan, normalkanTelepon, teleponHpSah } from "@/lib/format";
+import { titipKabar } from "@/lib/kabar";
 import { klaimPesananTamu } from "@/lib/akses-pesanan";
 import { tujuanAman } from "@/lib/kepemilikan";
 import {
@@ -40,8 +44,18 @@ const SkemaDaftar = z
       .regex(/\d/, "Kata sandi perlu memuat minimal satu angka"),
     alamat: z.string().max(500, "Alamat terlalu panjang").optional(),
   })
+  // Nomor dipakai untuk konfirmasi lewat WhatsApp, jadi harus nomor HP —
+  // telepon rumah/kantor tidak bisa menerima pesan dari dapur.
+  .refine((d) => teleponHpSah(d.telepon), {
+    path: ["telepon"],
+    message: "Gunakan nomor HP/WhatsApp Indonesia, contoh 0812 3456 7890",
+  })
   // Nomor HP adalah tebakan pertama siapa pun yang mencoba masuk ke akun orang
   // lain — dan nomornya justru tertulis di formulir masuk.
+  .refine((d) => !sandiContohUmum(d.sandi), {
+    path: ["sandi"],
+    message: "Kata sandi ini terlalu umum dan mudah ditebak. Pakai kombinasi lain.",
+  })
   .refine((d) => normalkanTelepon(d.sandi.replace(/\D/g, "")) !== normalkanTelepon(d.telepon), {
     path: ["sandi"],
     message: "Kata sandi tidak boleh sama dengan nomor HP",
@@ -129,12 +143,26 @@ export async function aksiMasuk(
 
   await resetBatasLaju(kunciAkun);
 
-  await buatSesi({
-    id: pengguna.id,
-    nama: pengguna.nama,
-    telepon: pengguna.telepon,
-    peran: pengguna.peran,
-  });
+  // Kotak "Ingat saya" dicentang bawaan; formulir mengirim "1" saat dicentang.
+  // Pemanggil lama tanpa bidang ini tetap mendapat sesi 30 hari.
+  const ingat = formData.has("ingatDikirim") ? formData.get("ingat") === "1" : true;
+  await buatSesi(
+    {
+      id: pengguna.id,
+      nama: pengguna.nama,
+      telepon: pengguna.telepon,
+      peran: pengguna.peran,
+    },
+    { ingat }
+  );
+  const lemah = sandiLemah(parsed.data.sandi, pengguna.telepon);
+  await tandaiSandiLemah(lemah);
+  await titipKabar(
+    lemah
+      ? `Halo ${namaPanggilan(pengguna.nama)}, kata sandimu mudah ditebak — segera ganti, ya.`
+      : `Selamat datang kembali, ${namaPanggilan(pengguna.nama)}!`,
+    lemah ? "info" : "sukses"
+  );
 
   const ke = formData.get("ke");
   if (pengguna.peran === "PEMILIK" || pengguna.peran === "STAF_DAPUR") {
@@ -207,6 +235,7 @@ export async function aksiDaftar(
         sandiHash,
         alamat: parsed.data.alamat?.trim() || null,
         peran: "PELANGGAN",
+        sesiSejak: awalSesiBaru(),
       },
     });
   } catch {
@@ -224,12 +253,42 @@ export async function aksiDaftar(
   });
 
   await klaimPesananTamu(penggunaBaru);
+  await titipKabar(`Akun dibuat. Selamat datang, ${namaPanggilan(penggunaBaru.nama)}!`);
   redirect(tujuanAman(formData.get("ke"), "/riwayat"));
 }
 
 export async function aksiKeluar(): Promise<void> {
+  const sesi = await bacaSesi();
   await hapusSesi();
-  redirect("/masuk");
+  await tandaiSandiLemah(false);
+  await titipKabar("Kamu sudah keluar. Sampai jumpa lagi!", "info");
+  // Staf kembali ke portal dapur (biasanya perangkat dapur bersama);
+  // pembeli kembali ke toko, bukan ke formulir yang tidak ia perlukan.
+  redirect(sesi && sesi.peran !== "PELANGGAN" ? "/masuk?ke=/admin" : "/");
+}
+
+/**
+ * "Keluar dari semua perangkat lain": token yang terbit sebelum detik ini
+ * ditolak (`sesiSejak`), lalu perangkat yang sedang dipakai diberi token baru.
+ * Untuk HP yang hilang atau akun yang pernah dibuka di perangkat orang lain.
+ */
+export async function aksiKeluarPerangkatLain(
+  _prevState: HasilAuth | null,
+  _formData: FormData
+): Promise<HasilAuth> {
+  const sesi = await bacaSesi();
+  if (!sesi) {
+    return { sukses: false, pesan: "Sesi Anda sudah berakhir. Silakan masuk lagi." };
+  }
+  const cekLaju = await periksaBatasLaju({ kunci: `keluar-semua:${sesi.id}`, maksimal: 5, jendelaDetik: 15 * 60 });
+  if (!cekLaju.diizinkan) {
+    return { sukses: false, pesan: `Terlalu sering. Coba lagi dalam ${Math.ceil(cekLaju.tungguDetik / 60)} menit.` };
+  }
+
+  await db.pengguna.update({ where: { id: sesi.id }, data: { sesiSejak: awalSesiBaru() } });
+  lupakanSinggahanPeran(sesi.id);
+  await perbaruiSesi(sesi);
+  return { sukses: true, pesan: "Semua perangkat lain sudah dikeluarkan. Perangkat ini tetap masuk." };
 }
 
 
@@ -309,6 +368,13 @@ export async function aksiGantiSandi(
       pesan: "Kata sandi saat ini salah.",
     };
   }
+  if (sandiLemah(parsed.data.sandiBaru, pengguna.telepon)) {
+    return {
+      sukses: false,
+      kesalahan: { sandiBaru: ["Terlalu mudah ditebak (sandi contoh atau nomor HP). Pakai kombinasi lain."] },
+      pesan: "Kata sandi baru terlalu mudah ditebak.",
+    };
+  }
 
   await db.pengguna.update({
     where: { id: pengguna.id },
@@ -319,14 +385,15 @@ export async function aksiGantiSandi(
   });
   lupakanSinggahanPeran(pengguna.id);
 
-  await buatSesi({
+  await perbaruiSesi({
     id: pengguna.id,
     nama: pengguna.nama,
     telepon: pengguna.telepon,
     peran: pengguna.peran,
   });
 
-  return { sukses: true, pesan: "Kata sandi berhasil diganti." };
+  await tandaiSandiLemah(sandiLemah(parsed.data.sandiBaru, pengguna.telepon));
+  return { sukses: true, pesan: "Kata sandi berhasil diganti. Perangkat lain sudah dikeluarkan." };
 }
 
 const SkemaProfil = z.object({
@@ -369,7 +436,7 @@ export async function aksiUbahProfil(
 
   // Nama ikut tertulis di token sesi (dipakai kepala halaman), jadi tokennya
   // diterbitkan ulang supaya nama baru langsung tampil.
-  await buatSesi(pengguna);
+  await perbaruiSesi(pengguna);
   revalidatePath("/akun");
   return { sukses: true, pesan: "Profil tersimpan." };
 }

@@ -35,7 +35,7 @@ export function TampilanCetakPesanan({
           &larr; Papan pesanan
         </Link>
         <div className="flex items-center gap-2">
-          <div role="tablist" aria-label="Jenis dokumen" className="flex gap-1 rounded-xl bg-white border border-krem-gelap p-1">
+          <div role="tablist" aria-label="Jenis dokumen" className="flex gap-1 rounded-xl bg-white border border-beras-gelap p-1">
             {(["dapur", "nota"] as const).map((m) => (
               <button
                 key={m}
@@ -44,7 +44,7 @@ export function TampilanCetakPesanan({
                 aria-selected={modeCetak === m}
                 onClick={() => setModeCetak(m)}
                 className={`min-h-[36px] px-3 rounded-lg text-sm font-medium cursor-pointer ${
-                  modeCetak === m ? "bg-kayu text-white" : "text-kayu-sedang hover:text-kayu"
+                  modeCetak === m ? "bg-arang text-white" : "text-arang-sedang hover:text-arang"
                 }`}
               >
                 {m === "dapur" ? "Lembar dapur" : "Nota pembeli"}
@@ -58,7 +58,7 @@ export function TampilanCetakPesanan({
       </div>
 
       {/* DOKUMEN CETAK UTAMA */}
-      <div className="max-w-xl mx-auto bg-white p-6 sm:p-8 rounded-2xl border border-krem-gelap print:shadow-none print:border-none print:p-2 print:m-0 print:max-w-none text-black font-sans">
+      <div className="max-w-xl mx-auto bg-white p-6 sm:p-8 rounded-2xl border border-beras-gelap print:shadow-none print:border-none print:p-2 print:m-0 print:max-w-none text-black font-sans">
         {modeCetak === "dapur" ? (
           /* ================= MODE LEMBAR KERJA DAPUR (KOT) ================= */
           <div className="space-y-4 text-xs">

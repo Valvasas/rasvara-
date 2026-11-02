@@ -63,11 +63,11 @@ export function PembelianMenu({ menu, waUrl }: PembelianMenuProps) {
 
   return (
     <>
-      <div className="mt-6 rounded-2xl border border-krem-gelap bg-white p-4 sm:p-5">
+      <div className="mt-6 rounded-2xl border border-beras-gelap bg-white p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="label !mb-0">Jumlah</p>
-            <p className="text-[13px] text-kayu-sedang">
+            <p className="text-[13px] text-arang-sedang">
               Min. {menu.minPesan} {menu.satuan}
             </p>
           </div>
@@ -80,9 +80,9 @@ export function PembelianMenu({ menu, waUrl }: PembelianMenuProps) {
             bisaHapus={false}
           />
         </div>
-        <div className="mt-4 pt-4 border-t border-krem-gelap flex items-baseline justify-between">
-          <span className="text-kayu-sedang">Subtotal</span>
-          <span className="text-xl font-bold text-kayu angka-tabel">{rupiah(menu.harga * jumlah)}</span>
+        <div className="mt-4 pt-4 border-t border-beras-gelap flex items-baseline justify-between">
+          <span className="text-arang-sedang">Subtotal</span>
+          <span className="text-xl font-bold text-arang angka-tabel">{rupiah(menu.harga * jumlah)}</span>
         </div>
 
         <div className="hidden md:grid grid-cols-2 gap-3 mt-5">
@@ -95,7 +95,7 @@ export function PembelianMenu({ menu, waUrl }: PembelianMenuProps) {
           </button>
         </div>
         {diKeranjang && (
-          <p className="mt-3 text-[13px] text-daun-tua font-medium">
+          <p className="mt-3 text-[13px] text-pandan-tua font-medium">
             ✓ Sudah ada {diKeranjang.jumlah} {menu.satuan} di keranjangmu
           </p>
         )}
@@ -103,7 +103,7 @@ export function PembelianMenu({ menu, waUrl }: PembelianMenuProps) {
 
       {/* Bar beli menempel di bawah — ponsel */}
       <div aria-hidden="true" className="md:hidden h-24" />
-      <div className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/97 backdrop-blur-md border-t border-krem-gelap shadow-[var(--shadow-mengambang)] aman-bawah">
+      <div className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/97 backdrop-blur-md border-t border-beras-gelap shadow-[var(--shadow-mengambang)] aman-bawah">
         <div className="flex items-stretch gap-2 px-3 pt-2.5">
           {waUrl && (
             <a
@@ -111,9 +111,9 @@ export function PembelianMenu({ menu, waUrl }: PembelianMenuProps) {
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Tanya lewat WhatsApp"
-              className="shrink-0 w-14 flex flex-col items-center justify-center rounded-xl text-daun-tua text-[11.5px] font-semibold hover:bg-daun-lembut"
+              className="shrink-0 w-14 flex flex-col items-center justify-center rounded-xl text-pandan-tua text-[11.5px] font-semibold hover:bg-pandan-lembut"
             >
-              <IkonWhatsapp className="w-6 h-6 text-daun" />
+              <IkonWhatsapp className="w-6 h-6 text-pandan" />
               Chat
             </a>
           )}

@@ -79,7 +79,7 @@ export function KelolaVoucher({ daftar }: { daftar: VoucherRingkas[] }) {
     <div className="space-y-6">
       {/* Formulir voucher baru */}
       <form ref={formRef} onSubmit={kirim} noValidate className="kartu overflow-hidden">
-        <div className="px-5 py-4 border-b border-krem-gelap">
+        <div className="px-5 py-4 border-b border-beras-gelap">
           <h2 className="judul-bagian">Buat voucher</h2>
         </div>
 
@@ -216,11 +216,11 @@ export function KelolaVoucher({ daftar }: { daftar: VoucherRingkas[] }) {
               </p>
             </div>
 
-            <label className="sm:col-span-2 flex items-start gap-3 rounded-xl border border-krem-gelap bg-krem-tua/50 p-3 cursor-pointer has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-bata/20">
-              <input type="checkbox" name="sekaliPerNomor" className="mt-1 w-5 h-5 accent-bata shrink-0" />
+            <label className="sm:col-span-2 flex items-start gap-3 rounded-xl border border-beras-gelap bg-beras-tua/50 p-3 cursor-pointer has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-pandan/20">
+              <input type="checkbox" name="sekaliPerNomor" className="mt-1 w-5 h-5 accent-pandan shrink-0" />
               <span>
-                <span className="block font-semibold text-kayu">Sekali per nomor HP</span>
-                <span className="block text-[13px] text-kayu-sedang">
+                <span className="block font-semibold text-arang">Sekali per nomor HP</span>
+                <span className="block text-[13px] text-arang-sedang">
                   Satu nomor WhatsApp hanya bisa memakai voucher ini sekali (pesanan batal tidak dihitung). Cocok untuk
                   promo pelanggan baru.
                 </span>
@@ -258,9 +258,9 @@ export function KelolaVoucher({ daftar }: { daftar: VoucherRingkas[] }) {
 
       {/* Daftar voucher */}
       <div className="kartu overflow-hidden">
-        <div className="px-5 py-4 border-b border-krem-gelap flex items-center justify-between">
+        <div className="px-5 py-4 border-b border-beras-gelap flex items-center justify-between">
           <h2 className="judul-bagian">Daftar voucher</h2>
-          <span className="text-sm text-kayu-sedang">
+          <span className="text-sm text-arang-sedang">
             {daftar.length} voucher
           </span>
         </div>
@@ -270,7 +270,7 @@ export function KelolaVoucher({ daftar }: { daftar: VoucherRingkas[] }) {
             Belum ada voucher. Buat satu di formulir atas.
           </p>
         ) : (
-          <ul className="divide-y divide-krem-gelap">
+          <ul className="divide-y divide-beras-gelap">
             {daftar.map((v) => {
               const habis = v.kuota !== null && v.terpakai >= v.kuota;
               const kedaluwarsa = v.berakhirPada
@@ -284,12 +284,12 @@ export function KelolaVoucher({ daftar }: { daftar: VoucherRingkas[] }) {
                 >
                   <div className="min-w-0 space-y-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-mono font-semibold text-kayu">
+                      <span className="font-mono font-semibold text-arang">
                         {v.kode}
                       </span>
 
                       {!v.aktif && (
-                        <span className="lencana bg-krem-tua text-kayu-sedang border-krem-gelap">
+                        <span className="lencana bg-beras-tua text-arang-sedang border-beras-gelap">
                           Nonaktif
                         </span>
                       )}
@@ -304,13 +304,13 @@ export function KelolaVoucher({ daftar }: { daftar: VoucherRingkas[] }) {
                         </span>
                       )}
                       {v.aktif && !kedaluwarsa && !habis && (
-                        <span className="lencana bg-daun-lembut text-daun-tua border-daun/20">
+                        <span className="lencana bg-pandan-lembut text-pandan-tua border-pandan/20">
                           Berjalan
                         </span>
                       )}
                     </div>
 
-                    <p className="text-xs text-kayu-sedang">
+                    <p className="text-xs text-arang-sedang">
                       {v.jenis === "PERSEN"
                         ? `Potong ${v.nilai}%${v.maksPotongan ? ` (maks ${rupiah(v.maksPotongan)})` : ""}`
                         : `Potong ${rupiah(v.nilai)}`}
@@ -318,7 +318,7 @@ export function KelolaVoucher({ daftar }: { daftar: VoucherRingkas[] }) {
                       {v.sekaliPerNomor && " • sekali per nomor HP"}
                     </p>
 
-                    <p className="text-xs text-kayu-sedang">
+                    <p className="text-xs text-arang-sedang">
                       Dipakai {v.terpakai}
                       {v.kuota !== null ? ` dari ${v.kuota}` : " kali"}
                       {v.berakhirPada &&

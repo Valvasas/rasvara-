@@ -61,3 +61,16 @@ describe("Autentikasi & Password Hashing", () => {
   });
 });
 
+
+describe("Pencabutan sesi (sesiSejak)", () => {
+  it("token yang terbit di detik yang sama dengan pendaftaran tetap berlaku", async () => {
+    const { tokenMasihBerlaku } = await import("../src/lib/auth");
+    // iat JWT = detik bulat; sesiSejak dari now() bermilidetik.
+    assert.equal(tokenMasihBerlaku(1_700_000_010_000, 1_700_000_010_567), true);
+  });
+
+  it("token lama (sebelum sandi diganti / keluar dari perangkat lain) ditolak", async () => {
+    const { tokenMasihBerlaku } = await import("../src/lib/auth");
+    assert.equal(tokenMasihBerlaku(1_700_000_009_000, 1_700_000_010_000), false);
+  });
+});

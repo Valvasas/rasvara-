@@ -72,7 +72,7 @@ export default async function HalamanAnalitik({
         </div>
 
         <div
-          className="flex items-center gap-1 bg-krem-tua p-1 rounded-xl border border-krem-gelap self-start"
+          className="flex items-center gap-1 bg-beras-tua p-1 rounded-xl border border-beras-gelap self-start"
           role="group"
           aria-label="Pilih rentang waktu"
         >
@@ -83,8 +83,8 @@ export default async function HalamanAnalitik({
               aria-current={hari === r}
               className={`min-h-[40px] px-3.5 py-2 rounded-lg text-xs font-bold transition-colors inline-flex items-center ${
                 hari === r
-                  ? "bg-kayu text-white"
-                  : "text-kayu-sedang hover:text-kayu"
+                  ? "bg-arang text-white"
+                  : "text-arang-sedang hover:text-arang"
               }`}
             >
               {r} hari
@@ -94,7 +94,7 @@ export default async function HalamanAnalitik({
       </div>
 
       {!data.adaData && (
-        <div className="p-5 rounded-2xl bg-kunyit-lembut border border-kunyit/30 text-sm text-kayu">
+        <div className="p-5 rounded-2xl bg-kunyit-lembut border border-kunyit/30 text-sm text-arang">
           <strong className="font-semibold">Belum ada data kunjungan.</strong>{" "}
           Angka akan terisi sendiri begitu ada yang membuka halaman toko.
           Kunjungan dari halaman admin sengaja tidak dihitung supaya statistik
@@ -108,19 +108,19 @@ export default async function HalamanAnalitik({
           label="Pengunjung Unik"
           nilai={angka(data.totalPengunjung)}
           keterangan={`dalam ${hari} hari terakhir`}
-          warna="text-daun"
+          warna="text-pandan"
         />
         <KartuAngka
           label="Halaman Dibuka"
           nilai={angka(data.totalTampilan)}
           keterangan={`rata-rata ${angka(data.rerataTampilanHarian)}/hari`}
-          warna="text-kayu"
+          warna="text-arang"
         />
         <KartuAngka
           label="Pesanan Masuk"
           nilai={angka(PESANAN_DIBUAT)}
           keterangan={`${konversi}% dari yang buka formulir`}
-          warna="text-bata"
+          warna="text-pandan"
         />
         <KartuAngka
           label="Lacak Dipakai"
@@ -135,18 +135,18 @@ export default async function HalamanAnalitik({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Halaman terpopuler */}
         <div className="kartu overflow-hidden">
-          <div className="p-4 bg-krem-tua/60 border-b border-krem-gelap">
+          <div className="p-4 bg-beras-tua/60 border-b border-beras-gelap">
             <h2 className="judul-bagian">
               Halaman Paling Sering Dibuka
             </h2>
           </div>
 
           {data.halamanTeratas.length === 0 ? (
-            <p className="p-5 text-xs text-kayu-sedang italic">
+            <p className="p-5 text-xs text-arang-sedang italic">
               Belum ada halaman yang tercatat.
             </p>
           ) : (
-            <ul className="divide-y divide-krem-gelap/60">
+            <ul className="divide-y divide-beras-gelap/60">
               {data.halamanTeratas.map((h) => {
                 const persen = Math.round(
                   (h.tampilan / data.halamanTeratas[0].tampilan) * 100
@@ -154,16 +154,16 @@ export default async function HalamanAnalitik({
                 return (
                   <li key={h.path} className="px-5 py-3">
                     <div className="flex items-center justify-between gap-3 mb-1.5">
-                      <span className="text-xs font-bold text-kayu truncate">
+                      <span className="text-xs font-bold text-arang truncate">
                         {LABEL_PATH[h.path] ?? h.path}
                       </span>
-                      <span className="text-xs font-semibold text-bata shrink-0">
+                      <span className="text-xs font-semibold text-pandan shrink-0">
                         {angka(h.tampilan)}
                       </span>
                     </div>
-                    <div className="h-1.5 rounded-full bg-krem-tua overflow-hidden">
+                    <div className="h-1.5 rounded-full bg-beras-tua overflow-hidden">
                       <div
-                        className="h-full rounded-full bg-bata/70"
+                        className="h-full rounded-full bg-pandan/70"
                         style={{ width: `${persen}%` }}
                       />
                     </div>
@@ -176,7 +176,7 @@ export default async function HalamanAnalitik({
 
         {/* Corong pemesanan */}
         <div className="kartu overflow-hidden">
-          <div className="p-4 bg-krem-tua/60 border-b border-krem-gelap">
+          <div className="p-4 bg-beras-tua/60 border-b border-beras-gelap">
             <h2 className="judul-bagian">
               Perjalanan Pembeli
             </h2>
@@ -186,16 +186,16 @@ export default async function HalamanAnalitik({
             {corong.map((c, i) => (
               <div key={c.label} className="space-y-1.5">
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-xs font-bold text-kayu">
+                  <span className="text-xs font-bold text-arang">
                     {i + 1}. {c.label}
                   </span>
-                  <span className="text-xs font-semibold text-kayu">
+                  <span className="text-xs font-semibold text-arang">
                     {angka(c.nilai)}
                   </span>
                 </div>
-                <div className="h-6 rounded-lg bg-krem-tua overflow-hidden">
+                <div className="h-6 rounded-lg bg-beras-tua overflow-hidden">
                   <div
-                    className="h-full rounded-lg bg-daun/70"
+                    className="h-full rounded-lg bg-pandan/70"
                     style={{
                       width: `${Math.max(2, Math.round((c.nilai / puncakCorong) * 100))}%`,
                     }}
@@ -204,7 +204,7 @@ export default async function HalamanAnalitik({
               </div>
             ))}
 
-            <p className="text-[11px] text-kayu-sedang pt-1 leading-relaxed">
+            <p className="text-[11px] text-arang-sedang pt-1 leading-relaxed">
               Kalau banyak yang membuka formulir tetapi sedikit yang
               menyelesaikan pesanan, biasanya ada yang mengganjal di formulir —
               misalnya menu favorit sedang nonaktif atau tanggal yang dipilih
@@ -214,8 +214,8 @@ export default async function HalamanAnalitik({
         </div>
       </div>
 
-      <div className="p-5 rounded-2xl bg-krem-tua/60 border border-krem-gelap text-xs text-kayu-sedang leading-relaxed">
-        <strong className="text-kayu font-bold">Cara angka ini dihitung.</strong>{" "}
+      <div className="p-5 rounded-2xl bg-beras-tua/60 border border-beras-gelap text-xs text-arang-sedang leading-relaxed">
+        <strong className="text-arang font-bold">Cara angka ini dihitung.</strong>{" "}
         Pengunjung unik dihitung dari sidik acak satu arah (SHA-256) yang dibuat
         dari alamat IP dan jenis peramban, dicampur kunci acak yang berganti
         setiap hari dan tidak pernah disimpan. Alamat IP sendiri tidak pernah
@@ -244,7 +244,7 @@ function KartuAngka({
         {label}
       </p>
       <p className={`text-2xl font-semibold mt-1 angka-tabel ${warna}`}>{nilai}</p>
-      <p className="text-[11px] text-kayu-sedang mt-1">{keterangan}</p>
+      <p className="text-[11px] text-arang-sedang mt-1">{keterangan}</p>
     </div>
   );
 }

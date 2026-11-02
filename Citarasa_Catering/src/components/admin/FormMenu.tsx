@@ -96,7 +96,7 @@ export function FormMenu({ menu }: { menu?: NilaiMenu }) {
 
       <div className="max-w-xs">
         <label htmlFor="kapasitasHarian" className="label">
-          Kuota per hari <span className="font-normal text-kayu-sedang">(opsional)</span>
+          Kuota per hari <span className="font-normal text-arang-sedang">(opsional)</span>
         </label>
         <input type="number" inputMode="numeric" min={1} placeholder="Tanpa batas" {...isian("kapasitasHarian")} />
         {g.kapasitasHarian ? (

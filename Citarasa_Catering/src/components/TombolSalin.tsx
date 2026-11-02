@@ -49,8 +49,8 @@ export function TombolSalin({
       aria-live="polite"
       className={`inline-flex items-center justify-center gap-1.5 min-h-[36px] rounded-lg text-xs font-medium border transition-colors cursor-pointer select-none ${
         tersalin
-          ? "bg-daun-lembut text-daun-tua border-daun/20"
-          : "bg-white text-kayu border-krem-gelap hover:bg-krem-tua"
+          ? "bg-pandan-lembut text-pandan-tua border-pandan/20"
+          : "bg-white text-arang border-beras-gelap hover:bg-beras-tua"
       } ${ringkas ? "px-2.5" : "px-3"} ${className}`}
     >
       {tersalin ? (

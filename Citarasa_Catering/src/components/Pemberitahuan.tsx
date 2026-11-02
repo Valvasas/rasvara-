@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState, useSyncExternalStore } from "react";
 import { IkonCek, IkonPeringatan, IkonTutup } from "@/components/ikon/Ikon";
 
 /**
@@ -39,7 +40,46 @@ function tutup(id: number) {
   if (daftar.length !== sebelum) beri();
 }
 
+/**
+ * Membaca kabar titipan server (lib/kabar.ts) setiap kali halaman berganti —
+ * aksi server yang diakhiri redirect tidak memuat ulang layout, jadi
+ * pemeriksaannya harus ikut perubahan path, bukan hanya saat pertama dipasang.
+ */
+function PembacaKabarServer() {
+  const pathname = usePathname();
+  const params = useSearchParams();
+  useEffect(() => {
+    const cocok = document.cookie.match(/(?:^|; )kabar_citarasa=([^;]*)/);
+    if (!cocok) return;
+    document.cookie = "kabar_citarasa=; Max-Age=0; path=/; SameSite=Lax";
+    try {
+      // Didekode sampai berbentuk JSON (maks. 2 kali) — toleran terhadap
+      // peramban/proxy yang meng-encode ulang nilai cookie.
+      let mentah = decodeURIComponent(cocok[1]);
+      if (!mentah.startsWith("{")) mentah = decodeURIComponent(mentah);
+      const { p, j } = JSON.parse(mentah) as { p?: unknown; j?: unknown };
+      if (typeof p === "string" && p) {
+        kabari(p, { jenis: j === "galat" || j === "info" ? j : "sukses" });
+      }
+    } catch {
+      // Cookie rusak/dipalsukan: abaikan saja, ini hanya sapaan.
+    }
+  }, [pathname, params]);
+  return null;
+}
+
 export function Pemberitahuan() {
+  return (
+    <>
+      <Suspense fallback={null}>
+        <PembacaKabarServer />
+      </Suspense>
+      <DaftarKabar />
+    </>
+  );
+}
+
+function DaftarKabar() {
   const kabar = useSyncExternalStore(
     (f) => {
       pendengar.add(f);
@@ -64,12 +104,12 @@ export function Pemberitahuan() {
         <div
           key={k.id}
           role={k.jenis === "galat" ? "alert" : "status"}
-          className="pointer-events-auto w-full max-w-md flex items-center gap-3 rounded-2xl bg-kayu text-white pl-4 pr-2 py-2.5 shadow-[0_12px_32px_-8px_rgba(28,21,17,0.45)] animate-[geser-masuk-bawah_0.35s_var(--ease-pegas)_both]"
+          className="pointer-events-auto w-full max-w-md flex items-center gap-3 rounded-[12px] bg-pandan-gelap text-white pl-4 pr-2 py-2.5 shadow-[0_12px_32px_-8px_rgba(8,30,22,0.5)] animate-[geser-masuk-bawah_0.35s_var(--ease-pegas)_both]"
         >
           <span
             aria-hidden="true"
             className={`w-7 h-7 shrink-0 rounded-full flex items-center justify-center ${
-              k.jenis === "galat" ? "bg-bahaya" : k.jenis === "info" ? "bg-kunyit" : "bg-daun"
+              k.jenis === "galat" ? "bg-bahaya" : k.jenis === "info" ? "bg-kunyit text-arang" : "bg-pandan-terang"
             }`}
           >
             {k.jenis === "galat" ? (

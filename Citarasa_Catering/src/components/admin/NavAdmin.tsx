@@ -10,6 +10,7 @@ import {
   IkonGrafik,
   IkonLaporan,
   IkonMangkuk,
+  IkonOrang,
   IkonPapan,
   IkonPengaturan,
   IkonRumah,
@@ -45,6 +46,7 @@ const KELOMPOK: { judul: string; tautan: Tautan[] }[] = [
     judul: "Toko",
     tautan: [
       { href: "/admin/menu", label: "Menu", Ikon: IkonMangkuk, hanyaPemilik: true },
+      { href: "/admin/pelanggan", label: "Pelanggan", Ikon: IkonOrang, hanyaPemilik: true },
       { href: "/admin/voucher", label: "Voucher", Ikon: IkonTiket, hanyaPemilik: true },
     ],
   },
@@ -79,8 +81,8 @@ export function NavAdmin({ peran, arah }: { peran?: Peran; arah: "vertikal" | "h
     if (!n) return null;
     return (
       <span
-        className={`ml-auto min-w-[22px] h-[22px] px-1.5 rounded-full text-[12px] font-bold leading-[22px] text-center tabular-nums ${
-          jenis === "baru" ? "bg-bata text-white anim-masuk-skala" : "bg-kunyit text-kayu"
+        className={`ml-auto min-w-[22px] h-[22px] px-1.5 rounded-full font-presisi text-[12px] font-bold leading-[22px] text-center ${
+          jenis === "baru" ? "bg-cabai text-white anim-masuk-skala" : "bg-kunyit text-arang"
         }`}
         aria-label={jenis === "baru" ? `${n} pesanan baru` : `${n} pembayaran perlu dicek`}
       >
@@ -102,7 +104,7 @@ export function NavAdmin({ peran, arah }: { peran?: Peran; arah: "vertikal" | "h
                   href={t.href}
                   aria-current={aktif ? "page" : undefined}
                   className={`flex items-center gap-2 min-h-[40px] px-3 rounded-full text-[14px] font-semibold whitespace-nowrap transition-colors ${
-                    aktif ? "bg-bata text-white" : "bg-white border border-krem-gelap text-kayu-sedang hover:text-kayu"
+                    aktif ? "bg-pandan-gelap text-beras" : "bg-white border border-beras-gelap text-arang-sedang hover:text-arang"
                   }`}
                 >
                   <t.Ikon className="w-[18px] h-[18px] shrink-0" />
@@ -124,7 +126,7 @@ export function NavAdmin({ peran, arah }: { peran?: Peran; arah: "vertikal" | "h
         if (tautan.length === 0) return null;
         return (
           <div key={k.judul}>
-            <p className="px-3 mb-1.5 text-[12px] font-bold uppercase tracking-wider text-kayu-sedang/80">{k.judul}</p>
+            <p className="px-3 mb-1.5 font-presisi text-[11px] font-medium uppercase tracking-[0.16em] text-kunyit-terang/85">{k.judul}</p>
             <ul className="space-y-0.5">
               {tautan.map((t) => {
                 const aktif = aktifkah(t);
@@ -133,11 +135,11 @@ export function NavAdmin({ peran, arah }: { peran?: Peran; arah: "vertikal" | "h
                     <Link
                       href={t.href}
                       aria-current={aktif ? "page" : undefined}
-                      className={`relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-semibold transition-colors ${
-                        aktif ? "bg-bata-lembut text-bata-tua" : "text-kayu-sedang hover:text-kayu hover:bg-krem-tua"
+                      className={`relative flex items-center gap-3 rounded-[10px] px-3 py-2.5 text-[15px] font-semibold transition-colors ${
+                        aktif ? "bg-white/12 text-beras" : "text-beras/70 hover:text-beras hover:bg-white/6"
                       }`}
                     >
-                      {aktif && <span aria-hidden="true" className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-bata" />}
+                      {aktif && <span aria-hidden="true" className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-kunyit-terang" />}
                       <t.Ikon className="w-5 h-5 shrink-0" />
                       {t.label}
                       <Lencana jenis={t.lencana} />

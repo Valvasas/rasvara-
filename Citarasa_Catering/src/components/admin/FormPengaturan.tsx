@@ -88,7 +88,7 @@ export function FormPengaturan({ awal }: { awal: Pengaturan }) {
                 defaultValue={awal.jedaMinimumMenit / 60}
                 className={`${kelas("jedaMinimumMenit")} !w-28`}
               />
-              <span className="text-[15px] text-kayu-sedang">jam sebelum jam siap</span>
+              <span className="text-[15px] text-arang-sedang">jam sebelum jam siap</span>
             </div>
             {g.jedaMinimumMenit ? (
               <Galat k="jedaMinimumMenit" />
@@ -129,7 +129,7 @@ export function FormPengaturan({ awal }: { awal: Pengaturan }) {
           {isPending ? "Menyimpan..." : "Simpan pengaturan"}
         </button>
         {state?.pesan && (
-          <p role={state.sukses ? "status" : "alert"} className={`text-sm ${state.sukses ? "text-daun-tua" : "text-bahaya"}`}>
+          <p role={state.sukses ? "status" : "alert"} className={`text-sm ${state.sukses ? "text-pandan-tua" : "text-bahaya"}`}>
             {state.pesan}
           </p>
         )}

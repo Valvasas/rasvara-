@@ -111,13 +111,13 @@ export default async function HalamanDetailPesanan({ params, searchParams }: Hal
           <BersihkanKeranjang />
           <Konfeti />
           <IlustrasiSukses className="w-48 mx-auto" />
-          <h1 className="mt-1 font-tampil text-2xl sm:text-3xl font-bold text-kayu">Pesanan berhasil dibuat!</h1>
+          <h1 className="mt-1 font-tampil text-2xl sm:text-3xl font-bold text-arang">Pesanan berhasil dibuat!</h1>
           <p className="teks-redup mt-2 max-w-md mx-auto">
             Simpan kode pesanan di bawah. Dapur akan mengonfirmasi lewat WhatsApp ke{" "}
-            <span className="font-semibold text-kayu">{pesanan.teleponPemesan.replace(/^62/, "0")}</span>.
+            <span className="font-semibold text-arang">{pesanan.teleponPemesan.replace(/^62/, "0")}</span>.
           </p>
-          <div className="mt-4 inline-flex items-center gap-2 rounded-xl bg-krem-tua px-4 py-2">
-            <span className="font-mono text-lg font-bold text-kayu tracking-tight">{pesanan.kode}</span>
+          <div className="mt-4 inline-flex items-center gap-2 rounded-xl bg-beras-tua px-4 py-2">
+            <span className="font-mono text-lg font-bold text-arang tracking-tight">{pesanan.kode}</span>
             <TombolSalin teks={pesanan.kode} label="Salin" ringkas />
           </div>
         </section>
@@ -128,11 +128,11 @@ export default async function HalamanDetailPesanan({ params, searchParams }: Hal
         <div className={`flex items-center gap-4 p-5 sm:p-6 ${dibatalkan ? "bg-bahaya-lembut/50" : "permukaan-hangat"}`}>
           <IlustrasiStatus status={pesanan.status} className="w-28 sm:w-36 shrink-0" />
           <div className="min-w-0">
-            <p className="text-[13px] font-semibold text-kayu-sedang uppercase tracking-wide">Status pesanan</p>
-            <h2 id="judul-status" className="mt-0.5 text-xl sm:text-2xl font-bold text-kayu leading-tight">
+            <p className="text-[13px] font-semibold text-arang-sedang uppercase tracking-wide">Status pesanan</p>
+            <h2 id="judul-status" className="mt-0.5 text-xl sm:text-2xl font-bold text-arang leading-tight">
               {INFO_STATUS[pesanan.status].labelPelanggan}
             </h2>
-            <p className="mt-1 text-[15px] text-kayu-sedang leading-snug">
+            <p className="mt-1 text-[15px] text-arang-sedang leading-snug">
               {penjelasanUntukPembeli(pesanan.status, pesanan.caraAmbil)}
             </p>
             {!dibatalkan && (
@@ -145,13 +145,13 @@ export default async function HalamanDetailPesanan({ params, searchParams }: Hal
 
         {dibatalkan ? (
           pesanan.alasanBatal && (
-            <p className="px-5 sm:px-6 py-4 border-t border-krem-gelap text-[15px]">
+            <p className="px-5 sm:px-6 py-4 border-t border-beras-gelap text-[15px]">
               <span className="font-semibold">Alasan:</span> {pesanan.alasanBatal}
             </p>
           )
         ) : (
           // Linimasa ala lacak paket: tahap selesai bercentang hijau beserta jamnya.
-          <ol aria-label="Perjalanan pesanan" className="px-5 sm:px-6 py-5 border-t border-krem-gelap">
+          <ol aria-label="Perjalanan pesanan" className="px-5 sm:px-6 py-5 border-t border-beras-gelap">
             {TAHAPAN.map((t, idx) => {
               const lewat = idx < indeksAktif || pesanan.status === "SELESAI";
               const sekarang = idx === indeksAktif && pesanan.status !== "SELESAI";
@@ -162,26 +162,26 @@ export default async function HalamanDetailPesanan({ params, searchParams }: Hal
                   {!terakhir && (
                     <span
                       aria-hidden="true"
-                      className={`absolute left-[13px] top-7 bottom-0 w-0.5 ${idx < indeksAktif ? "bg-daun" : "bg-krem-gelap"}`}
+                      className={`absolute left-[13px] top-7 bottom-0 w-0.5 ${idx < indeksAktif ? "bg-pandan" : "bg-beras-gelap"}`}
                     />
                   )}
                   <span
                     className={`relative z-10 w-7 h-7 shrink-0 rounded-full flex items-center justify-center text-xs font-bold ${
                       lewat
-                        ? "bg-daun text-white"
+                        ? "bg-pandan text-white"
                         : sekarang
-                        ? "bg-bata text-white anim-denyut"
-                        : "bg-white border-2 border-krem-gelap text-kayu-sedang"
+                        ? "bg-pandan text-white anim-denyut"
+                        : "bg-white border-2 border-beras-gelap text-arang-sedang"
                     }`}
                   >
                     {lewat ? <IkonCek className="w-4 h-4" strokeWidth={3} /> : idx + 1}
                   </span>
                   <div className="min-w-0 pt-0.5">
-                    <p className={`text-[15px] ${sekarang ? "font-bold text-kayu" : lewat ? "font-medium text-kayu" : "text-kayu-sedang"}`}>
+                    <p className={`text-[15px] ${sekarang ? "font-bold text-arang" : lewat ? "font-medium text-arang" : "text-arang-sedang"}`}>
                       {t.kunci === "SIAP" ? (pesanan.caraAmbil === "DIANTAR" ? "Siap diantar" : "Siap diambil") : t.nama}
                     </p>
                     {(lewat || sekarang) && waktu && (
-                      <p className="text-[13px] text-kayu-sedang angka-tabel">
+                      <p className="text-[13px] text-arang-sedang angka-tabel">
                         {tanggalPendek(waktu)}, {jam(waktu)} WIB
                       </p>
                     )}
@@ -203,28 +203,28 @@ export default async function HalamanDetailPesanan({ params, searchParams }: Hal
           {pesanan.caraBayar === "TRANSFER" ? (
             rekeningAda ? (
               <>
-                <div className="mt-4 flex items-center justify-between gap-3 rounded-xl bg-bata-lembut/60 px-4 py-3">
-                  <span className="text-[15px] text-kayu-sedang">Jumlah transfer</span>
+                <div className="mt-4 flex items-center justify-between gap-3 rounded-xl bg-pandan-lembut/60 px-4 py-3">
+                  <span className="text-[15px] text-arang-sedang">Jumlah transfer</span>
                   <span className="flex items-center gap-2">
-                    <span className="text-xl font-bold text-bata-tua angka-tabel">{rupiah(pesanan.total)}</span>
+                    <span className="text-xl font-bold text-pandan-tua angka-tabel">{rupiah(pesanan.total)}</span>
                     <TombolSalin teks={String(pesanan.total)} label="Salin" ringkas />
                   </span>
                 </div>
-                <div className="mt-3 rounded-xl border border-krem-gelap p-4 flex flex-wrap items-center justify-between gap-3">
+                <div className="mt-3 rounded-xl border border-beras-gelap p-4 flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <p className="text-[14px] text-kayu-sedang">
+                    <p className="text-[14px] text-arang-sedang">
                       {pengaturan.namaBank} a.n. {pengaturan.namaRekening}
                     </p>
-                    <p className="mt-0.5 text-xl font-bold font-mono text-kayu tracking-wide">{pengaturan.nomorRekening}</p>
+                    <p className="mt-0.5 text-xl font-bold font-mono text-arang tracking-wide">{pengaturan.nomorRekening}</p>
                   </div>
                   <TombolSalin teks={pengaturan.nomorRekening} label="Salin nomor" />
                 </div>
-                <ol className="mt-4 space-y-1.5 text-[15px] text-kayu-sedang list-decimal pl-5">
+                <ol className="mt-4 space-y-1.5 text-[15px] text-arang-sedang list-decimal pl-5">
                   <li>Transfer tepat sesuai jumlah di atas.</li>
                   <li>Foto atau screenshot bukti transfernya.</li>
                   <li>Unggah di bawah ini — dapur akan mengecek dan menandai lunas.</li>
                 </ol>
-                <div className="mt-5 pt-5 border-t border-krem-gelap">
+                <div className="mt-5 pt-5 border-t border-beras-gelap">
                   <FormUnggahBukti kode={pesanan.kode} buktiSaatIni={pesanan.buktiBayarUrl} statusBayar={pesanan.statusBayar} />
                 </div>
               </>
@@ -234,8 +234,8 @@ export default async function HalamanDetailPesanan({ params, searchParams }: Hal
               </p>
             )
           ) : (
-            <p className="mt-3 text-[16px] text-kayu">
-              Siapkan <strong className="text-bata-tua angka-tabel">{rupiah(pesanan.total)}</strong> saat pesanan{" "}
+            <p className="mt-3 text-[16px] text-arang">
+              Siapkan <strong className="text-pandan-tua angka-tabel">{rupiah(pesanan.total)}</strong> saat pesanan{" "}
               {pesanan.caraAmbil === "DIANTAR" ? "tiba di lokasimu" : "diambil di dapur"}.
             </p>
           )}
@@ -253,18 +253,18 @@ export default async function HalamanDetailPesanan({ params, searchParams }: Hal
             <IkonJam className="w-5 h-5" />
           </span>
           <div>
-            <p className="text-kayu-sedang">{labelHari(pesanan.tanggalAcara)}</p>
-            <p className="font-semibold text-kayu">{tanggalPanjang(pesanan.tanggalAcara)}</p>
-            <p className="text-kayu">Siap pukul {jamTampil(pesanan.jamAcara)} WIB</p>
+            <p className="text-arang-sedang">{labelHari(pesanan.tanggalAcara)}</p>
+            <p className="font-semibold text-arang">{tanggalPanjang(pesanan.tanggalAcara)}</p>
+            <p className="text-arang">Siap pukul {jamTampil(pesanan.jamAcara)} WIB</p>
           </div>
         </div>
         <div className="flex gap-3">
-          <span className="w-10 h-10 shrink-0 rounded-xl bg-bata-lembut text-bata-tua flex items-center justify-center">
+          <span className="w-10 h-10 shrink-0 rounded-xl bg-pandan-lembut text-pandan-tua flex items-center justify-center">
             {pesanan.caraAmbil === "DIANTAR" ? <IkonTruk className="w-5 h-5" /> : <IkonToko className="w-5 h-5" />}
           </span>
           <div className="min-w-0">
-            <p className="text-kayu-sedang">{LABEL_AMBIL[pesanan.caraAmbil]}</p>
-            <p className="font-semibold text-kayu break-words">
+            <p className="text-arang-sedang">{LABEL_AMBIL[pesanan.caraAmbil]}</p>
+            <p className="font-semibold text-arang break-words">
               {pesanan.caraAmbil === "DIANTAR" ? pesanan.alamatAntar : pengaturan.alamat || "Di dapur kami"}
             </p>
             {pesanan.caraAmbil === "AMBIL_SENDIRI" && pengaturan.alamat && (
@@ -272,7 +272,7 @@ export default async function HalamanDetailPesanan({ params, searchParams }: Hal
                 href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(pengaturan.alamat)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-1 inline-flex items-center gap-1 text-bata font-semibold hover:underline"
+                className="mt-1 inline-flex items-center gap-1 text-pandan font-semibold hover:underline"
               >
                 <IkonLokasi className="w-4 h-4" /> Buka di peta
               </a>
@@ -280,9 +280,9 @@ export default async function HalamanDetailPesanan({ params, searchParams }: Hal
           </div>
         </div>
         {pesanan.catatan && (
-          <div className="sm:col-span-2 rounded-xl bg-krem-tua px-4 py-3">
-            <p className="text-[13px] font-semibold text-kayu-sedang">Catatanmu untuk dapur</p>
-            <p className="mt-0.5 text-kayu whitespace-pre-line">{pesanan.catatan}</p>
+          <div className="sm:col-span-2 rounded-xl bg-beras-tua px-4 py-3">
+            <p className="text-[13px] font-semibold text-arang-sedang">Catatanmu untuk dapur</p>
+            <p className="mt-0.5 text-arang whitespace-pre-line">{pesanan.catatan}</p>
           </div>
         )}
       </section>
@@ -295,7 +295,7 @@ export default async function HalamanDetailPesanan({ params, searchParams }: Hal
           </h2>
           {baru !== "1" && (
             <span className="inline-flex items-center gap-1.5">
-              <span className="font-mono text-[14px] font-semibold text-kayu-sedang">{pesanan.kode}</span>
+              <span className="font-mono text-[14px] font-semibold text-arang-sedang">{pesanan.kode}</span>
               <TombolSalin teks={pesanan.kode} label="Salin" ringkas />
             </span>
           )}
@@ -304,35 +304,35 @@ export default async function HalamanDetailPesanan({ params, searchParams }: Hal
           {pesanan.item.map((it) => (
             <li key={it.id} className="flex justify-between gap-4">
               <span className="min-w-0">
-                <span className="text-kayu font-medium">{it.namaMenu}</span>
-                <span className="block text-[13px] text-kayu-sedang angka-tabel">
+                <span className="text-arang font-medium">{it.namaMenu}</span>
+                <span className="block text-[13px] text-arang-sedang angka-tabel">
                   {it.jumlah} {it.satuan} × {rupiah(it.hargaSatuan)}
                 </span>
               </span>
-              <span className="text-kayu angka-tabel shrink-0">{rupiah(it.subtotal)}</span>
+              <span className="text-arang angka-tabel shrink-0">{rupiah(it.subtotal)}</span>
             </li>
           ))}
         </ul>
-        <dl className="mt-4 pt-4 border-t border-krem-gelap space-y-2 text-[15px]">
+        <dl className="mt-4 pt-4 border-t border-beras-gelap space-y-2 text-[15px]">
           <div className="flex justify-between">
-            <dt className="text-kayu-sedang">Subtotal</dt>
+            <dt className="text-arang-sedang">Subtotal</dt>
             <dd className="angka-tabel">{rupiah(pesanan.subtotal)}</dd>
           </div>
           {pesanan.diskon > 0 && (
-            <div className="flex justify-between text-daun-tua">
+            <div className="flex justify-between text-pandan-tua">
               <dt>Voucher{pesanan.kodeVoucher ? ` ${pesanan.kodeVoucher}` : ""}</dt>
               <dd className="angka-tabel">−{rupiah(pesanan.diskon)}</dd>
             </div>
           )}
           <div className="flex justify-between">
-            <dt className="text-kayu-sedang">Ongkir</dt>
+            <dt className="text-arang-sedang">Ongkir</dt>
             <dd className="angka-tabel">
               {pesanan.caraAmbil === "AMBIL_SENDIRI" ? "—" : pesanan.ongkir === 0 ? "Gratis" : rupiah(pesanan.ongkir)}
             </dd>
           </div>
-          <div className="flex justify-between items-baseline pt-3 border-t border-krem-gelap">
-            <dt className="font-semibold text-kayu">Total · {LABEL_BAYAR[pesanan.caraBayar]}</dt>
-            <dd className="text-xl font-bold text-kayu angka-tabel">{rupiah(pesanan.total)}</dd>
+          <div className="flex justify-between items-baseline pt-3 border-t border-beras-gelap">
+            <dt className="font-semibold text-arang">Total · {LABEL_BAYAR[pesanan.caraBayar]}</dt>
+            <dd className="text-xl font-bold text-arang angka-tabel">{rupiah(pesanan.total)}</dd>
           </div>
         </dl>
       </section>

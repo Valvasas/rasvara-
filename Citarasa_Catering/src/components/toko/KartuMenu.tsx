@@ -27,7 +27,7 @@ interface KartuMenuProps {
 export function KartuMenu({ menu, prioritas = false, terjual = 0, peringkat }: KartuMenuProps) {
   const label = labelTerjual(terjual);
   return (
-    <article className="group relative flex flex-col h-full rounded-2xl bg-white border border-krem-gelap overflow-hidden kartu-interaktif">
+    <article className="group relative flex flex-col h-full rounded-[14px] bg-white border border-beras-gelap overflow-hidden kartu-interaktif">
       <ViewTransition name={`foto-${menu.id}`} share="foto-menu" default="none">
         <PanelFotoMenu
           foto={menu.foto}
@@ -43,7 +43,7 @@ export function KartuMenu({ menu, prioritas = false, terjual = 0, peringkat }: K
 
       <div className="absolute top-2 left-2 right-2 flex items-start justify-between gap-1 pointer-events-none">
         {menu.preorderHari > 0 ? (
-          <span className="lencana bg-white/95 text-kayu border-transparent shadow-sm text-[12px] sm:text-[13px]">
+          <span className="lencana font-presisi rounded-md bg-white/95 text-arang border-beras-gelap text-[12px]" title={`Pesan paling lambat ${menu.preorderHari} hari sebelumnya`}>
             <IkonKalender className="w-3.5 h-3.5" />
             H-{menu.preorderHari}
           </span>
@@ -51,7 +51,7 @@ export function KartuMenu({ menu, prioritas = false, terjual = 0, peringkat }: K
           <span />
         )}
         {peringkat !== undefined && peringkat <= 3 && (
-          <span className="lencana bg-bata text-white border-transparent shadow-sm text-[12px] sm:text-[13px]">
+          <span className="lencana font-presisi rounded-md bg-cabai text-white border-transparent text-[12px]">
             <IkonApi className="w-3.5 h-3.5" />
             #{peringkat}
           </span>
@@ -59,21 +59,21 @@ export function KartuMenu({ menu, prioritas = false, terjual = 0, peringkat }: K
       </div>
 
       <div className="flex flex-1 min-w-0 flex-col p-3 sm:p-4">
-        <h3 className="text-[15px] sm:text-base font-semibold text-kayu leading-snug line-clamp-2 min-h-[2.6em]">
+        <h3 className="text-[15px] sm:text-base font-semibold text-arang leading-snug line-clamp-2 min-h-[2.6em]">
           <Link
             href={`/menu/${menu.slug}`}
-            className="after:absolute after:inset-0 after:content-[''] focus:outline-none focus-visible:after:ring-4 focus-visible:after:ring-bata/40 focus-visible:after:rounded-2xl"
+            className="after:absolute after:inset-0 after:content-[''] focus:outline-none focus-visible:after:ring-4 focus-visible:after:ring-pandan/40 focus-visible:after:rounded-[14px]"
           >
             {menu.nama}
           </Link>
         </h3>
 
-        <p className="mt-1.5 text-lg font-bold text-bata-tua angka-tabel leading-none">
+        <p className="mt-2 font-presisi text-[1.05rem] sm:text-lg font-bold text-arang leading-none">
           {rupiah(menu.harga)}
-          <span className="text-[13px] font-medium text-kayu-sedang"> /{menu.satuan}</span>
+          <span className="font-sans text-[13px] font-medium text-arang-sedang"> /{menu.satuan}</span>
         </p>
 
-        <p className="mt-1.5 text-[13px] text-kayu-sedang leading-snug">
+        <p className="mt-1.5 text-[13px] text-arang-sedang leading-snug">
           Min. {menu.minPesan}
           {label && (
             <>

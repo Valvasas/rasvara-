@@ -66,7 +66,7 @@ export default async function HalamanBukuKas({ searchParams }: HalamanBukuKasPro
         <div>
           <h1 className="judul-halaman">Buku kas</h1>
           <p className="teks-redup mt-1">
-            Saldo keseluruhan <span className={`font-medium ${saldo < 0 ? "text-bahaya" : "text-kayu"}`}>{rupiah(saldo)}</span>
+            Saldo keseluruhan <span className={`font-medium ${saldo < 0 ? "text-bahaya" : "text-arang"}`}>{rupiah(saldo)}</span>
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -85,15 +85,15 @@ export default async function HalamanBukuKas({ searchParams }: HalamanBukuKasPro
       <dl className="mt-6 grid gap-4 sm:grid-cols-3">
         <div className="kartu p-5">
           <dt className="teks-redup">Masuk · {labelBulan(bulan)}</dt>
-          <dd className="mt-1 text-2xl font-semibold text-daun-tua angka-tabel">{rupiah(ringkas.masuk)}</dd>
+          <dd className="mt-1 text-2xl font-semibold text-pandan-tua angka-tabel">{rupiah(ringkas.masuk)}</dd>
         </div>
         <div className="kartu p-5">
           <dt className="teks-redup">Keluar</dt>
-          <dd className="mt-1 text-2xl font-semibold text-kayu angka-tabel">{rupiah(ringkas.keluar)}</dd>
+          <dd className="mt-1 text-2xl font-semibold text-arang angka-tabel">{rupiah(ringkas.keluar)}</dd>
         </div>
         <div className="kartu p-5">
           <dt className="teks-redup">Selisih</dt>
-          <dd className={`mt-1 text-2xl font-semibold angka-tabel ${ringkas.selisih < 0 ? "text-bahaya" : "text-kayu"}`}>
+          <dd className={`mt-1 text-2xl font-semibold angka-tabel ${ringkas.selisih < 0 ? "text-bahaya" : "text-arang"}`}>
             {rupiah(ringkas.selisih)}
           </dd>
         </div>
@@ -101,9 +101,9 @@ export default async function HalamanBukuKas({ searchParams }: HalamanBukuKasPro
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] items-start">
         <section aria-labelledby="judul-transaksi" className="kartu overflow-hidden min-w-0">
-          <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-krem-gelap">
+          <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 border-b border-beras-gelap">
             <h2 id="judul-transaksi" className="judul-bagian">
-              Transaksi <span className="text-kayu-sedang font-normal text-sm">({totalBaris})</span>
+              Transaksi <span className="text-arang-sedang font-normal text-sm">({totalBaris})</span>
             </h2>
             <div className="flex gap-1">
               {[undefined, "MASUK", "KELUAR"].map((j) => (
@@ -135,22 +135,22 @@ export default async function HalamanBukuKas({ searchParams }: HalamanBukuKasPro
                 <tbody>
                   {daftar.map((k) => (
                     <tr key={k.id}>
-                      <td className="whitespace-nowrap text-kayu-sedang">{tanggalPendek(k.tanggal)}</td>
+                      <td className="whitespace-nowrap text-arang-sedang">{tanggalPendek(k.tanggal)}</td>
                       <td>
-                        <p className="text-kayu">{k.keterangan}</p>
-                        <p className="text-xs text-kayu-sedang">
+                        <p className="text-arang">{k.keterangan}</p>
+                        <p className="text-xs text-arang-sedang">
                           {k.kategori}
                           {k.pesanan && (
                             <>
                               {" · "}
-                              <Link href={`/pesanan/${k.pesanan.kode}`} className="font-mono text-bata hover:underline">
+                              <Link href={`/pesanan/${k.pesanan.kode}`} className="font-mono text-pandan hover:underline">
                                 {k.pesanan.kode}
                               </Link>
                             </>
                           )}
                         </p>
                       </td>
-                      <td className={`text-right whitespace-nowrap angka-tabel font-medium ${k.jenis === "MASUK" ? "text-daun-tua" : "text-kayu"}`}>
+                      <td className={`text-right whitespace-nowrap angka-tabel font-medium ${k.jenis === "MASUK" ? "text-pandan-tua" : "text-arang"}`}>
                         {k.jenis === "MASUK" ? "+" : "−"}
                         {rupiah(k.jumlah)}
                       </td>
@@ -158,7 +158,7 @@ export default async function HalamanBukuKas({ searchParams }: HalamanBukuKasPro
                         {k.sumber === "MANUAL" ? (
                           <TombolHapusKas id={k.id} />
                         ) : (
-                          <span className="text-xs text-kayu-sedang" title="Tercatat otomatis dari pelunasan pesanan">Otomatis</span>
+                          <span className="text-xs text-arang-sedang" title="Tercatat otomatis dari pelunasan pesanan">Otomatis</span>
                         )}
                       </td>
                     </tr>

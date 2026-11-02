@@ -567,3 +567,58 @@ export function IkonBantuan(props: IkonProps) {
     </Bingkai>
   );
 }
+
+/** Huruf i dalam lingkaran — keterangan */
+export function IkonInfo(props: IkonProps) {
+  return (
+    <Bingkai {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 11v5" />
+      <path d="M12 8h.01" />
+    </Bingkai>
+  );
+}
+
+/** Perisai bercentang — keamanan akun */
+export function IkonPerisai(props: IkonProps) {
+  return (
+    <Bingkai {...props}>
+      <path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6l7-3z" />
+      <path d="M9 12l2 2 4-4" />
+    </Bingkai>
+  );
+}
+
+/** Perangkat (HP + laptop) — sesi aktif */
+export function IkonPerangkat(props: IkonProps) {
+  return (
+    <Bingkai {...props}>
+      <rect x="2" y="5" width="14" height="10" rx="1.5" />
+      <path d="M1 18h16" />
+      <rect x="17" y="8" width="6" height="12" rx="1.2" />
+      <path d="M20 17h.01" />
+    </Bingkai>
+  );
+}
+
+/** Dua orang — daftar pelanggan */
+export function IkonOrang(props: IkonProps) {
+  return (
+    <Bingkai {...props}>
+      <circle cx="9" cy="8" r="3.2" />
+      <path d="M3 19c.7-3.2 3-5 6-5s5.3 1.8 6 5" />
+      <path d="M16 5.2a3 3 0 0 1 0 5.6M18 14.4c1.6.7 2.6 2.2 3 4.6" />
+    </Bingkai>
+  );
+}
+
+/** Target — ketepatan waktu */
+export function IkonTarget(props: IkonProps) {
+  return (
+    <Bingkai {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="5" />
+      <circle cx="12" cy="12" r="1.2" />
+    </Bingkai>
+  );
+}

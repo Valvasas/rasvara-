@@ -107,9 +107,9 @@ function GalatField({ id, pesan }: { id: string; pesan?: string }) {
 function JudulBagian({ nomor, judul, Ikon, id }: { nomor: number; judul: string; Ikon: typeof IkonKeranjang; id: string }) {
   return (
     <h2 id={id} className="flex items-center gap-3 judul-bagian">
-      <span className="relative w-10 h-10 shrink-0 rounded-xl bg-bata-lembut text-bata-tua flex items-center justify-center">
+      <span className="relative w-10 h-10 shrink-0 rounded-xl bg-pandan-lembut text-pandan-tua flex items-center justify-center">
         <Ikon className="w-5 h-5" />
-        <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-bata text-white text-[11px] font-bold flex items-center justify-center ring-2 ring-white">
+        <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-pandan text-white text-[11px] font-bold flex items-center justify-center ring-2 ring-white">
           {nomor}
         </span>
       </span>
@@ -337,19 +337,19 @@ export function FormPemesanan({
   };
 
   const kelasPilihan = (aktif: boolean, nonaktif = false) =>
-    `relative flex items-start gap-3 rounded-2xl border-[1.5px] p-4 transition-[border-color,background-color,transform] has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-bata/25 ${
+    `relative flex items-start gap-3 rounded-2xl border-[1.5px] p-4 transition-[border-color,background-color,transform] has-[:focus-visible]:ring-4 has-[:focus-visible]:ring-pandan/25 ${
       nonaktif
-        ? "border-krem-gelap bg-krem-tua/60 opacity-60 cursor-not-allowed"
+        ? "border-beras-gelap bg-beras-tua/60 opacity-60 cursor-not-allowed"
         : aktif
-        ? "border-bata bg-bata-lembut/60 cursor-pointer"
-        : "border-krem-gelap bg-white hover:border-kayu-sedang/35 cursor-pointer active:scale-[0.99]"
+        ? "border-pandan bg-pandan-lembut/60 cursor-pointer"
+        : "border-beras-gelap bg-white hover:border-arang-sedang/35 cursor-pointer active:scale-[0.99]"
     }`;
 
   const TitikPilih = ({ aktif }: { aktif: boolean }) => (
     <span
       aria-hidden="true"
       className={`ml-auto mt-0.5 w-5 h-5 shrink-0 rounded-full border-2 flex items-center justify-center transition-colors ${
-        aktif ? "border-bata bg-bata" : "border-krem-gelap bg-white"
+        aktif ? "border-pandan bg-pandan" : "border-beras-gelap bg-white"
       }`}
     >
       {aktif && <span className="w-2 h-2 rounded-full bg-white anim-masuk-skala" />}
@@ -394,13 +394,13 @@ export function FormPemesanan({
           <JudulBagian nomor={1} judul="Pesananmu" Ikon={IkonKeranjang} id="judul-menu" />
 
           {itemTerpilih.length > 0 && (
-            <ul className="mt-4 divide-y divide-krem-gelap">
+            <ul className="mt-4 divide-y divide-beras-gelap">
               {itemTerpilih.map((it) => (
                 <li key={it.id} className="py-3.5 flex gap-3 items-center anim-masuk">
                   <GambarMini url={it.fotoUrl} nama={it.nama} ukuran="w-14 h-14" />
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-kayu leading-snug line-clamp-2">{it.nama}</p>
-                    <p className="text-[13.5px] text-kayu-sedang">
+                    <p className="font-semibold text-arang leading-snug line-clamp-2">{it.nama}</p>
+                    <p className="text-[13.5px] text-arang-sedang">
                       <span className="angka-tabel">{rupiah(it.harga)}</span> / {it.satuan}
                       {it.preorderHari > 0 && ` · H-${it.preorderHari}`}
                     </p>
@@ -413,7 +413,7 @@ export function FormPemesanan({
                         nama={it.nama}
                         onUbah={(n) => ubahJumlah(it, n)}
                       />
-                      <span className="font-bold text-kayu angka-tabel">{rupiah(it.subtotal)}</span>
+                      <span className="font-bold text-arang angka-tabel">{rupiah(it.subtotal)}</span>
                     </div>
                   </div>
                 </li>
@@ -422,9 +422,9 @@ export function FormPemesanan({
           )}
 
           {itemTerpilih.length === 0 && (
-            <p className="mt-3 kotak-info bg-krem-tua border-krem-gelap text-kayu">
+            <p className="mt-3 kotak-info bg-beras-tua border-beras-gelap text-arang">
               Keranjangmu kosong. Pilih menu di bawah ini, atau{" "}
-              <Link href="/menu" className="font-semibold text-bata underline">
+              <Link href="/menu" className="font-semibold text-pandan underline">
                 lihat katalog lengkap
               </Link>
               .
@@ -435,18 +435,18 @@ export function FormPemesanan({
             <button
               type="button"
               onClick={() => setPemilihTerbuka(true)}
-              className="mt-3 w-full tombol-kedua border-dashed text-bata-tua"
+              className="mt-3 w-full tombol-kedua border-dashed text-pandan-tua"
             >
               <IkonTambah className="w-4 h-4" strokeWidth={2.5} />
               Tambah menu lain
             </button>
           ) : (
-            <div className="mt-4 rounded-2xl bg-krem-tua/60 p-3 sm:p-4 anim-masuk">
+            <div className="mt-4 rounded-2xl bg-beras-tua/60 p-3 sm:p-4 anim-masuk">
               <div className="relative">
                 <label htmlFor="cari-menu" className="sr-only">
                   Cari menu
                 </label>
-                <IkonCari className="w-[18px] h-[18px] text-kayu-sedang absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <IkonCari className="w-[18px] h-[18px] text-arang-sedang absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   id="cari-menu"
                   type="search"
@@ -477,14 +477,14 @@ export function FormPemesanan({
                 </div>
               )}
 
-              <ul className="mt-3 divide-y divide-krem-gelap rounded-xl bg-white border border-krem-gelap overflow-hidden">
+              <ul className="mt-3 divide-y divide-beras-gelap rounded-xl bg-white border border-beras-gelap overflow-hidden">
                 {menuTampil.map((m) => (
                   <li key={m.id} className="flex items-center gap-3 px-3 py-3">
                     <GambarMini url={m.foto[0]?.url ?? null} nama={m.nama} ukuran="w-12 h-12" />
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium text-kayu leading-snug line-clamp-2">{m.nama}</p>
-                      <p className="text-[13px] text-kayu-sedang">
-                        <span className="text-kayu font-semibold angka-tabel">{rupiah(m.harga)}</span> / {m.satuan} · min.{" "}
+                      <p className="font-medium text-arang leading-snug line-clamp-2">{m.nama}</p>
+                      <p className="text-[13px] text-arang-sedang">
+                        <span className="text-arang font-semibold angka-tabel">{rupiah(m.harga)}</span> / {m.satuan} · min.{" "}
                         {m.minPesan}
                         {m.preorderHari > 0 && ` · H-${m.preorderHari}`}
                       </p>
@@ -624,10 +624,10 @@ export function FormPemesanan({
                   onChange={() => setCaraAmbil("AMBIL_SENDIRI")}
                   className="sr-only"
                 />
-                <IkonToko className="w-6 h-6 mt-0.5 text-bata-tua shrink-0" />
+                <IkonToko className="w-6 h-6 mt-0.5 text-pandan-tua shrink-0" />
                 <span>
-                  <span className="block font-semibold text-kayu">Ambil sendiri</span>
-                  <span className="block text-[14px] text-kayu-sedang mt-0.5">Gratis, di dapur kami</span>
+                  <span className="block font-semibold text-arang">Ambil sendiri</span>
+                  <span className="block text-[14px] text-arang-sedang mt-0.5">Gratis, di dapur kami</span>
                 </span>
                 <TitikPilih aktif={caraAmbil === "AMBIL_SENDIRI"} />
               </label>
@@ -640,10 +640,10 @@ export function FormPemesanan({
                   onChange={() => setCaraAmbil("DIANTAR")}
                   className="sr-only"
                 />
-                <IkonTruk className="w-6 h-6 mt-0.5 text-bata-tua shrink-0" />
+                <IkonTruk className="w-6 h-6 mt-0.5 text-pandan-tua shrink-0" />
                 <span>
-                  <span className="block font-semibold text-kayu">Diantar</span>
-                  <span className="block text-[14px] text-kayu-sedang mt-0.5">
+                  <span className="block font-semibold text-arang">Diantar</span>
+                  <span className="block text-[14px] text-arang-sedang mt-0.5">
                     {pengaturan.ongkirDefault === 0
                       ? "Gratis ongkir"
                       : gratisOngkir
@@ -698,9 +698,9 @@ export function FormPemesanan({
           <JudulBagian nomor={3} judul="Data pemesan" Ikon={IkonKartuNama} id="judul-data" />
 
           {!pengguna && (
-            <p className="mt-3 text-[14px] text-kayu-sedang">
+            <p className="mt-3 text-[14px] text-arang-sedang">
               Sudah punya akun?{" "}
-              <Link href="/masuk?ke=/pesan" className="font-semibold text-bata hover:underline">
+              <Link href="/masuk?ke=/pesan" className="font-semibold text-pandan hover:underline">
                 Masuk
               </Link>{" "}
               supaya data terisi otomatis. Tanpa akun juga boleh.
@@ -756,7 +756,7 @@ export function FormPemesanan({
 
           <div className="mt-5">
             <label htmlFor="catatanPesanan" className="label">
-              Catatan untuk dapur <span className="font-normal text-kayu-sedang">(boleh dikosongkan)</span>
+              Catatan untuk dapur <span className="font-normal text-arang-sedang">(boleh dikosongkan)</span>
             </label>
             <textarea
               id="catatanPesanan"
@@ -788,8 +788,8 @@ export function FormPemesanan({
                   className="sr-only"
                 />
                 <span>
-                  <span className="block font-semibold text-kayu">Transfer bank</span>
-                  <span className="block text-[14px] text-kayu-sedang mt-0.5">
+                  <span className="block font-semibold text-arang">Transfer bank</span>
+                  <span className="block text-[14px] text-arang-sedang mt-0.5">
                     {rekeningTersedia ? `${pengaturan.namaBank} · unggah bukti setelah pesan` : "Belum tersedia"}
                   </span>
                 </span>
@@ -805,8 +805,8 @@ export function FormPemesanan({
                   className="sr-only"
                 />
                 <span>
-                  <span className="block font-semibold text-kayu">Tunai (COD)</span>
-                  <span className="block text-[14px] text-kayu-sedang mt-0.5">Bayar saat pesanan diterima</span>
+                  <span className="block font-semibold text-arang">Tunai (COD)</span>
+                  <span className="block text-[14px] text-arang-sedang mt-0.5">Bayar saat pesanan diterima</span>
                 </span>
                 <TitikPilih aktif={caraBayar === "TUNAI"} />
               </label>
@@ -828,13 +828,13 @@ export function FormPemesanan({
           <ul className="mt-4 space-y-3 text-[15px]">
             {itemTerpilih.map((it) => (
               <li key={it.id} className="flex justify-between gap-3">
-                <span className="text-kayu min-w-0">
+                <span className="text-arang min-w-0">
                   {it.nama}
-                  <span className="block text-[13px] text-kayu-sedang angka-tabel">
+                  <span className="block text-[13px] text-arang-sedang angka-tabel">
                     {it.jumlah} {it.satuan} × {rupiah(it.harga)}
                   </span>
                 </span>
-                <span className="text-kayu angka-tabel shrink-0">{rupiah(it.subtotal)}</span>
+                <span className="text-arang angka-tabel shrink-0">{rupiah(it.subtotal)}</span>
               </li>
             ))}
           </ul>
@@ -843,7 +843,7 @@ export function FormPemesanan({
         {/* Voucher */}
         <div className="mt-4">
           {kodeTerpakai ? (
-            <div className="flex items-center justify-between gap-3 rounded-xl bg-daun-lembut border border-daun/20 px-3 py-2.5 text-[15px] text-daun-tua anim-masuk-skala">
+            <div className="flex items-center justify-between gap-3 rounded-xl bg-pandan-lembut border border-pandan/20 px-3 py-2.5 text-[15px] text-pandan-tua anim-masuk-skala">
               <span className="min-w-0 truncate flex items-center gap-2">
                 <IkonTiket className="w-5 h-5 shrink-0" />
                 <span className="font-bold">{kodeTerpakai}</span> terpakai
@@ -890,32 +890,32 @@ export function FormPemesanan({
             </button>
           )}
           {pesanVoucher && !kodeTerpakai && (
-            <p role="status" className={`mt-2 text-[13px] ${pesanVoucher.ok ? "text-daun-tua" : "text-bahaya"}`}>
+            <p role="status" className={`mt-2 text-[13px] ${pesanVoucher.ok ? "text-pandan-tua" : "text-bahaya"}`}>
               {pesanVoucher.teks}
             </p>
           )}
         </div>
 
-        <dl className="mt-4 pt-4 border-t border-krem-gelap space-y-2 text-[15px]">
+        <dl className="mt-4 pt-4 border-t border-beras-gelap space-y-2 text-[15px]">
           <div className="flex justify-between">
-            <dt className="text-kayu-sedang">Subtotal</dt>
+            <dt className="text-arang-sedang">Subtotal</dt>
             <dd className="angka-tabel">{rupiah(subtotal)}</dd>
           </div>
           {potongan > 0 && kodeTerpakai && (
-            <div className="flex justify-between text-daun-tua font-medium">
+            <div className="flex justify-between text-pandan-tua font-medium">
               <dt>Voucher {kodeTerpakai}</dt>
               <dd className="angka-tabel">−{rupiah(potongan)}</dd>
             </div>
           )}
           <div className="flex justify-between">
-            <dt className="text-kayu-sedang">Ongkir</dt>
+            <dt className="text-arang-sedang">Ongkir</dt>
             <dd className="angka-tabel">
-              {caraAmbil === "AMBIL_SENDIRI" ? "—" : ongkir === 0 ? <span className="text-daun-tua font-medium">Gratis</span> : rupiah(ongkir)}
+              {caraAmbil === "AMBIL_SENDIRI" ? "—" : ongkir === 0 ? <span className="text-pandan-tua font-medium">Gratis</span> : rupiah(ongkir)}
             </dd>
           </div>
-          <div className="flex justify-between items-baseline pt-3 border-t border-krem-gelap">
-            <dt className="font-semibold text-kayu">Total bayar</dt>
-            <dd className="text-2xl font-bold text-bata-tua angka-tabel">{rupiah(total)}</dd>
+          <div className="flex justify-between items-baseline pt-3 border-t border-beras-gelap">
+            <dt className="font-semibold text-arang">Total bayar</dt>
+            <dd className="text-2xl font-bold text-pandan-tua angka-tabel">{rupiah(total)}</dd>
           </div>
         </dl>
 
@@ -933,18 +933,18 @@ export function FormPemesanan({
         >
           {isPending ? "Mengirim pesanan…" : "Buat pesanan"}
         </button>
-        <p id="alasan-kunci" className="mt-2 text-[13px] text-center text-kayu-sedang min-h-[1rem]">
+        <p id="alasan-kunci" className="mt-2 text-[13px] text-center text-arang-sedang min-h-[1rem]">
           {halangan?.pesan ?? `Dapur buka ${jamTampil(pengaturan.jamBuka)}–${jamTampil(pengaturan.jamTutup)} WIB. Pesanan bisa dibatalkan selama belum diproses.`}
         </p>
       </aside>
 
       {/* Bar "Total | Buat pesanan" menempel di bawah — ponsel */}
       <div aria-hidden="true" className="md:hidden h-20" />
-      <div className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/97 backdrop-blur-md border-t border-krem-gelap shadow-[var(--shadow-mengambang)] aman-bawah">
+      <div className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/97 backdrop-blur-md border-t border-beras-gelap shadow-[var(--shadow-mengambang)] aman-bawah">
         <div className="px-4 pt-3 flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[13px] text-kayu-sedang">Total bayar</p>
-            <p className="text-lg font-bold text-bata-tua angka-tabel leading-tight">{rupiah(total)}</p>
+            <p className="text-[13px] text-arang-sedang">Total bayar</p>
+            <p className="text-lg font-bold text-pandan-tua angka-tabel leading-tight">{rupiah(total)}</p>
           </div>
           {halangan ? (
             // Bukan tombol mati: menekannya menjelaskan apa yang kurang dan

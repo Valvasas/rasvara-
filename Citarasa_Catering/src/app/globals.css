@@ -1,19 +1,31 @@
 @import "tailwindcss";
 
 /*
- * Design system Citarasa — versi 2 (siap rilis).
+ * Design system Citarasa — versi 3 (identitas rilis).
  *
- * Arah visual: "dapur hangat yang ramai". Warna diambil dari isi dapurnya
- * sendiri: kertas nasi (krem), sambal & gerabah (bata), kunyit, daun pisang,
- * dan meja kayu. Warna hangat dipilih dengan sengaja — merah-oranye-kuning
- * menaikkan selera makan, sedangkan biru/ungu menurunkannya; itu sebabnya
- * hampir semua aplikasi pesan-antar makanan memakai merah/oranye/hijau.
+ * Empat janji merek, masing-masing diterjemahkan jadi satu keputusan visual:
  *
- * Aturan kontras (semua sudah dihitung, minimal WCAG AA 4.5:1):
- *   - teks biasa: kayu / kayu-sedang di atas krem, krem-tua, atau putih
+ *   SEHAT  → hijau pandan sebagai warna merek & aksi utama. Hijau dibaca
+ *            otak sebagai "segar, alami, aman" — dan berbeda dari lautan
+ *            merah-oranye aplikasi pesan-antar lain, jadi mudah diingat.
+ *   MATANG → emas kunyit sebagai aksen. Ini warna kerak cokelat-keemasan
+ *            (reaksi Maillard) yang dikenali mata sebagai "matang pas".
+ *            Hijau tua + emas juga terbaca dewasa & mapan, bukan jajanan.
+ *   LEZAT  → merah cabai, dipakai hemat (terlaris, sedang dimasak, lencana
+ *            keranjang). Merah-oranye menaikkan selera; kalau di mana-mana
+ *            ia berubah jadi kebisingan, kalau sedikit ia jadi sinyal.
+ *   CEPAT & TEPAT → tipografi presisi: angka monospace untuk jam, kode, dan
+ *            nominal; garis-ukur (tick) sebagai ornamen; sudut tegas (10–14px)
+ *            alih-alih gelembung 24px. Latar "beras" yang bersih, bukan krem
+ *            kekuningan + gradien blob — formula yang membuat situs makanan
+ *            buatan AI terlihat seragam.
+ *
+ * Aturan kontras (dihitung dengan rumus luminans WCAG, minimal AA 4.5:1):
+ *   - teks biasa: arang / arang-sedang di atas beras, beras-tua, atau putih
  *   - teks di atas latar *-lembut WAJIB memakai varian *-tua
- *   - teks putih hanya di atas bata, bata-tua, daun, kayu, atau bahaya
- *   - kunyit adalah aksen latar/ilustrasi, bukan warna teks
+ *   - teks putih hanya di atas pandan, pandan-tua, pandan-gelap, arang,
+ *     cabai, atau bahaya
+ *   - kunyit = latar aksen (teks arang di atasnya 7.7:1), bukan warna teks
  *
  * Aturan keterbacaan (untuk remaja sampai orang tua):
  *   - isian formulir selalu 16px: di bawah itu Safari iPhone memperbesar
@@ -24,45 +36,46 @@
  *     karena semua ukuran Tailwind memakai rem
  */
 @theme {
-  /* Permukaan */
-  --color-krem: #FFFCF7;        /* latar halaman */
-  --color-krem-tua: #F7F1E8;    /* latar sekunder, hover */
-  --color-krem-gelap: #E9DFD1;  /* garis tepi */
+  /* Permukaan — "beras": putih bersih sedikit hangat, bukan krem kuning */
+  --color-beras: #F7F7F1;        /* latar halaman */
+  --color-beras-tua: #EEEEE6;    /* latar sekunder, hover */
+  --color-beras-gelap: #DADBCF;  /* garis tepi */
 
-  /* Aksi utama */
-  --color-bata: #C2461C;
-  --color-bata-tua: #9E3714;
-  --color-bata-lembut: #FCEDE5;
-  --color-bata-terang: #E8673A; /* hanya untuk gradien & ilustrasi, bukan latar teks */
+  /* Merek & aksi utama — "pandan" */
+  --color-pandan: #0D6B4E;
+  --color-pandan-tua: #08503A;
+  --color-pandan-gelap: #0A3A2C; /* pita merek gelap (kepala beranda, toast) */
+  --color-pandan-lembut: #E2F1E8;
+  --color-pandan-terang: #3BAA7E; /* ilustrasi & dekorasi di atas latar gelap */
 
-  /* Aksen hangat */
-  --color-kunyit: #E39B2E;
-  --color-kunyit-tua: #8A5410;
-  --color-kunyit-lembut: #FDF4DF;
-  --color-kunyit-terang: #F6C453; /* ilustrasi */
+  /* Aksen matang — "kunyit" */
+  --color-kunyit: #E8A33A;
+  --color-kunyit-tua: #7A4C05;
+  --color-kunyit-lembut: #FBF0DA;
+  --color-kunyit-terang: #F6C86A;
 
-  /* Sukses / segar */
-  --color-daun: #2E7D4F;
-  --color-daun-tua: #1F5E3A;
-  --color-daun-lembut: #E6F4EB;
-  --color-daun-terang: #5DAA6E; /* ilustrasi */
+  /* Aksen selera — "cabai" (hemat!) */
+  --color-cabai: #C8401A;
+  --color-cabai-tua: #972F10;
+  --color-cabai-lembut: #FCEAE2;
 
-  /* Teks */
-  --color-kayu: #2B211B;
-  --color-kayu-tua: #1C1511;
-  --color-kayu-sedang: #6B5C52;
-  --color-kayu-lembut: #F3EEEA;
+  /* Teks — "arang" (hitam kehijauan, senada dengan pandan) */
+  --color-arang: #17211C;
+  --color-arang-tua: #0C1411;
+  --color-arang-sedang: #4D5A53;
+  --color-arang-lembut: #E9EDE8;
 
   /* Galat */
   --color-bahaya: #B42318;
   --color-bahaya-lembut: #FDEDEB;
 
-  --font-sans: var(--font-archivo), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-display: var(--font-domine), Georgia, "Times New Roman", serif;
+  --font-sans: var(--font-jakarta), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-display: var(--font-bricolage), var(--font-jakarta), system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-  --shadow-lembut: 0 1px 2px rgba(43, 33, 27, 0.04), 0 4px 16px -4px rgba(43, 33, 27, 0.08);
-  --shadow-angkat: 0 2px 4px rgba(43, 33, 27, 0.04), 0 14px 32px -10px rgba(120, 50, 20, 0.22);
-  --shadow-mengambang: 0 -4px 24px -6px rgba(43, 33, 27, 0.14);
+  --shadow-lembut: 0 1px 2px rgba(16, 33, 27, 0.05), 0 4px 14px -6px rgba(16, 33, 27, 0.10);
+  --shadow-angkat: 0 2px 4px rgba(16, 33, 27, 0.05), 0 16px 32px -14px rgba(8, 80, 58, 0.28);
+  --shadow-mengambang: 0 -4px 24px -8px rgba(16, 33, 27, 0.16);
 
   --ease-pegas: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease-halus: cubic-bezier(0.16, 1, 0.3, 1);
@@ -71,10 +84,10 @@
 html {
   font-size: 16px;
   scroll-behavior: smooth;
-  color: var(--color-kayu);
-  background-color: var(--color-krem);
+  color: var(--color-arang);
+  background-color: var(--color-beras);
   -webkit-text-size-adjust: 100%;
-  /* Ruang untuk bar navigasi bawah di ponsel saat melompat ke #jangkar */
+  /* Ruang untuk kepala yang menempel saat melompat ke #jangkar */
   scroll-padding-top: 5rem;
 }
 
@@ -87,18 +100,19 @@ body {
   margin: 0;
   min-height: 100vh;
   font-family: var(--font-sans);
-  background-color: var(--color-krem);
-  color: var(--color-kayu);
+  background-color: var(--color-beras);
+  color: var(--color-arang);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Judul editorial: serif hanya untuk headline */
+/* Judul: grotesk berkarakter, rapat, tegas */
 .font-tampil {
   font-family: var(--font-display);
-  letter-spacing: -0.015em;
+  letter-spacing: -0.025em;
+  font-optical-sizing: auto;
 }
 
 /* Angka rata kanan di tabel & nota tidak goyang lebarnya */
@@ -106,10 +120,22 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-:focus-visible {
-  outline: 3px solid var(--color-bata);
-  outline-offset: 2px;
-  border-radius: 6px;
+/* Suara "presisi": jam, kode pesanan, nominal penting */
+.font-presisi {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* Di dalam @layer base supaya kelas utilitas (mis. focus:outline-none pada
+   isian yang sudah punya cincin fokus sendiri) bisa menimpanya. CSS tanpa
+   layer selalu menang atas CSS ber-layer, berapa pun spesifisitasnya. */
+@layer base {
+  :focus-visible {
+    outline: 3px solid var(--color-pandan);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
 }
 
 /* ===================== Komponen dasar ===================== */
@@ -117,73 +143,80 @@ body {
 /* Dasar tombol & kotak pesan didaftarkan sebagai @utility karena Tailwind v4
    hanya mengizinkan @apply pada utilitas, bukan pada kelas buatan biasa. */
 @utility tombol {
-  @apply inline-flex items-center justify-center gap-2 min-h-[48px] px-5 rounded-xl
+  @apply inline-flex items-center justify-center gap-2 min-h-[48px] px-5 rounded-[10px]
     text-[15px] font-semibold whitespace-nowrap cursor-pointer select-none
     transition-[background-color,border-color,color,box-shadow,transform] duration-150
-    active:scale-[0.97]
-    disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100;
+    active:scale-[0.98]
+    disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100
+    [&>svg]:shrink-0;
 }
 @utility kotak-info {
-  @apply rounded-xl px-4 py-3 text-[15px] border leading-relaxed;
+  @apply rounded-[10px] px-4 py-3 text-[15px] border leading-relaxed;
 }
 
 @layer components {
   .tombol-utama {
-    @apply tombol bg-bata text-white shadow-[0_6px_16px_-6px_rgba(194,70,28,0.55)] hover:bg-bata-tua;
+    @apply tombol bg-pandan text-white shadow-[inset_0_-2px_0_rgba(0,0,0,0.18),0_6px_14px_-8px_rgba(8,80,58,0.7)] hover:bg-pandan-tua;
   }
   .tombol-kedua {
-    @apply tombol bg-white text-kayu border border-krem-gelap hover:bg-krem-tua hover:border-kayu-sedang/30;
+    @apply tombol bg-white text-arang border border-beras-gelap hover:bg-beras-tua hover:border-arang-sedang/30;
   }
   .tombol-garis {
-    @apply tombol bg-white text-bata-tua border-[1.5px] border-bata hover:bg-bata-lembut;
+    @apply tombol bg-white text-pandan-tua border-[1.5px] border-pandan hover:bg-pandan-lembut;
   }
   .tombol-hantu {
-    @apply tombol text-kayu-sedang hover:text-kayu hover:bg-krem-tua;
+    @apply tombol text-arang-sedang hover:text-arang hover:bg-beras-tua;
   }
   .tombol-sukses {
-    @apply tombol bg-daun text-white hover:bg-daun-tua;
+    @apply tombol bg-pandan text-white hover:bg-pandan-tua;
+  }
+  /* Aksen emas — untuk satu aksi istimewa per layar (mis. "Pesan lagi") */
+  .tombol-emas {
+    @apply tombol bg-kunyit text-arang shadow-[inset_0_-2px_0_rgba(0,0,0,0.12)] hover:bg-kunyit-terang;
   }
   .tombol-bahaya {
     @apply tombol bg-white text-bahaya border border-bahaya/30 hover:bg-bahaya-lembut;
   }
+  /* WhatsApp sengaja tombol putih berikon hijau: dua tombol hijau penuh
+     bersebelahan membuat pembeli ragu mana aksi utamanya. */
   .tombol-wa {
-    @apply tombol bg-daun text-white hover:bg-daun-tua;
+    @apply tombol bg-white text-arang border border-beras-gelap hover:bg-beras-tua [&>svg]:text-[#1A9E4B];
   }
   .tombol-kecil {
     @apply min-h-[40px] px-3.5 text-sm rounded-lg;
   }
   .tombol-besar {
-    @apply min-h-[54px] px-7 text-base rounded-2xl;
+    @apply min-h-[54px] px-5 sm:px-7 text-base rounded-xl;
   }
   .tombol-ikon {
-    @apply inline-flex items-center justify-center w-11 h-11 rounded-xl text-kayu-sedang
-      hover:text-kayu hover:bg-krem-tua transition-colors cursor-pointer active:scale-95;
+    @apply inline-flex items-center justify-center w-11 h-11 rounded-[10px] text-arang-sedang
+      hover:text-arang hover:bg-beras-tua transition-colors cursor-pointer active:scale-95;
   }
 
   /* Kartu & permukaan */
   .kartu {
-    @apply bg-white rounded-2xl border border-krem-gelap;
+    @apply bg-white rounded-[14px] border border-beras-gelap;
   }
   .kartu-isi {
     @apply p-5 sm:p-6;
   }
   .kartu-interaktif {
-    @apply transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-angkat)] hover:border-bata/30;
+    @apply transition-[transform,box-shadow,border-color] duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-angkat)] hover:border-pandan/35;
   }
 
   /* Isian formulir — 16px wajib (lihat catatan di atas) */
   .label {
-    @apply block text-[15px] font-semibold text-kayu mb-1.5;
+    @apply block text-[15px] font-semibold text-arang mb-1.5;
   }
   .petunjuk {
-    @apply text-[13px] text-kayu-sedang mt-1.5 leading-snug;
+    @apply text-[13px] text-arang-sedang mt-1.5 leading-snug;
   }
   .isian {
-    @apply w-full min-h-[48px] px-4 py-2 rounded-xl border-[1.5px] border-krem-gelap bg-white
-      text-base text-kayu placeholder:text-kayu-sedang/55 transition-colors
-      hover:border-kayu-sedang/35
-      focus:outline-none focus:border-bata focus:ring-4 focus:ring-bata/12
-      disabled:bg-krem-tua disabled:text-kayu-sedang;
+    @apply w-full min-h-[48px] px-4 py-2 rounded-[10px] border-[1.5px] border-beras-gelap bg-white
+      text-base text-arang placeholder:text-arang-sedang/55 transition-colors
+      hover:border-arang-sedang/35
+      focus:outline-none focus:border-pandan focus:ring-4 focus:ring-pandan/12
+      disabled:bg-beras-tua disabled:text-arang-sedang;
   }
   .isian-galat {
     @apply border-bahaya focus:border-bahaya focus:ring-bahaya/15;
@@ -199,24 +232,28 @@ body {
 
   /* Judul */
   .judul-halaman {
-    @apply text-2xl sm:text-3xl font-bold text-kayu tracking-tight;
+    @apply font-display tracking-[-0.025em] text-[1.75rem] sm:text-[2.1rem] font-bold text-arang leading-[1.1];
   }
   .judul-bagian {
-    @apply text-lg sm:text-xl font-bold text-kayu;
+    @apply font-display tracking-[-0.02em] text-lg sm:text-xl font-bold text-arang;
   }
   .teks-redup {
-    @apply text-[15px] text-kayu-sedang;
+    @apply text-[15px] text-arang-sedang;
+  }
+  /* Label kecil di atas judul: kapital, berjarak — suara "papan instrumen" */
+  .label-atas {
+    @apply font-mono tabular-nums text-[12px] font-medium uppercase tracking-[0.12em] text-arang-sedang;
   }
 
   /* Pemberitahuan dalam halaman */
   .kotak-sukses {
-    @apply kotak-info bg-daun-lembut text-daun-tua border-daun/20;
+    @apply kotak-info bg-pandan-lembut text-pandan-tua border-pandan/20;
   }
   .kotak-galat {
     @apply kotak-info bg-bahaya-lembut text-bahaya border-bahaya/20;
   }
   .kotak-peringatan {
-    @apply kotak-info bg-kunyit-lembut text-kunyit-tua border-kunyit/30;
+    @apply kotak-info bg-kunyit-lembut text-kunyit-tua border-kunyit/35;
   }
 
   /* Tabel data admin */
@@ -224,45 +261,108 @@ body {
     @apply w-full text-[15px];
   }
   .tabel th {
-    @apply text-left text-[13px] font-semibold text-kayu-sedang px-4 py-3 bg-krem-tua/60 border-b border-krem-gelap whitespace-nowrap;
+    @apply text-left text-[12px] font-semibold uppercase tracking-wider text-arang-sedang px-4 py-3 bg-beras-tua/60 border-b border-beras-gelap whitespace-nowrap;
   }
   .tabel td {
-    @apply px-4 py-3 border-b border-krem-gelap/70 align-middle;
+    @apply px-4 py-3 border-b border-beras-gelap/70 align-middle;
   }
   .tabel tbody tr:last-child td {
     @apply border-b-0;
   }
   .tabel tbody tr {
-    @apply hover:bg-krem/80 transition-colors;
+    @apply hover:bg-beras/80 transition-colors;
   }
 
   /* Pil filter */
   .pil {
     @apply inline-flex items-center gap-1.5 min-h-[42px] px-4 rounded-full text-[15px] font-medium border
-      border-krem-gelap bg-white text-kayu-sedang hover:text-kayu hover:border-kayu-sedang/30
+      border-beras-gelap bg-white text-arang-sedang hover:text-arang hover:border-arang-sedang/30
       transition-[background-color,color,border-color,transform] active:scale-95 whitespace-nowrap;
   }
   .pil-aktif {
-    @apply bg-kayu text-white border-kayu hover:text-white hover:border-kayu;
+    @apply bg-arang text-white border-arang hover:text-white hover:border-arang;
   }
 
   /* Lencana angka kecil (keranjang, notifikasi) */
   .lencana-angka {
-    @apply absolute -top-1 -right-1 min-w-[20px] h-5 px-1.5 rounded-full bg-bata text-white
+    @apply absolute -top-1 -right-1 min-w-[20px] h-5 px-1.5 rounded-full bg-cabai text-white
       text-[12px] font-bold leading-5 text-center ring-2 ring-white tabular-nums;
   }
 
-  /* Latar hangat untuk hero & panel ilustrasi */
+  /* Permukaan merek terang: beras + kisi titik halus (kertas ukur dapur) */
   .permukaan-hangat {
-    background:
-      radial-gradient(120% 90% at 100% 0%, rgba(246, 196, 83, 0.28) 0%, transparent 55%),
-      radial-gradient(90% 80% at 0% 100%, rgba(232, 103, 58, 0.14) 0%, transparent 60%),
-      var(--color-krem);
+    background-color: var(--color-beras);
+    background-image: radial-gradient(rgba(13, 107, 78, 0.09) 1px, transparent 1.2px);
+    background-size: 18px 18px;
+    background-position: -1px -1px;
+  }
+
+  /* Permukaan merek gelap: hijau pandan pekat — dipakai untuk pita merek */
+  .permukaan-pandan {
+    background-color: var(--color-pandan-gelap);
+    background-image:
+      radial-gradient(rgba(246, 200, 106, 0.10) 1px, transparent 1.2px),
+      radial-gradient(120% 120% at 100% 0%, rgba(59, 170, 126, 0.22) 0%, transparent 55%);
+    background-size: 22px 22px, 100% 100%;
+    color: var(--color-beras);
+  }
+
+  /* Garis ukur: deretan tick seperti penggaris/jam — ornamen "presisi" */
+  .garis-ukur {
+    height: 10px;
+    background-image:
+      repeating-linear-gradient(90deg, currentColor 0 1px, transparent 1px 12px),
+      repeating-linear-gradient(90deg, currentColor 0 1px, transparent 1px 60px);
+    background-size: 100% 5px, 100% 10px;
+    background-repeat: no-repeat;
+    background-position: left bottom, left bottom;
+    opacity: 0.35;
+  }
+
+  /* Cap waktu & kode: chip monospace berbingkai tipis */
+  .cap-presisi {
+    @apply font-mono tabular-nums inline-flex shrink-0 whitespace-nowrap items-center gap-1.5 rounded-md border border-beras-gelap bg-white px-2 py-0.5 text-[13px] font-medium text-arang;
+  }
+
+  /* Tiket: dua bagian yang dipisah "sobekan" setengah lingkaran di kedua
+     sisi — untuk struk, kode pesanan, papan jadwal. Lubangnya dipotong
+     dengan mask di sambungan masing-masing bagian, jadi selalu tepat di
+     garis sobek berapa pun tinggi isinya. */
+  .tiket-atas,
+  .tiket-bawah {
+    @apply relative bg-white;
+    --lubang: 10px;
+  }
+  .tiket-atas {
+    border-radius: 14px 14px 0 0;
+    -webkit-mask:
+      radial-gradient(circle var(--lubang) at 0 100%, transparent 98%, #000) left / 51% 100% no-repeat,
+      radial-gradient(circle var(--lubang) at 100% 100%, transparent 98%, #000) right / 51% 100% no-repeat;
+    mask:
+      radial-gradient(circle var(--lubang) at 0 100%, transparent 98%, #000) left / 51% 100% no-repeat,
+      radial-gradient(circle var(--lubang) at 100% 100%, transparent 98%, #000) right / 51% 100% no-repeat;
+  }
+  .tiket-bawah {
+    border-radius: 0 0 14px 14px;
+    -webkit-mask:
+      radial-gradient(circle var(--lubang) at 0 0, transparent 98%, #000) left / 51% 100% no-repeat,
+      radial-gradient(circle var(--lubang) at 100% 0, transparent 98%, #000) right / 51% 100% no-repeat;
+    mask:
+      radial-gradient(circle var(--lubang) at 0 0, transparent 98%, #000) left / 51% 100% no-repeat,
+      radial-gradient(circle var(--lubang) at 100% 0, transparent 98%, #000) right / 51% 100% no-repeat;
+  }
+  .tiket-bawah::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 18px;
+    right: 18px;
+    border-top: 2px dashed var(--color-beras-gelap);
   }
 
   /* Kerangka pemuatan (skeleton) */
   .kerangka {
-    @apply rounded-xl bg-krem-tua;
+    @apply rounded-[10px] bg-beras-tua;
     background-image: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.75) 50%, transparent 100%);
     background-size: 200% 100%;
     background-repeat: no-repeat;
@@ -273,14 +373,14 @@ body {
 /* Scrollbar tipis untuk area geser horizontal */
 .gulir-tipis {
   scrollbar-width: thin;
-  scrollbar-color: var(--color-krem-gelap) transparent;
+  scrollbar-color: var(--color-beras-gelap) transparent;
 }
 .gulir-tipis::-webkit-scrollbar {
   height: 6px;
   width: 6px;
 }
 .gulir-tipis::-webkit-scrollbar-thumb {
-  background-color: var(--color-krem-gelap);
+  background-color: var(--color-beras-gelap);
   border-radius: 999px;
 }
 .tanpa-scrollbar {
@@ -338,9 +438,9 @@ body {
   100% { opacity: 0; transform: translateY(-22px) scaleY(1.15); }
 }
 @keyframes denyut {
-  0% { box-shadow: 0 0 0 0 rgba(194, 70, 28, 0.45); }
-  70% { box-shadow: 0 0 0 12px rgba(194, 70, 28, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(194, 70, 28, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(59, 170, 126, 0.55); }
+  70% { box-shadow: 0 0 0 10px rgba(59, 170, 126, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(59, 170, 126, 0); }
 }
 @keyframes berputar-pelan {
   to { transform: rotate(360deg); }
@@ -357,9 +457,18 @@ body {
   from { transform: scaleY(0); }
   to { transform: scaleY(1); }
 }
+@keyframes tumbuh-datar {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
 @keyframes kedip-lembut {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.45; }
+}
+/* Jarum jam di logo & ilustrasi berdetak ke posisinya */
+@keyframes jarum {
+  from { transform: rotate(-70deg); }
+  to { transform: rotate(0deg); }
 }
 
 .anim-masuk {
@@ -373,6 +482,11 @@ body {
 .anim-tumbuh {
   transform-origin: bottom;
   animation: tumbuh 0.6s var(--ease-halus) both;
+  animation-delay: var(--tunda, 0ms);
+}
+.anim-tumbuh-datar {
+  transform-origin: left;
+  animation: tumbuh-datar 0.7s var(--ease-halus) both;
   animation-delay: var(--tunda, 0ms);
 }
 .anim-lompat {
@@ -397,6 +511,15 @@ body {
 }
 .anim-kedip {
   animation: kedip-lembut 1.6s ease-in-out infinite;
+}
+.anim-putar-cepat {
+  animation: berputar-pelan 0.8s linear infinite;
+}
+.anim-jarum {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  animation: jarum 0.9s var(--ease-pegas) both;
+  animation-delay: var(--tunda, 150ms);
 }
 
 /* Di dalam SVG, titik pusat transformasi bawaan adalah pojok kiri-atas

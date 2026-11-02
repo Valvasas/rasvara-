@@ -55,13 +55,13 @@ export default async function HalamanDetailMenu({ params }: HalamanDetailMenuPro
 
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 pt-4 pb-10 sm:pt-8 sm:pb-14">
-      <nav aria-label="Jejak halaman" className="flex items-center gap-1.5 text-[14px] text-kayu-sedang">
-        <Link href="/menu" className="inline-flex items-center gap-1 min-h-[40px] hover:text-kayu">
+      <nav aria-label="Jejak halaman" className="flex items-center gap-1.5 text-[14px] text-arang-sedang">
+        <Link href="/menu" className="inline-flex items-center gap-1 min-h-[40px] hover:text-arang">
           <IkonPanahKiri className="w-4 h-4" />
           Menu
         </Link>
         <span aria-hidden="true">/</span>
-        <Link href={`/menu?kategori=${menu.kategori}`} className="min-h-[40px] inline-flex items-center hover:text-kayu">
+        <Link href={`/menu?kategori=${menu.kategori}`} className="min-h-[40px] inline-flex items-center hover:text-arang">
           {LABEL_KATEGORI[menu.kategori]}
         </Link>
       </nav>
@@ -78,24 +78,24 @@ export default async function HalamanDetailMenu({ params }: HalamanDetailMenuPro
         </ViewTransition>
 
         <div className="lg:sticky lg:top-24">
-          <h1 className="font-tampil text-[1.75rem] sm:text-4xl font-bold text-kayu leading-tight">{menu.nama}</h1>
+          <h1 className="font-tampil text-[1.75rem] sm:text-4xl font-bold text-arang leading-tight">{menu.nama}</h1>
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {labelLaku && (
-              <span className="lencana bg-bata-lembut text-bata-tua border-bata/20">
+              <span className="lencana bg-pandan-lembut text-pandan-tua border-pandan/20">
                 <IkonApi className="w-3.5 h-3.5" />
                 {labelLaku}
               </span>
             )}
-            <span className="lencana bg-kayu-lembut text-kayu border-kayu/10">{LABEL_KATEGORI[menu.kategori]}</span>
+            <span className="lencana bg-arang-lembut text-arang border-arang/10">{LABEL_KATEGORI[menu.kategori]}</span>
           </div>
 
-          <p className="mt-4 text-3xl font-bold text-bata-tua angka-tabel">
+          <p className="mt-4 text-3xl font-bold text-pandan-tua angka-tabel">
             {rupiah(menu.harga)}
-            <span className="text-base font-medium text-kayu-sedang"> / {menu.satuan}</span>
+            <span className="text-base font-medium text-arang-sedang"> / {menu.satuan}</span>
           </p>
 
-          <p className="mt-4 text-[17px] text-kayu-sedang leading-relaxed whitespace-pre-line">{menu.deskripsi}</p>
+          <p className="mt-4 text-[17px] text-arang-sedang leading-relaxed whitespace-pre-line">{menu.deskripsi}</p>
 
           <ul className="mt-5 grid gap-2.5 text-[15px]">
             <li className="flex items-start gap-3">
@@ -105,23 +105,23 @@ export default async function HalamanDetailMenu({ params }: HalamanDetailMenuPro
               <span className="pt-1">
                 {menu.preorderHari > 0 ? (
                   <>
-                    Pesan paling lambat <strong className="text-kayu">H-{menu.preorderHari}</strong> — dimasak khusus untukmu
+                    Pesan paling lambat <strong className="text-arang">H-{menu.preorderHari}</strong> — dimasak khusus untukmu
                   </>
                 ) : (
-                  <>Bisa dipesan <strong className="text-kayu">untuk hari ini</strong></>
+                  <>Bisa dipesan <strong className="text-arang">untuk hari ini</strong></>
                 )}
               </span>
             </li>
             <li className="flex items-start gap-3">
-              <span className="w-8 h-8 shrink-0 rounded-lg bg-daun-lembut text-daun-tua flex items-center justify-center">
+              <span className="w-8 h-8 shrink-0 rounded-lg bg-pandan-lembut text-pandan-tua flex items-center justify-center">
                 <IkonCek className="w-[18px] h-[18px]" />
               </span>
               <span className="pt-1">
-                Minimal pesan <strong className="text-kayu">{menu.minPesan} {menu.satuan}</strong>, bisa digabung menu lain
+                Minimal pesan <strong className="text-arang">{menu.minPesan} {menu.satuan}</strong>, bisa digabung menu lain
               </span>
             </li>
             <li className="flex items-start gap-3">
-              <span className="w-8 h-8 shrink-0 rounded-lg bg-bata-lembut text-bata-tua flex items-center justify-center">
+              <span className="w-8 h-8 shrink-0 rounded-lg bg-pandan-lembut text-pandan-tua flex items-center justify-center">
                 <IkonTruk className="w-[18px] h-[18px]" />
               </span>
               <span className="pt-1">
@@ -146,7 +146,7 @@ export default async function HalamanDetailMenu({ params }: HalamanDetailMenuPro
             </h2>
             <Link
               href={`/menu?kategori=${menu.kategori}`}
-              className="shrink-0 min-h-[44px] inline-flex items-center text-[15px] font-semibold text-bata hover:text-bata-tua"
+              className="shrink-0 min-h-[44px] inline-flex items-center text-[15px] font-semibold text-pandan hover:text-pandan-tua"
             >
               Lihat semua
             </Link>

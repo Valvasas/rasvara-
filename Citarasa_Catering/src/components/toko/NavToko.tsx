@@ -34,7 +34,7 @@ function KolomCari({ className = "" }: { className?: string }) {
       <label htmlFor="cari-global" className="sr-only">
         Cari menu
       </label>
-      <IkonCari className="w-[18px] h-[18px] text-kayu-sedang absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+      <IkonCari className="w-[18px] h-[18px] text-arang-sedang absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
       <input
         // key: kolom ikut berganti isi saat pembeli berpindah pencarian lewat tombol kembali.
         key={nilaiAwal}
@@ -45,8 +45,8 @@ function KolomCari({ className = "" }: { className?: string }) {
         maxLength={60}
         enterKeyHint="search"
         autoComplete="off"
-        placeholder="Cari nasi kotak, tumpeng…"
-        className="w-full h-11 pl-10 pr-4 rounded-full border-[1.5px] border-krem-gelap bg-white text-base text-kayu placeholder:text-kayu-sedang/60 transition-colors hover:border-kayu-sedang/30 focus:outline-none focus:border-bata focus:ring-4 focus:ring-bata/12"
+        placeholder="Cari menu: nasi kotak, tumpeng, snack…"
+        className="w-full h-11 pl-10 pr-4 rounded-[10px] border-[1.5px] border-beras-gelap bg-beras text-base text-arang placeholder:text-arang-sedang/60 transition-colors hover:border-arang-sedang/30 focus:outline-none focus:border-pandan focus:ring-4 focus:ring-pandan/12"
       />
     </form>
   );
@@ -70,7 +70,7 @@ function TombolKeranjang() {
       href="/keranjang"
       aria-label={jumlah > 0 ? `Keranjang, ${jumlah} menu` : "Keranjang, kosong"}
       aria-current={aktif ? "page" : undefined}
-      className={`relative tombol-ikon ${aktif ? "text-bata bg-bata-lembut" : ""}`}
+      className={`relative tombol-ikon ${aktif ? "text-pandan-tua bg-pandan-lembut" : ""}`}
     >
       <span key={`ikon-${denyut}`} className={denyut ? "anim-goyang inline-flex" : "inline-flex"}>
         <IkonKeranjang className="w-6 h-6" />
@@ -100,23 +100,24 @@ function TautanAkun({ peran, nama }: NavTokoProps) {
       <Link
         href="/akun"
         aria-current={pathname === "/akun" ? "page" : undefined}
-        className="inline-flex items-center gap-2 min-h-[44px] pl-1.5 pr-3 rounded-full hover:bg-krem-tua transition-colors"
+        className="inline-flex items-center gap-2 min-h-[44px] pl-1.5 pr-3 rounded-full hover:bg-beras-tua transition-colors"
       >
-        <span aria-hidden="true" className="w-8 h-8 rounded-full bg-kunyit-lembut text-kunyit-tua font-bold flex items-center justify-center">
+        <span aria-hidden="true" className="w-8 h-8 rounded-full bg-pandan text-white font-bold flex items-center justify-center">
           {inisial}
         </span>
-        <span className="text-[15px] font-semibold text-kayu">Akun</span>
+        <span className="max-w-[9rem] truncate text-[15px] font-semibold text-arang">{(nama ?? "Akun").split(" ")[0]}</span>
       </Link>
     );
   }
   const ke = pathname && !/^\/(masuk|daftar)/.test(pathname) ? `?ke=${encodeURIComponent(pathname)}` : "";
   return (
     <span className="flex items-center gap-2">
-      <Link href={`/masuk${ke}`} className="tombol-kedua tombol-kecil">
+      <Link href={`/masuk${ke}`} className="tombol-hantu tombol-kecil text-arang">
+        <IkonPengguna className="w-[18px] h-[18px]" />
         Masuk
       </Link>
       <Link href={`/daftar${ke}`} className="tombol-utama tombol-kecil hidden lg:inline-flex">
-        Daftar
+        Daftar gratis
       </Link>
     </span>
   );
@@ -127,19 +128,19 @@ function TautanAkun({ peran, nama }: NavTokoProps) {
  * pembeli Indonesia: logo di kiri, kolom cari lebar di tengah, keranjang &
  * akun di kanan. Di ponsel, navigasi utama pindah ke bar bawah (NavBawah).
  */
-export function NavToko({ peran, nama }: NavTokoProps) {
+export function NavToko({ peran, nama, namaUsaha }: NavTokoProps & { namaUsaha: string }) {
   const pathname = usePathname();
   const cariDiPonsel = RUTE_DENGAN_CARI(pathname);
   const aktif = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
 
   const kelasTautan = (href: string) =>
     `inline-flex items-center min-h-[44px] px-3 rounded-lg text-[15px] font-semibold transition-colors ${
-      aktif(href) ? "text-bata-tua bg-bata-lembut" : "text-kayu-sedang hover:text-kayu hover:bg-krem-tua"
+      aktif(href) ? "text-pandan-tua bg-pandan-lembut" : "text-arang-sedang hover:text-arang hover:bg-beras-tua"
     }`;
 
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 h-16 flex items-center gap-2 sm:gap-4">
-      <Wordmark href="/" compact kelasTeks={cariDiPonsel ? "hidden sm:flex" : "flex"} />
+      <Wordmark href="/" nama={namaUsaha} compact kelasTeks={cariDiPonsel ? "hidden sm:flex" : "flex"} />
 
       <Suspense fallback={<div className={`flex-1 h-11 ${cariDiPonsel ? "" : "hidden md:block"}`} />}>
         <KolomCari className={`flex-1 md:max-w-md lg:max-w-lg md:mx-auto ${cariDiPonsel ? "" : "hidden md:block"}`} />
@@ -201,7 +202,7 @@ export function NavBawah({ peran }: { peran: Peran | null }) {
       <div aria-hidden="true" className="md:hidden h-[calc(4.25rem+env(safe-area-inset-bottom))]" />
       <nav
         aria-label="Navigasi bawah"
-        className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-krem-gelap shadow-[var(--shadow-mengambang)] aman-bawah"
+        className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/95 backdrop-blur-md border-t border-beras-gelap shadow-[var(--shadow-mengambang)] aman-bawah"
         style={{ viewTransitionName: "nav-bawah" }}
       >
         <ul className="grid grid-cols-5">
@@ -213,13 +214,13 @@ export function NavBawah({ peran }: { peran: Peran | null }) {
                   href={href}
                   aria-current={aktif ? "page" : undefined}
                   className={`relative flex flex-col items-center justify-center gap-0.5 h-[3.75rem] text-[12.5px] transition-colors active:scale-95 ${
-                    aktif ? "text-bata-tua font-bold" : "text-kayu-sedang font-medium"
+                    aktif ? "text-pandan-tua font-bold" : "text-arang-sedang font-medium"
                   }`}
                 >
                   {aktif && (
-                    <span aria-hidden="true" className="absolute top-0 h-[3px] w-8 rounded-b-full bg-bata anim-masuk-skala" />
+                    <span aria-hidden="true" className="absolute top-0 h-[3px] w-8 rounded-b-full bg-pandan anim-masuk-skala" />
                   )}
-                  <span className={`relative flex items-center justify-center w-12 h-7 rounded-full transition-colors ${aktif ? "bg-bata-lembut" : ""}`}>
+                  <span className={`relative flex items-center justify-center w-12 h-7 rounded-full transition-colors ${aktif ? "bg-pandan-lembut" : ""}`}>
                     <Ikon className="w-[22px] h-[22px]" strokeWidth={aktif ? 2.2 : 1.75} />
                     {href === "/keranjang" && jumlah > 0 && (
                       <span className="lencana-angka !top-[-6px] !right-0">{jumlah > 99 ? "99+" : jumlah}</span>

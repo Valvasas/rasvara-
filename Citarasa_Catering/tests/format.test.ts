@@ -13,6 +13,8 @@ import {
   jamTampil,
   sedangBuka,
   normalkanTelepon,
+  teleponHpSah,
+  teleponLokalDariInput,
   teleponTampil,
   namaPanggilan,
 } from "../src/lib/format";
@@ -116,3 +118,23 @@ describe("Format Sapaan Nama Panggilan", () => {
   });
 });
 
+
+describe("Isian telepon berawalan +62", () => {
+  it("menyederhanakan semua cara tulis menjadi digit setelah kode negara", () => {
+    for (const masukan of ["081234567890", "+62 812-3456-7890", "6281234567890", "0812 3456 7890", "812345 67890"]) {
+      assert.equal(teleponLokalDariInput(masukan), "81234567890");
+    }
+  });
+
+  it("hasilnya diterima normalisasi server", () => {
+    assert.equal(normalkanTelepon(teleponLokalDariInput("0812-3456-7890")), "6281234567890");
+  });
+
+  it("nomor HP Indonesia yang sah", () => {
+    assert.equal(teleponHpSah("081234567890"), true);
+    assert.equal(teleponHpSah("+6281234567"), true);
+    assert.equal(teleponHpSah("0212345678"), false); // telepon rumah: tidak ada WhatsApp
+    assert.equal(teleponHpSah("0812"), false);
+    assert.equal(teleponHpSah("08123456789012345"), false);
+  });
+});

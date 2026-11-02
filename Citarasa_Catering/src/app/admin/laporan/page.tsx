@@ -64,10 +64,10 @@ export default async function HalamanLaporan({ searchParams }: HalamanLaporanPro
   ]);
 
   const kartu = [
-    { label: "Pemasukan", nilai: rupiah(kas.masuk), catatan: perubahan(kas.masuk, kasLalu.masuk), kelas: "text-daun-tua" },
-    { label: "Pengeluaran", nilai: rupiah(kas.keluar), catatan: perubahan(kas.keluar, kasLalu.keluar), kelas: "text-kayu" },
-    { label: "Laba kotor", nilai: rupiah(kas.selisih), catatan: perubahan(kas.selisih, kasLalu.selisih), kelas: kas.selisih < 0 ? "text-bahaya" : "text-kayu" },
-    { label: "Pesanan selesai", nilai: angka(pesananSelesai), catatan: pesananBatal ? `${pesananBatal} dibatalkan` : null, kelas: "text-kayu" },
+    { label: "Pemasukan", nilai: rupiah(kas.masuk), catatan: perubahan(kas.masuk, kasLalu.masuk), kelas: "text-pandan-tua" },
+    { label: "Pengeluaran", nilai: rupiah(kas.keluar), catatan: perubahan(kas.keluar, kasLalu.keluar), kelas: "text-arang" },
+    { label: "Laba kotor", nilai: rupiah(kas.selisih), catatan: perubahan(kas.selisih, kasLalu.selisih), kelas: kas.selisih < 0 ? "text-bahaya" : "text-arang" },
+    { label: "Pesanan selesai", nilai: angka(pesananSelesai), catatan: pesananBatal ? `${pesananBatal} dibatalkan` : null, kelas: "text-arang" },
   ];
   const maksPengeluaran = Math.max(1, ...pengeluaran.map((p) => p._sum.jumlah ?? 0));
 
@@ -95,7 +95,7 @@ export default async function HalamanLaporan({ searchParams }: HalamanLaporanPro
           <div key={k.label} className="kartu p-5">
             <dt className="teks-redup">{k.label}</dt>
             <dd className={`mt-1 text-xl sm:text-2xl font-semibold angka-tabel ${k.kelas}`}>{k.nilai}</dd>
-            {k.catatan && <dd className="mt-1 text-xs text-kayu-sedang">{k.catatan}</dd>}
+            {k.catatan && <dd className="mt-1 text-xs text-arang-sedang">{k.catatan}</dd>}
           </div>
         ))}
       </dl>
@@ -106,13 +106,13 @@ export default async function HalamanLaporan({ searchParams }: HalamanLaporanPro
           {terlaris.length === 0 ? (
             <p className="mt-3 teks-redup">Belum ada pesanan selesai di bulan ini.</p>
           ) : (
-            <ol className="mt-4 divide-y divide-krem-gelap">
+            <ol className="mt-4 divide-y divide-beras-gelap">
               {terlaris.map((m, i) => (
                 <li key={m.namaMenu} className="flex items-center gap-3 py-3 text-sm">
-                  <span className="w-5 text-kayu-sedang angka-tabel">{i + 1}</span>
-                  <span className="flex-1 min-w-0 truncate text-kayu">{m.namaMenu}</span>
-                  <span className="text-kayu-sedang angka-tabel">{angka(m._sum.jumlah ?? 0)} porsi</span>
-                  <span className="w-28 text-right font-medium text-kayu angka-tabel">{rupiah(m._sum.subtotal ?? 0)}</span>
+                  <span className="w-5 text-arang-sedang angka-tabel">{i + 1}</span>
+                  <span className="flex-1 min-w-0 truncate text-arang">{m.namaMenu}</span>
+                  <span className="text-arang-sedang angka-tabel">{angka(m._sum.jumlah ?? 0)} porsi</span>
+                  <span className="w-28 text-right font-medium text-arang angka-tabel">{rupiah(m._sum.subtotal ?? 0)}</span>
                 </li>
               ))}
             </ol>
@@ -130,14 +130,14 @@ export default async function HalamanLaporan({ searchParams }: HalamanLaporanPro
                 return (
                   <li key={p.kategori} className="text-sm">
                     <div className="flex justify-between gap-3">
-                      <span className="text-kayu">{p.kategori}</span>
-                      <span className="text-kayu angka-tabel">
+                      <span className="text-arang">{p.kategori}</span>
+                      <span className="text-arang angka-tabel">
                         {rupiah(jumlah)}
-                        <span className="text-kayu-sedang"> · {kas.keluar ? Math.round((jumlah / kas.keluar) * 100) : 0}%</span>
+                        <span className="text-arang-sedang"> · {kas.keluar ? Math.round((jumlah / kas.keluar) * 100) : 0}%</span>
                       </span>
                     </div>
-                    <div className="mt-1.5 h-2 rounded-full bg-krem-tua overflow-hidden" aria-hidden="true">
-                      <div className="h-full rounded-full bg-bata/70" style={{ width: `${(jumlah / maksPengeluaran) * 100}%` }} />
+                    <div className="mt-1.5 h-2 rounded-full bg-beras-tua overflow-hidden" aria-hidden="true">
+                      <div className="h-full rounded-full bg-pandan/70" style={{ width: `${(jumlah / maksPengeluaran) * 100}%` }} />
                     </div>
                   </li>
                 );

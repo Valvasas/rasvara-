@@ -51,7 +51,7 @@ export default async function HalamanAdminPengaturan() {
         <DaftarStafDapur daftarAwal={daftarStaf} />
       </section>
 
-      <section aria-labelledby="judul-sandi" className="kartu kartu-isi">
+      <section id="ganti-sandi" aria-labelledby="judul-sandi" className="kartu kartu-isi scroll-mt-24">
         <h2 id="judul-sandi" className="judul-bagian mb-4">Kata sandi Anda</h2>
         <FormGantiSandi untukDapur />
       </section>

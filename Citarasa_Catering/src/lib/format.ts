@@ -215,6 +215,23 @@ export function normalkanTelepon(input: string): string {
   return bersih;
 }
 
+/**
+ * Isian telepon berawalan "+62" tetap: apa pun yang diketik/ditempel pembeli
+ * ("0812…", "+62 812…", "62812…", "0812-3456-7890") disederhanakan jadi
+ * digit setelah kode negara ("812…"). Server menormalkan ulang sendiri.
+ */
+export function teleponLokalDariInput(input: string): string {
+  let d = input.replace(/\D/g, "");
+  if (d.startsWith("62")) d = d.slice(2);
+  d = d.replace(/^0+/, "");
+  return d.slice(0, 13);
+}
+
+/** Nomor HP/WhatsApp Indonesia yang wajar: 08xx, total 10–13 digit (dengan 0). */
+export function teleponHpSah(input: string): boolean {
+  return /^628\d{7,11}$/.test(normalkanTelepon(input));
+}
+
 /** 6281234567890 -> "0812-3456-7890" */
 export function teleponTampil(nomor: string): string {
   const n = normalkanTelepon(nomor);

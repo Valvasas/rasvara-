@@ -89,16 +89,16 @@ export function FormUnggahBukti({
             href={buktiSaatIni}
             target="_blank"
             rel="noopener noreferrer"
-            className="relative w-16 h-16 rounded-lg overflow-hidden border border-krem-gelap bg-krem-tua shrink-0"
+            className="relative w-16 h-16 rounded-lg overflow-hidden border border-beras-gelap bg-beras-tua shrink-0"
           >
             {/* img biasa: berkas dilayani route berizin, bukan aset statis */}
             <img src={buktiSaatIni} alt="Bukti transfer yang terkirim" className="w-full h-full object-cover" />
           </a>
           <div className="text-sm">
-            <p className="font-medium text-kayu flex items-center gap-1.5">
+            <p className="font-medium text-arang flex items-center gap-1.5">
               <IkonLampiran className="w-4 h-4" /> Bukti transfer terkirim
             </p>
-            <p className="text-kayu-sedang">
+            <p className="text-arang-sedang">
               {isLunas ? "Pembayaran sudah dikonfirmasi." : "Menunggu dicek dapur."}
             </p>
           </div>
@@ -135,14 +135,14 @@ export function FormUnggahBukti({
           )}
 
           {menyiapkan ? (
-            <p role="status" className="flex items-center justify-center gap-2 min-h-[52px] rounded-xl border border-krem-gelap bg-krem-tua text-[15px] text-kayu-sedang">
-              <span className="w-4 h-4 rounded-full border-2 border-bata border-t-transparent animate-spin" aria-hidden="true" />
+            <p role="status" className="flex items-center justify-center gap-2 min-h-[52px] rounded-xl border border-beras-gelap bg-beras-tua text-[15px] text-arang-sedang">
+              <span className="w-4 h-4 rounded-full border-2 border-pandan border-t-transparent animate-spin" aria-hidden="true" />
               Menyiapkan foto…
             </p>
           ) : pratinjau ? (
-            <div className="flex flex-wrap items-center gap-3 rounded-xl border border-krem-gelap p-3">
-              <img src={pratinjau} alt="Pratinjau bukti" className="w-14 h-14 rounded-lg object-cover border border-krem-gelap" />
-              <p className="flex-1 min-w-0 text-sm text-kayu truncate">{namaFile}</p>
+            <div className="flex flex-wrap items-center gap-3 rounded-xl border border-beras-gelap p-3">
+              <img src={pratinjau} alt="Pratinjau bukti" className="w-14 h-14 rounded-lg object-cover border border-beras-gelap" />
+              <p className="flex-1 min-w-0 text-sm text-arang truncate">{namaFile}</p>
               <div className="flex gap-2">
                 <button type="button" onClick={handleBatalPilih} disabled={isPendingUpload} className="tombol-hantu tombol-kecil">
                   Batal
@@ -155,9 +155,9 @@ export function FormUnggahBukti({
           ) : (
             <label
               htmlFor="berkas-bukti"
-              className="flex items-center justify-center gap-2 min-h-[52px] rounded-xl border border-dashed border-kayu-sedang/40 text-sm font-medium text-kayu hover:bg-krem-tua cursor-pointer transition-colors has-[:focus-visible]:ring-2"
+              className="flex items-center justify-center gap-2 min-h-[52px] rounded-xl border border-dashed border-arang-sedang/40 text-sm font-medium text-arang hover:bg-beras-tua cursor-pointer transition-colors has-[:focus-visible]:ring-2"
             >
-              <IkonFoto className="w-5 h-5 text-kayu-sedang" />
+              <IkonFoto className="w-5 h-5 text-arang-sedang" />
               Pilih foto / screenshot
             </label>
           )}
@@ -170,7 +170,7 @@ export function FormUnggahBukti({
           type="button"
           onClick={handleKonfirmasiCepat}
           disabled={isPendingKonfirmasi}
-          className="text-sm text-kayu-sedang hover:text-kayu underline underline-offset-2 cursor-pointer"
+          className="text-sm text-arang-sedang hover:text-arang underline underline-offset-2 cursor-pointer"
         >
           {isPendingKonfirmasi ? "Mengirim konfirmasi..." : "Sudah transfer tapi tidak punya fotonya? Konfirmasi tanpa bukti"}
         </button>

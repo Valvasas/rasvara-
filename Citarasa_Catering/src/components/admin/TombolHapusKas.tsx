@@ -37,7 +37,7 @@ export function TombolHapusKas({ id }: { id: string }) {
         type="button"
         onClick={klik}
         disabled={isPending}
-        className={`tombol tombol-kecil px-2 ${yakin ? "bg-bahaya text-white" : "text-kayu-sedang hover:text-bahaya hover:bg-bahaya-lembut"}`}
+        className={`tombol tombol-kecil px-2 ${yakin ? "bg-bahaya text-white" : "text-arang-sedang hover:text-bahaya hover:bg-bahaya-lembut"}`}
       >
         {isPending ? "Menghapus..." : yakin ? "Hapus?" : "Hapus"}
       </button>

@@ -39,12 +39,12 @@ export function FormCatatKas({ hariIni }: { hariIni: string }) {
 
       <fieldset>
         <legend className="sr-only">Jenis catatan</legend>
-        <div className="grid grid-cols-2 gap-1 rounded-xl bg-krem-tua p-1">
+        <div className="grid grid-cols-2 gap-1 rounded-xl bg-beras-tua p-1">
           {(["KELUAR", "MASUK"] as const).map((j) => (
             <label
               key={j}
-              className={`min-h-[40px] rounded-lg text-sm font-medium flex items-center justify-center cursor-pointer transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-bata/40 ${
-                jenis === j ? "bg-white text-kayu shadow-sm" : "text-kayu-sedang hover:text-kayu"
+              className={`min-h-[40px] rounded-lg text-sm font-medium flex items-center justify-center cursor-pointer transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-pandan/40 ${
+                jenis === j ? "bg-white text-arang shadow-sm" : "text-arang-sedang hover:text-arang"
               }`}
             >
               <input type="radio" name="jenis" value={j} checked={jenis === j} onChange={() => pilihJenis(j)} className="sr-only" />

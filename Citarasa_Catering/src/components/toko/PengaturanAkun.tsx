@@ -29,7 +29,7 @@ export function SakelarTeks({ ringkas = false }: { ringkas?: boolean }) {
   };
 
   const tombol = (
-    <div role="group" aria-label="Ukuran tulisan" className="inline-flex rounded-xl border-[1.5px] border-krem-gelap bg-krem-tua p-1">
+    <div role="group" aria-label="Ukuran tulisan" className="inline-flex rounded-xl border-[1.5px] border-beras-gelap bg-beras-tua p-1">
       {[
         { nilai: false, label: "Normal", kelas: "text-[15px]" },
         { nilai: true, label: "Besar", kelas: "text-[18px]" },
@@ -40,7 +40,7 @@ export function SakelarTeks({ ringkas = false }: { ringkas?: boolean }) {
           onClick={() => pilih(o.nilai)}
           aria-pressed={besar === o.nilai}
           className={`min-h-[40px] px-4 rounded-lg font-semibold cursor-pointer transition-colors ${o.kelas} ${
-            besar === o.nilai ? "bg-white text-kayu shadow-sm" : "text-kayu-sedang hover:text-kayu"
+            besar === o.nilai ? "bg-white text-arang shadow-sm" : "text-arang-sedang hover:text-arang"
           }`}
         >
           {o.label}
@@ -52,7 +52,7 @@ export function SakelarTeks({ ringkas = false }: { ringkas?: boolean }) {
   if (ringkas) {
     return (
       <div className="flex items-center gap-3">
-        <span className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-kayu">
+        <span className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-arang">
           <IkonUkuranTeks className="w-5 h-5" />
           Ukuran tulisan
         </span>
@@ -68,8 +68,8 @@ export function SakelarTeks({ ringkas = false }: { ringkas?: boolean }) {
           <IkonUkuranTeks className="w-5 h-5" />
         </span>
         <div>
-          <p className="font-semibold text-kayu">Ukuran tulisan</p>
-          <p className="text-[13px] text-kayu-sedang">Perbesar bila tulisan terasa kecil</p>
+          <p className="font-semibold text-arang">Ukuran tulisan</p>
+          <p className="text-[13px] text-arang-sedang">Perbesar bila tulisan terasa kecil</p>
         </div>
       </div>
       {tombol}

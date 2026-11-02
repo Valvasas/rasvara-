@@ -1,15 +1,21 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { aksiDaftar } from "@/app/aksi/auth";
 import { InputSandi } from "@/components/InputSandi";
+import { InputTelepon } from "@/components/InputTelepon";
 import { IkonCek } from "@/components/ikon/Ikon";
+import { normalkanTelepon } from "@/lib/format";
 
 /** Syarat sandi yang ditampilkan hidup saat mengetik — jauh lebih ramah daripada galat setelah kirim. */
 const SYARAT = [
   { label: "Minimal 8 karakter", cek: (s: string) => s.length >= 8 },
   { label: "Ada angka", cek: (s: string) => /\d/.test(s) },
-  { label: "Bukan nomor HP-mu", cek: (s: string, hp: string) => s.length > 0 && s.replace(/\D/g, "") !== hp.replace(/\D/g, "") },
+  {
+    label: "Bukan nomor HP-mu",
+    // Sama dengan aturan server: "0812…" dan "812…" dianggap nomor yang sama.
+    cek: (s: string, hp: string) => s.length > 0 && (!hp || normalkanTelepon(s.replace(/\D/g, "")) !== normalkanTelepon(hp)),
+  },
 ];
 
 export function FormDaftar({ ke }: { ke?: string }) {
@@ -20,13 +26,24 @@ export function FormDaftar({ ke }: { ke?: string }) {
   const [alamat, setAlamat] = useState("");
   const [sandi, setSandi] = useState("");
   const galat = state?.kesalahan ?? {};
+  const kotakGalat = useRef<HTMLDivElement>(null);
+  const terpenuhi = SYARAT.filter((s) => s.cek(sandi, telepon)).length;
+
+  useEffect(() => {
+    if (state && !state.sukses) kotakGalat.current?.focus();
+  }, [state]);
 
   return (
     <form action={action} noValidate className="space-y-5">
       {ke && <input type="hidden" name="ke" value={ke} />}
       {state?.pesan && (
-        <div role="alert" className="kotak-galat">
+        <div ref={kotakGalat} tabIndex={-1} role="alert" className="kotak-galat focus:outline-none">
           {state.pesan}
+          {/sudah terdaftar/i.test(state.pesan) && (
+            <a href="/masuk" className="ml-1 font-bold underline underline-offset-2">
+              Masuk sekarang
+            </a>
+          )}
         </div>
       )}
 
@@ -50,30 +67,16 @@ export function FormDaftar({ ke }: { ke?: string }) {
         {galat.nama && <p className="pesan-galat">{galat.nama[0]}</p>}
       </div>
 
-      <div>
-        <label htmlFor="telepon" className="label">
-          Nomor WhatsApp
-        </label>
-        <input
-          type="tel"
-          id="telepon"
-          name="telepon"
-          inputMode="tel"
-          autoComplete="tel"
-          required
-          maxLength={20}
-          value={telepon}
-          onChange={(e) => setTelepon(e.target.value)}
-          placeholder="0812 3456 7890"
-          aria-invalid={galat.telepon ? true : undefined}
-          className={`isian ${galat.telepon ? "isian-galat" : ""}`}
-        />
-        {galat.telepon ? (
-          <p className="pesan-galat">{galat.telepon[0]}</p>
-        ) : (
-          <p className="petunjuk">Dipakai untuk masuk dan konfirmasi pesanan.</p>
-        )}
-      </div>
+      <InputTelepon
+        id="telepon"
+        name="telepon"
+        label="Nomor WhatsApp"
+        nilai={telepon}
+        onNilai={setTelepon}
+        error={galat.telepon?.[0]}
+        petunjuk="Jadi nomor masuk & tempat dapur mengirim kabar pesanan."
+        required
+      />
 
       <div>
         <InputSandi
@@ -87,14 +90,25 @@ export function FormDaftar({ ke }: { ke?: string }) {
           onNilai={setSandi}
           describedBy="syarat-sandi"
         />
+        {/* Meter kekuatan 3 ruas: tiap syarat yang terpenuhi mengisi satu ruas */}
+        <div aria-hidden="true" className="mt-2.5 grid grid-cols-3 gap-1.5">
+          {[0, 1, 2].map((i) => (
+            <span
+              key={i}
+              className={`h-1.5 rounded-full transition-colors duration-300 ${
+                i < terpenuhi ? (terpenuhi === 3 ? "bg-pandan" : "bg-kunyit") : "bg-beras-tua"
+              }`}
+            />
+          ))}
+        </div>
         <ul id="syarat-sandi" className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
           {SYARAT.map((s) => {
             const ok = s.cek(sandi, telepon);
             return (
-              <li key={s.label} className={`flex items-center gap-1.5 text-[13px] transition-colors ${ok ? "text-daun-tua font-semibold" : "text-kayu-sedang"}`}>
+              <li key={s.label} className={`flex items-center gap-1.5 text-[13px] transition-colors ${ok ? "text-pandan-tua font-semibold" : "text-arang-sedang"}`}>
                 <span
                   aria-hidden="true"
-                  className={`w-4 h-4 rounded-full flex items-center justify-center transition-colors ${ok ? "bg-daun text-white" : "border border-krem-gelap"}`}
+                  className={`w-4 h-4 rounded-full flex items-center justify-center transition-colors ${ok ? "bg-pandan text-white" : "border border-beras-gelap"}`}
                 >
                   {ok && <IkonCek className="w-2.5 h-2.5" strokeWidth={4} />}
                 </span>
@@ -108,7 +122,7 @@ export function FormDaftar({ ke }: { ke?: string }) {
 
       <div>
         <label htmlFor="alamat" className="label">
-          Alamat antar <span className="font-normal text-kayu-sedang">(boleh nanti)</span>
+          Alamat antar <span className="font-normal text-arang-sedang">(boleh nanti)</span>
         </label>
         <textarea
           id="alamat"
@@ -122,16 +136,23 @@ export function FormDaftar({ ke }: { ke?: string }) {
         />
       </div>
 
-      <button type="submit" disabled={isPending} className="tombol-utama tombol-besar w-full">
-        {isPending ? "Membuat akun…" : "Buat akun"}
+      <button type="submit" disabled={isPending} aria-busy={isPending} className="tombol-utama tombol-besar w-full">
+        {isPending ? (
+          <>
+            <span aria-hidden="true" className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white anim-putar-cepat" />
+            Membuat akun…
+          </>
+        ) : (
+          "Buat akun gratis"
+        )}
       </button>
-      <p className="text-center text-[13px] text-kayu-sedang">
+      <p className="text-center text-[13px] text-arang-sedang">
         Dengan mendaftar, kamu menyetujui{" "}
-        <a href="/syarat-ketentuan" className="underline hover:text-kayu">
+        <a href="/syarat-ketentuan" className="underline hover:text-arang">
           syarat
         </a>{" "}
         &amp;{" "}
-        <a href="/kebijakan-privasi" className="underline hover:text-kayu">
+        <a href="/kebijakan-privasi" className="underline hover:text-arang">
           kebijakan privasi
         </a>
         .

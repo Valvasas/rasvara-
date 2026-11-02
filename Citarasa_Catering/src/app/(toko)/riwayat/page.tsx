@@ -99,7 +99,7 @@ export default async function HalamanRiwayat({ searchParams }: HalamanRiwayatPro
 
   return (
     <div className="mx-auto max-w-3xl px-4 sm:px-6 pt-5 pb-10 sm:pt-10 sm:pb-14">
-      <h1 className="font-tampil text-[1.75rem] sm:text-4xl font-bold text-kayu">Pesanan saya</h1>
+      <h1 className="font-tampil text-[1.75rem] sm:text-4xl font-bold text-arang">Pesanan saya</h1>
       {!sesi && kodePerangkat.length > 0 && (
         <p className="mt-3 kotak-info bg-kunyit-lembut/70 border-kunyit/30 text-kunyit-tua">
           Ini pesanan yang dibuat dari perangkat ini.{" "}
@@ -111,7 +111,7 @@ export default async function HalamanRiwayat({ searchParams }: HalamanRiwayatPro
       )}
 
       {/* Tab status ala marketplace */}
-      <nav aria-label="Saring status pesanan" className="sticky top-16 z-30 -mx-4 px-4 sm:mx-0 sm:px-0 mt-4 bg-krem/95 backdrop-blur-md border-b border-krem-gelap">
+      <nav aria-label="Saring status pesanan" className="sticky top-16 z-30 -mx-4 px-4 sm:mx-0 sm:px-0 mt-4 bg-beras/95 backdrop-blur-md border-b border-beras-gelap">
         <ul className="flex gap-1 overflow-x-auto tanpa-scrollbar">
           {TAB.map((t, i) => {
             const aktif = t.kunci === tab;
@@ -121,20 +121,20 @@ export default async function HalamanRiwayat({ searchParams }: HalamanRiwayatPro
                   href={t.kunci === "semua" ? "/riwayat" : `/riwayat?tab=${t.kunci}`}
                   aria-current={aktif ? "page" : undefined}
                   className={`relative inline-flex items-center gap-1.5 min-h-[48px] px-3 text-[15px] font-semibold transition-colors ${
-                    aktif ? "text-bata-tua" : "text-kayu-sedang hover:text-kayu"
+                    aktif ? "text-pandan-tua" : "text-arang-sedang hover:text-arang"
                   }`}
                 >
                   {t.label}
                   {hitungan[i] > 0 && t.kunci !== "semua" && (
                     <span
                       className={`min-w-[22px] h-[22px] px-1.5 rounded-full text-[12px] leading-[22px] text-center angka-tabel ${
-                        t.kunci === "bayar" ? "bg-bata text-white" : "bg-kayu-lembut text-kayu"
+                        t.kunci === "bayar" ? "bg-pandan text-white" : "bg-arang-lembut text-arang"
                       }`}
                     >
                       {hitungan[i]}
                     </span>
                   )}
-                  {aktif && <span aria-hidden="true" className="absolute inset-x-2 bottom-0 h-[3px] rounded-t-full bg-bata anim-masuk-skala" />}
+                  {aktif && <span aria-hidden="true" className="absolute inset-x-2 bottom-0 h-[3px] rounded-t-full bg-pandan anim-masuk-skala" />}
                 </Link>
               </li>
             );
@@ -145,7 +145,7 @@ export default async function HalamanRiwayat({ searchParams }: HalamanRiwayatPro
       {daftar.length === 0 ? (
         <div className="kartu kartu-isi mt-6 text-center anim-masuk">
           <IlustrasiPesananKosong className="w-52 mx-auto" />
-          <p className="mt-2 text-lg font-bold text-kayu">
+          <p className="mt-2 text-lg font-bold text-arang">
             {tab === "semua" ? "Belum ada pesanan" : "Tidak ada pesanan di sini"}
           </p>
           <p className="teks-redup mt-1 max-w-sm mx-auto">
@@ -175,29 +175,29 @@ export default async function HalamanRiwayat({ searchParams }: HalamanRiwayatPro
             );
             return (
               <li key={p.kode} className="kartu overflow-hidden anim-masuk" style={{ ["--tunda" as string]: `${idx * 40}ms` }}>
-                <div className="flex items-center justify-between gap-3 px-4 sm:px-5 py-3 border-b border-krem-gelap bg-krem-tua/40">
-                  <span className="text-[13px] text-kayu-sedang">
+                <div className="flex items-center justify-between gap-3 px-4 sm:px-5 py-3 border-b border-beras-gelap bg-beras-tua/40">
+                  <span className="text-[13px] text-arang-sedang">
                     Dipesan {tanggalPendek(p.dibuatPada)} · <span className="font-mono">{p.kode}</span>
                   </span>
                   <LencanaStatus status={p.status} untukPelanggan />
                 </div>
-                <Link href={`/pesanan/${p.kode}`} className="flex gap-3 sm:gap-4 px-4 sm:px-5 py-4 hover:bg-krem/60 transition-colors">
+                <Link href={`/pesanan/${p.kode}`} className="flex gap-3 sm:gap-4 px-4 sm:px-5 py-4 hover:bg-beras/60 transition-colors">
                   <GambarMini url={pertama?.menu?.foto[0]?.url ?? null} nama={pertama?.namaMenu ?? ""} ukuran="w-16 h-16" />
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-kayu leading-snug line-clamp-1">{pertama?.namaMenu}</p>
-                    <p className="text-[14px] text-kayu-sedang">
+                    <p className="font-semibold text-arang leading-snug line-clamp-1">{pertama?.namaMenu}</p>
+                    <p className="text-[14px] text-arang-sedang">
                       {pertama?.jumlah} {pertama?.satuan}
                       {lainnya > 0 && ` · +${lainnya} menu lain`}
                     </p>
-                    <p className="mt-1 inline-flex items-center gap-1.5 text-[14px] text-kayu">
-                      <IkonKalender className="w-4 h-4 text-kayu-sedang" />
+                    <p className="mt-1 inline-flex items-center gap-1.5 text-[14px] text-arang">
+                      <IkonKalender className="w-4 h-4 text-arang-sedang" />
                       {labelHari(p.tanggalAcara)}, {tanggalPendek(p.tanggalAcara)} · {jamTampil(p.jamAcara)}
                     </p>
                   </div>
                 </Link>
-                <div className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-5 py-3 border-t border-krem-gelap">
-                  <p className="text-[14px] text-kayu-sedang">
-                    Total <span className="text-lg font-bold text-kayu angka-tabel">{rupiah(p.total)}</span>
+                <div className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-5 py-3 border-t border-beras-gelap">
+                  <p className="text-[14px] text-arang-sedang">
+                    Total <span className="text-lg font-bold text-arang angka-tabel">{rupiah(p.total)}</span>
                   </p>
                   <div className="flex gap-2">
                     {perluBayar ? (

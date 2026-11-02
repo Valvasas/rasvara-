@@ -181,7 +181,7 @@ export function PetaLokasiAntar({
             type="button"
             onClick={pakaiLokasiSaya}
             disabled={sedangCariLokasi}
-            className="min-h-[40px] px-3 py-2 rounded-lg text-[11px] font-bold text-bata bg-bata-lembut hover:bg-bata hover:text-white disabled:opacity-50 transition-colors cursor-pointer"
+            className="min-h-[40px] px-3 py-2 rounded-lg text-[11px] font-bold text-pandan bg-pandan-lembut hover:bg-pandan hover:text-white disabled:opacity-50 transition-colors cursor-pointer"
           >
             {sedangCariLokasi ? "Mencari..." : "Pakai lokasi saya"}
           </button>
@@ -194,7 +194,7 @@ export function PetaLokasiAntar({
                 penandaRef.current = null;
                 onHapus();
               }}
-              className="min-h-[40px] px-3 py-2 rounded-lg text-[11px] font-bold text-kayu-sedang hover:text-bahaya transition-colors cursor-pointer"
+              className="min-h-[40px] px-3 py-2 rounded-lg text-[11px] font-bold text-arang-sedang hover:text-bahaya transition-colors cursor-pointer"
             >
               Hapus titik
             </button>
@@ -204,13 +204,13 @@ export function PetaLokasiAntar({
 
       <div
         ref={wadahRef}
-        className="w-full h-64 rounded-2xl overflow-hidden border border-krem-gelap bg-krem-tua z-0"
+        className="w-full h-64 rounded-2xl overflow-hidden border border-beras-gelap bg-beras-tua z-0"
         aria-label="Peta untuk menandai titik pengantaran"
         role="application"
       />
 
       {!siap && (
-        <p className="text-[11px] text-kayu-sedang">Memuat peta...</p>
+        <p className="text-[11px] text-arang-sedang">Memuat peta...</p>
       )}
 
       {galat && (
@@ -219,7 +219,7 @@ export function PetaLokasiAntar({
         </p>
       )}
 
-      <p className="text-[11px] text-kayu-sedang leading-relaxed">
+      <p className="text-[11px] text-arang-sedang leading-relaxed">
         {adaTitik ? (
           <>
             Titik tersimpan di {latitude!.toFixed(5)}, {longitude!.toFixed(5)}.
@@ -234,7 +234,7 @@ export function PetaLokasiAntar({
         )}
       </p>
 
-      <p className="text-[10px] text-kayu-sedang/80">
+      <p className="text-[10px] text-arang-sedang/80">
         Peta disediakan OpenStreetMap. Saat peta terbuka, peramban Anda
         menghubungi server mereka untuk mengambil gambar peta.
       </p>

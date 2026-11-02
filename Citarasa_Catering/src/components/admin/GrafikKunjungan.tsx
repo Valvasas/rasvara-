@@ -31,12 +31,12 @@ export function GrafikKunjungan({ data }: GrafikKunjunganProps) {
 
   return (
     <div className="kartu overflow-hidden">
-      <div className="p-4 bg-krem-tua/60 border-b border-krem-gelap flex flex-wrap items-center justify-between gap-3">
+      <div className="p-4 bg-beras-tua/60 border-b border-beras-gelap flex flex-wrap items-center justify-between gap-3">
         <h2 className="judul-bagian">
           Kunjungan Harian
         </h2>
 
-        <ul className="flex items-center gap-4 text-[11px] font-semibold text-kayu-sedang">
+        <ul className="flex items-center gap-4 text-[11px] font-semibold text-arang-sedang">
           <li className="flex items-center gap-1.5">
             <span
               className="w-3 h-3 rounded-sm shrink-0"
@@ -64,11 +64,11 @@ export function GrafikKunjungan({ data }: GrafikKunjunganProps) {
             aria-hidden="true"
           >
             {[0, 1, 2, 3].map((i) => (
-              <div key={i} className="border-t border-krem-gelap/50" />
+              <div key={i} className="border-t border-beras-gelap/50" />
             ))}
           </div>
 
-          <div className="absolute -top-1 left-0 text-[10px] font-semibold text-kayu-sedang pointer-events-none">
+          <div className="absolute -top-1 left-0 text-[10px] font-semibold text-arang-sedang pointer-events-none">
             {angka(tertinggi)}
           </div>
 
@@ -87,7 +87,7 @@ export function GrafikKunjungan({ data }: GrafikKunjunganProps) {
                 {/* Area sentuh menutupi seluruh tinggi kolom, bukan hanya batangnya. */}
                 <span
                   className={`absolute inset-0 rounded-md transition-colors ${
-                    disorot === i ? "bg-krem-tua/70" : "bg-transparent"
+                    disorot === i ? "bg-beras-tua/70" : "bg-transparent"
                   }`}
                   aria-hidden="true"
                 />
@@ -110,7 +110,7 @@ export function GrafikKunjungan({ data }: GrafikKunjunganProps) {
                 {disorot === i && (
                   <div
                     role="tooltip"
-                    className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-10 w-max max-w-[180px] px-3 py-2 rounded-xl bg-kayu text-krem shadow-lg text-[11px] leading-relaxed pointer-events-none"
+                    className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 z-10 w-max max-w-[180px] px-3 py-2 rounded-xl bg-arang text-beras shadow-lg text-[11px] leading-relaxed pointer-events-none"
                   >
                     <p className="font-semibold mb-0.5">{d.label}</p>
                     <p>{angka(d.pengunjung)} pengunjung unik</p>
@@ -127,7 +127,7 @@ export function GrafikKunjungan({ data }: GrafikKunjunganProps) {
           {data.map((d, i) => (
             <div
               key={d.tanggal}
-              className="flex-1 text-center text-[10px] font-semibold text-kayu-sedang truncate"
+              className="flex-1 text-center text-[10px] font-semibold text-arang-sedang truncate"
             >
               {i % jarakLabel === 0 ? d.label : ""}
             </div>
@@ -137,17 +137,17 @@ export function GrafikKunjungan({ data }: GrafikKunjunganProps) {
         {/* Tampilan tabel: angka tetap terbaca walau warna tidak terlihat,
             dan bisa dipakai pembaca layar. */}
         <details className="mt-5 group">
-          <summary className="text-xs font-bold text-bata cursor-pointer hover:underline list-none inline-flex items-center gap-1.5">
+          <summary className="text-xs font-bold text-pandan cursor-pointer hover:underline list-none inline-flex items-center gap-1.5">
             <span className="group-open:hidden">Lihat angkanya dalam tabel</span>
             <span className="hidden group-open:inline">Sembunyikan tabel</span>
           </summary>
 
-          <div className="mt-3 overflow-x-auto rounded-2xl border border-krem-gelap">
+          <div className="mt-3 overflow-x-auto rounded-2xl border border-beras-gelap">
             <table className="w-full text-xs">
               <caption className="sr-only">
                 Jumlah pengunjung unik dan halaman dibuka per hari
               </caption>
-              <thead className="bg-krem-tua text-kayu">
+              <thead className="bg-beras-tua text-arang">
                 <tr>
                   <th scope="col" className="text-left font-bold px-4 py-2.5">
                     Tanggal
@@ -160,14 +160,14 @@ export function GrafikKunjungan({ data }: GrafikKunjunganProps) {
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-krem-gelap/60 bg-white">
+              <tbody className="divide-y divide-beras-gelap/60 bg-white">
                 {data.map((d) => (
                   <tr key={d.tanggal}>
-                    <td className="px-4 py-2 text-kayu-sedang">{d.tanggal}</td>
-                    <td className="px-4 py-2 text-right font-semibold text-kayu">
+                    <td className="px-4 py-2 text-arang-sedang">{d.tanggal}</td>
+                    <td className="px-4 py-2 text-right font-semibold text-arang">
                       {angka(d.pengunjung)}
                     </td>
-                    <td className="px-4 py-2 text-right font-semibold text-kayu">
+                    <td className="px-4 py-2 text-right font-semibold text-arang">
                       {angka(d.tampilan)}
                     </td>
                   </tr>

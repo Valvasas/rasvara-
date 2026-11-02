@@ -46,3 +46,30 @@ export function alasanJamDitolak(opsi: {
   }
   return null;
 }
+
+/** "HH.MM" dari menit sejak tengah malam. */
+export function labelJamMenit(menit: number): string {
+  return jamDariMenit(menit);
+}
+
+/**
+ * Jam siap paling cepat untuk pesanan HARI INI, dibulatkan ke atas ke
+ * kelipatan 15 menit (jam yang dipilih pembeli di formulir juga lazim bulat).
+ *
+ * Mengembalikan null bila:
+ *  - pemilik belum mengisi jeda persiapan (0) — tanpa angka itu, "tercepat"
+ *    secara teknis berarti "sekarang", janji yang tidak bisa ditepati dapur
+ *    mana pun, jadi lebih jujur tidak menampilkan apa-apa;
+ *  - jam tercepat sudah melewati tengah malam — hari ini sudah tidak bisa.
+ *
+ * Aturannya identik dengan `alasanJamDitolak`: jam yang dikembalikan di sini
+ * dijamin lolos validasi server.
+ */
+export function jamSiapTercepatHariIni(opsi: { menitSekarang: number; jedaMenit: number }): number | null {
+  const jeda = Math.max(0, Math.floor(opsi.jedaMenit));
+  if (jeda === 0) return null;
+  // Dibulatkan KE ATAS, jadi selalu ≥ sekarang + jeda (syarat server).
+  const tercepat = Math.ceil((opsi.menitSekarang + jeda) / 15) * 15;
+  if (tercepat >= 24 * 60) return null;
+  return tercepat;
+}

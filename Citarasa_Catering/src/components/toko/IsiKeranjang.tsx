@@ -20,11 +20,11 @@ import {
 /** Gambar kecil menu, dengan cadangan ikon bila menu belum berfoto. */
 export function GambarMini({ url, nama, ukuran = "w-20 h-20" }: { url: string | null; nama: string; ukuran?: string }) {
   return (
-    <span className={`relative ${ukuran} shrink-0 overflow-hidden rounded-xl bg-krem-tua flex items-center justify-center`}>
+    <span className={`relative ${ukuran} shrink-0 overflow-hidden rounded-xl bg-beras-tua flex items-center justify-center`}>
       {url ? (
         <Image src={url} alt="" fill sizes="80px" className="object-cover" />
       ) : (
-        <IkonMangkuk className="w-8 h-8 text-bata/40" strokeWidth={1.3} aria-label={nama} />
+        <IkonMangkuk className="w-8 h-8 text-pandan/40" strokeWidth={1.3} aria-label={nama} />
       )}
     </span>
   );
@@ -63,7 +63,7 @@ export function IsiKeranjang({ menuTerbaru }: { menuTerbaru: DataMenuKeranjang[]
     return (
       <div className="kartu kartu-isi text-center max-w-md mx-auto anim-masuk">
         <IlustrasiKeranjangKosong className="w-56 mx-auto" />
-        <h2 className="mt-2 text-xl font-bold text-kayu">Keranjangmu masih kosong</h2>
+        <h2 className="mt-2 text-xl font-bold text-arang">Keranjangmu masih kosong</h2>
         <p className="teks-redup mt-1">Yuk pilih nasi kotak, tumpeng, atau snack box untuk acaramu.</p>
         {dibuang.length > 0 && (
           <p className="mt-4 kotak-peringatan text-left">
@@ -97,7 +97,7 @@ export function IsiKeranjang({ menuTerbaru }: { menuTerbaru: DataMenuKeranjang[]
           </p>
         )}
 
-        <ul className="kartu divide-y divide-krem-gelap overflow-hidden">
+        <ul className="kartu divide-y divide-beras-gelap overflow-hidden">
           {isi.map((i) => (
             <li key={i.menuId} className="p-4 sm:p-5 flex gap-3 sm:gap-4 anim-masuk">
               <Link href={`/menu/${i.slug}`} tabIndex={-1} aria-hidden="true">
@@ -105,7 +105,7 @@ export function IsiKeranjang({ menuTerbaru }: { menuTerbaru: DataMenuKeranjang[]
               </Link>
               <div className="min-w-0 flex-1">
                 <div className="flex items-start justify-between gap-2">
-                  <Link href={`/menu/${i.slug}`} className="font-semibold text-kayu leading-snug hover:text-bata line-clamp-2">
+                  <Link href={`/menu/${i.slug}`} className="font-semibold text-arang leading-snug hover:text-pandan line-clamp-2">
                     {i.nama}
                   </Link>
                   <button
@@ -120,7 +120,7 @@ export function IsiKeranjang({ menuTerbaru }: { menuTerbaru: DataMenuKeranjang[]
                     <IkonSampah className="w-5 h-5" />
                   </button>
                 </div>
-                <p className="text-[14px] text-kayu-sedang">
+                <p className="text-[14px] text-arang-sedang">
                   <span className="angka-tabel">{rupiah(i.harga)}</span> / {i.satuan} · min. {i.minPesan}
                   {i.preorderHari > 0 && ` · H-${i.preorderHari}`}
                 </p>
@@ -133,7 +133,7 @@ export function IsiKeranjang({ menuTerbaru }: { menuTerbaru: DataMenuKeranjang[]
                     nama={i.nama}
                     onUbah={(n) => ubahJumlahKeranjang(i.menuId, n)}
                   />
-                  <span className="font-bold text-kayu angka-tabel">{rupiah(i.harga * i.jumlah)}</span>
+                  <span className="font-bold text-arang angka-tabel">{rupiah(i.harga * i.jumlah)}</span>
                 </div>
               </div>
             </li>
@@ -141,7 +141,7 @@ export function IsiKeranjang({ menuTerbaru }: { menuTerbaru: DataMenuKeranjang[]
         </ul>
 
         <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-          <Link href="/menu" className="tombol-hantu tombol-kecil text-bata hover:!text-bata-tua">
+          <Link href="/menu" className="tombol-hantu tombol-kecil text-pandan hover:!text-pandan-tua">
             + Tambah menu lain
           </Link>
           {yakinKosongkan ? (
@@ -175,18 +175,18 @@ export function IsiKeranjang({ menuTerbaru }: { menuTerbaru: DataMenuKeranjang[]
         </h2>
         <dl className="mt-4 space-y-2 text-[15px]">
           <div className="flex justify-between">
-            <dt className="text-kayu-sedang">
+            <dt className="text-arang-sedang">
               {isi.length} menu · {totalPorsi} porsi
             </dt>
             <dd className="angka-tabel">{rupiah(subtotal)}</dd>
           </div>
-          <div className="flex justify-between text-kayu-sedang">
+          <div className="flex justify-between text-arang-sedang">
             <dt>Ongkir &amp; voucher</dt>
             <dd>di langkah berikutnya</dd>
           </div>
-          <div className="flex justify-between items-baseline pt-3 border-t border-krem-gelap">
-            <dt className="font-semibold text-kayu">Subtotal</dt>
-            <dd className="text-2xl font-bold text-kayu angka-tabel">{rupiah(subtotal)}</dd>
+          <div className="flex justify-between items-baseline pt-3 border-t border-beras-gelap">
+            <dt className="font-semibold text-arang">Subtotal</dt>
+            <dd className="text-2xl font-bold text-arang angka-tabel">{rupiah(subtotal)}</dd>
           </div>
         </dl>
         <Link href="/pesan" className="hidden md:inline-flex tombol-utama tombol-besar w-full mt-5">
@@ -197,11 +197,11 @@ export function IsiKeranjang({ menuTerbaru }: { menuTerbaru: DataMenuKeranjang[]
 
       {/* Bar checkout menempel di bawah — ponsel */}
       <div aria-hidden="true" className="md:hidden h-20" />
-      <div className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/97 backdrop-blur-md border-t border-krem-gelap shadow-[var(--shadow-mengambang)] aman-bawah">
+      <div className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-white/97 backdrop-blur-md border-t border-beras-gelap shadow-[var(--shadow-mengambang)] aman-bawah">
         <div className="px-4 pt-3 flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[13px] text-kayu-sedang">Subtotal ({isi.length} menu)</p>
-            <p className="text-lg font-bold text-kayu angka-tabel leading-tight">{rupiah(subtotal)}</p>
+            <p className="text-[13px] text-arang-sedang">Subtotal ({isi.length} menu)</p>
+            <p className="text-lg font-bold text-arang angka-tabel leading-tight">{rupiah(subtotal)}</p>
           </div>
           <Link href="/pesan" className="tombol-utama">
             Checkout

@@ -24,7 +24,7 @@ export function KelolaTanggalTutup({ daftar, hariIni }: { daftar: TanggalTutupRi
         </div>
         <div className="flex-1 min-w-[180px]">
           <label htmlFor="alasan-tutup" className="label">
-            Alasan <span className="font-normal text-kayu-sedang">(opsional)</span>
+            Alasan <span className="font-normal text-arang-sedang">(opsional)</span>
           </label>
           <input id="alasan-tutup" name="alasan" type="text" maxLength={100} placeholder="Libur Lebaran" className="isian" />
         </div>
@@ -41,12 +41,12 @@ export function KelolaTanggalTutup({ daftar, hariIni }: { daftar: TanggalTutupRi
       {daftar.length === 0 ? (
         <p className="teks-redup">Tidak ada tanggal libur mendatang.</p>
       ) : (
-        <ul className="divide-y divide-krem-gelap border-y border-krem-gelap">
+        <ul className="divide-y divide-beras-gelap border-y border-beras-gelap">
           {daftar.map((t) => (
             <li key={t.id} className="flex items-center justify-between gap-3 py-3 text-sm">
               <span>
-                <span className="text-kayu">{tanggalPanjang(t.tanggal)}</span>
-                {t.alasan && <span className="text-kayu-sedang"> · {t.alasan}</span>}
+                <span className="text-arang">{tanggalPanjang(t.tanggal)}</span>
+                {t.alasan && <span className="text-arang-sedang"> · {t.alasan}</span>}
               </span>
               <button
                 type="button"

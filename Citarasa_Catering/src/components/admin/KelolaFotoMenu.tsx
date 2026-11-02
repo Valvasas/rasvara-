@@ -112,9 +112,9 @@ export function KelolaFotoMenu({ menuId, namaMenu, foto }: KelolaFotoMenuProps) 
               {foto.map((f, index) => (
                 <li
                   key={f.id}
-                  className="relative rounded-xl overflow-hidden border border-krem-gelap bg-white"
+                  className="relative rounded-xl overflow-hidden border border-beras-gelap bg-white"
                 >
-                  <div className="relative aspect-square bg-krem/40">
+                  <div className="relative aspect-square bg-beras/40">
                     {/* Berkas lokal di /unggahan tidak lewat optimasi Next Image. */}
                     <img
                       src={f.url}
@@ -122,7 +122,7 @@ export function KelolaFotoMenu({ menuId, namaMenu, foto }: KelolaFotoMenuProps) 
                       className="w-full h-full object-cover"
                     />
                     {index === 0 && (
-                      <span className="absolute top-1.5 left-1.5 lencana bg-white/95 text-kayu border-transparent">
+                      <span className="absolute top-1.5 left-1.5 lencana bg-white/95 text-arang border-transparent">
                         Sampul
                       </span>
                     )}
@@ -213,7 +213,7 @@ export function KelolaFotoMenu({ menuId, namaMenu, foto }: KelolaFotoMenuProps) 
                     <img
                       src={pratinjau}
                       alt="Pratinjau foto yang akan diunggah"
-                      className="w-12 h-12 rounded-lg object-cover border border-krem-gelap"
+                      className="w-12 h-12 rounded-lg object-cover border border-beras-gelap"
                     />
                     <button
                       type="submit"
@@ -226,7 +226,7 @@ export function KelolaFotoMenu({ menuId, namaMenu, foto }: KelolaFotoMenuProps) 
                 </>
               )}
 
-              <p className="text-xs text-kayu-sedang sm:ml-auto">
+              <p className="text-xs text-arang-sedang sm:ml-auto">
                 JPG, PNG, atau WebP. Foto besar otomatis dikecilkan.
               </p>
             </form>
