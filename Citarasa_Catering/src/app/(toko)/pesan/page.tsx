@@ -69,7 +69,7 @@ export default async function HalamanPesan({ searchParams }: HalamanPesanProps) 
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 pt-5 pb-8 sm:pt-10 sm:pb-12">
       <LangkahPesan aktif={2} />
-      <h1 className="mt-5 font-tampil text-[1.75rem] sm:text-4xl font-bold text-kayu">Checkout</h1>
+      <h1 className="mt-5 font-tampil text-[1.75rem] sm:text-4xl font-bold text-arang">Checkout</h1>
       <p className="teks-redup mt-1 mb-6">Lengkapi empat bagian di bawah. Total selalu terlihat di ringkasan.</p>
 
       <FormPemesanan

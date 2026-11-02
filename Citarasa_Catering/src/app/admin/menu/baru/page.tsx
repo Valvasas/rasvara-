@@ -13,7 +13,7 @@ export default async function HalamanTambahMenu() {
 
   return (
     <div className="max-w-3xl">
-      <Link href="/admin/menu" className="inline-flex items-center gap-1.5 text-sm text-kayu-sedang hover:text-kayu">
+      <Link href="/admin/menu" className="inline-flex items-center gap-1.5 text-sm text-arang-sedang hover:text-arang">
         <IkonPanahKiri className="w-4 h-4" /> Menu
       </Link>
       <h1 className="judul-halaman mt-3">Tambah menu</h1>

@@ -82,7 +82,7 @@ export default async function HalamanMenu({ searchParams }: HalamanMenuProps) {
     <div className="mx-auto max-w-6xl px-4 sm:px-6 pt-5 pb-12 sm:pt-10">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="font-tampil text-[1.75rem] sm:text-4xl font-bold text-kayu leading-tight break-words">{judul}</h1>
+          <h1 className="font-tampil text-[1.75rem] sm:text-4xl font-bold text-arang leading-tight break-words">{judul}</h1>
           <p className="teks-redup mt-1" aria-live="polite">
             {total} menu · harga per satuan, semua bisa digabung dalam satu pesanan
           </p>
@@ -92,7 +92,7 @@ export default async function HalamanMenu({ searchParams }: HalamanMenuProps) {
       {/* Kategori — menempel di bawah kepala saat digulir, seperti tab marketplace */}
       <nav
         aria-label="Kategori menu"
-        className="sticky top-16 z-30 -mx-4 px-4 sm:-mx-6 sm:px-6 mt-4 py-2.5 bg-krem/95 backdrop-blur-md border-b border-krem-gelap/60"
+        className="sticky top-16 z-30 -mx-4 px-4 sm:-mx-6 sm:px-6 mt-4 py-2.5 bg-beras/95 backdrop-blur-md border-b border-beras-gelap/60"
       >
         <ul className="flex gap-2 overflow-x-auto tanpa-scrollbar">
           <li className="shrink-0">
@@ -125,7 +125,7 @@ export default async function HalamanMenu({ searchParams }: HalamanMenuProps) {
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         {cari ? (
-          <Link href={href({ q: null })} className="inline-flex items-center gap-1.5 rounded-full bg-kayu-lembut pl-3 pr-2 py-1.5 text-[15px] text-kayu hover:bg-krem-gelap">
+          <Link href={href({ q: null })} className="inline-flex items-center gap-1.5 rounded-full bg-arang-lembut pl-3 pr-2 py-1.5 text-[15px] text-arang hover:bg-beras-gelap">
             Cari: <span className="font-semibold">{cari}</span>
             <IkonTutup className="w-4 h-4" />
             <span className="sr-only">Hapus pencarian</span>
@@ -134,14 +134,14 @@ export default async function HalamanMenu({ searchParams }: HalamanMenuProps) {
           <span />
         )}
         <div role="group" aria-label="Urutkan menu" className="flex items-center gap-1 text-[14px]">
-          <span className="text-kayu-sedang mr-1 hidden sm:inline">Urutkan:</span>
+          <span className="text-arang-sedang mr-1 hidden sm:inline">Urutkan:</span>
           {PILIHAN_URUT.map((p) => (
             <Link
               key={p.kunci}
               href={href({ urut: p.kunci })}
               aria-current={urut === p.kunci ? "true" : undefined}
               className={`inline-flex items-center min-h-[40px] px-3 rounded-lg font-semibold whitespace-nowrap transition-colors ${
-                urut === p.kunci ? "bg-bata-lembut text-bata-tua" : "text-kayu-sedang hover:text-kayu hover:bg-krem-tua"
+                urut === p.kunci ? "bg-pandan-lembut text-pandan-tua" : "text-arang-sedang hover:text-arang hover:bg-beras-tua"
               }`}
             >
               {p.label}
@@ -161,7 +161,7 @@ export default async function HalamanMenu({ searchParams }: HalamanMenuProps) {
       ) : (
         <div className="mt-8 kartu kartu-isi text-center max-w-md mx-auto">
           <Ilustrasi404 className="w-48 mx-auto" />
-          <p className="mt-2 text-lg font-bold text-kayu">
+          <p className="mt-2 text-lg font-bold text-arang">
             {cari ? "Menu tidak ditemukan" : "Belum ada menu di sini"}
           </p>
           <p className="teks-redup mt-1">

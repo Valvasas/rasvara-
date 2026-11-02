@@ -9,15 +9,41 @@ import {
 
 const GAYA_KATEGORI: Record<
   KategoriMenu,
-  { latar: string; ikonWarna: string; Ikon: typeof IkonKotakNasi }
+  { latar: string; ikonWarna: string; dial: string; Ikon: typeof IkonKotakNasi }
 > = {
-  // Satu keluarga warna hangat yang sama, hanya beda nada tipis per kategori,
-  // supaya grid menu tanpa foto tidak terlihat seperti papan permen warna-warni.
-  NASI_KOTAK: { latar: "bg-[#F6E7DC]", ikonWarna: "text-bata/45", Ikon: IkonKotakNasi },
-  SNACK: { latar: "bg-[#F8EDD8]", ikonWarna: "text-kunyit-tua/45", Ikon: IkonSnack },
-  TUMPENG: { latar: "bg-[#F4EAD6]", ikonWarna: "text-kunyit-tua/45", Ikon: IkonTumpeng },
-  NASI_GORENG: { latar: "bg-[#F3E4DA]", ikonWarna: "text-bata-tua/40", Ikon: IkonNasiGoreng },
+  // Satu warna merek per kategori — sama dengan ubin kategori di beranda,
+  // jadi pembeli belajar "hijau = nasi kotak, emas = tumpeng" tanpa sadar.
+  NASI_KOTAK: { latar: "bg-pandan-lembut", ikonWarna: "text-pandan", dial: "text-pandan", Ikon: IkonKotakNasi },
+  SNACK: { latar: "bg-arang-lembut", ikonWarna: "text-arang-sedang", dial: "text-arang-sedang", Ikon: IkonSnack },
+  TUMPENG: { latar: "bg-kunyit-lembut", ikonWarna: "text-kunyit-tua", dial: "text-kunyit", Ikon: IkonTumpeng },
+  NASI_GORENG: { latar: "bg-cabai-lembut", ikonWarna: "text-cabai-tua", dial: "text-cabai", Ikon: IkonNasiGoreng },
 };
+
+/** 60 tick seperti piringan jam — motif "presisi" merek di sampul tanpa foto. */
+function Dial({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 100 100" aria-hidden="true" className={className}>
+      {Array.from({ length: 60 }, (_, i) => {
+        const besar = i % 5 === 0;
+        return (
+          <line
+            key={i}
+            x1="50"
+            y1={besar ? 4 : 5.5}
+            x2="50"
+            y2={besar ? 11 : 8.5}
+            stroke="currentColor"
+            strokeWidth={besar ? 1.4 : 0.7}
+            strokeLinecap="round"
+            opacity={besar ? 0.55 : 0.3}
+            transform={`rotate(${i * 6} 50 50)`}
+          />
+        );
+      })}
+      <circle cx="50" cy="50" r="33" fill="white" opacity="0.65" />
+    </svg>
+  );
+}
 
 interface PanelFotoMenuProps {
   /** Galeri menu, sudah urut. Foto pertama dipakai sebagai sampul. */
@@ -63,16 +89,19 @@ export function PanelFotoMenu({
             className={`object-cover ${zoomSaatHover ? "transition-transform duration-500 ease-out group-hover:scale-105" : ""}`}
           />
           {foto.length > 1 && (
-            <span className="absolute bottom-2 right-2 text-[12px] font-semibold px-2 py-0.5 rounded-full bg-white/90 text-kayu">
+            <span className="absolute bottom-2 right-2 font-presisi text-[11.5px] font-semibold px-2 py-0.5 rounded-md bg-white/90 text-arang">
               {foto.length} foto
             </span>
           )}
         </>
       ) : (
-        <div className={`absolute inset-0 flex items-center justify-center ${gaya.latar}`}>
+        <div className={`absolute inset-0 flex items-center justify-center permukaan-hangat ${gaya.latar}`}>
+          <Dial
+            className={`absolute h-[78%] max-h-64 aspect-square ${gaya.dial} ${zoomSaatHover ? "transition-transform duration-700 ease-out group-hover:rotate-[30deg]" : ""}`}
+          />
           <gaya.Ikon
-            className={`${ukuranIkon} ${gaya.ikonWarna} ${zoomSaatHover ? "transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-6" : ""}`}
-            strokeWidth={1.1}
+            className={`relative ${ukuranIkon} ${gaya.ikonWarna} ${zoomSaatHover ? "transition-transform duration-500 group-hover:scale-110 group-hover:-rotate-6" : ""}`}
+            strokeWidth={1.3}
           />
         </div>
       )}

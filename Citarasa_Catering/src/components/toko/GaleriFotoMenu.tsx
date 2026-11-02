@@ -55,7 +55,7 @@ export function GaleriFotoMenu({ foto, nama, kategori }: GaleriFotoMenuProps) {
         foto={[]}
         kategori={kategori}
         nama={nama}
-        className="aspect-[4/3] w-full rounded-2xl border border-krem-gelap"
+        className="aspect-[4/3] w-full rounded-2xl border border-beras-gelap"
         ukuranIkon="w-20 h-20"
         priority
       />
@@ -76,7 +76,7 @@ export function GaleriFotoMenu({ foto, nama, kategori }: GaleriFotoMenuProps) {
           ref={trekRef}
           onScroll={saatGeser}
           tabIndex={0}
-          className="flex overflow-x-auto snap-x snap-mandatory scroll-smooth rounded-2xl border border-krem-gelap bg-krem/40 focus:outline-none focus-visible:ring-4 focus-visible:ring-bata/30"
+          className="flex overflow-x-auto snap-x snap-mandatory scroll-smooth rounded-2xl border border-beras-gelap bg-beras/40 focus:outline-none focus-visible:ring-4 focus-visible:ring-pandan/30"
           style={{ scrollbarWidth: "none" }}
         >
           {foto.map((f, i) => (
@@ -96,7 +96,7 @@ export function GaleriFotoMenu({ foto, nama, kategori }: GaleriFotoMenuProps) {
                 className="object-cover"
               />
               {f.keterangan && (
-                <p className="absolute bottom-0 inset-x-0 bg-white/90 text-kayu text-xs font-medium px-4 py-2">
+                <p className="absolute bottom-0 inset-x-0 bg-white/90 text-arang text-xs font-medium px-4 py-2">
                   {f.keterangan}
                 </p>
               )}
@@ -111,7 +111,7 @@ export function GaleriFotoMenu({ foto, nama, kategori }: GaleriFotoMenuProps) {
               onClick={() => keFoto(Math.max(0, aktif - 1))}
               disabled={aktif === 0}
               aria-label="Lihat foto sebelumnya"
-              className="hidden sm:flex absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11 items-center justify-center rounded-full bg-krem/95 text-kayu shadow-md border border-krem-gelap hover:bg-white disabled:opacity-0 transition-all cursor-pointer"
+              className="hidden sm:flex absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11 items-center justify-center rounded-full bg-beras/95 text-arang shadow-md border border-beras-gelap hover:bg-white disabled:opacity-0 transition-all cursor-pointer"
             >
               <svg
                 className="w-5 h-5"
@@ -130,7 +130,7 @@ export function GaleriFotoMenu({ foto, nama, kategori }: GaleriFotoMenuProps) {
               onClick={() => keFoto(Math.min(foto.length - 1, aktif + 1))}
               disabled={aktif === foto.length - 1}
               aria-label="Lihat foto berikutnya"
-              className="hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 items-center justify-center rounded-full bg-krem/95 text-kayu shadow-md border border-krem-gelap hover:bg-white disabled:opacity-0 transition-all cursor-pointer"
+              className="hidden sm:flex absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11 items-center justify-center rounded-full bg-beras/95 text-arang shadow-md border border-beras-gelap hover:bg-white disabled:opacity-0 transition-all cursor-pointer"
             >
               <svg
                 className="w-5 h-5"
@@ -144,7 +144,7 @@ export function GaleriFotoMenu({ foto, nama, kategori }: GaleriFotoMenuProps) {
               </svg>
             </button>
 
-            <span className="absolute top-3 right-3 text-[11px] font-bold px-2.5 py-1 rounded-full bg-white/90 text-kayu">
+            <span className="absolute top-3 right-3 text-[11px] font-bold px-2.5 py-1 rounded-full bg-white/90 text-arang">
               {aktif + 1} / {foto.length}
             </span>
           </>
@@ -162,8 +162,8 @@ export function GaleriFotoMenu({ foto, nama, kategori }: GaleriFotoMenuProps) {
                 aria-current={i === aktif}
                 className={`relative w-14 h-14 rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
                   i === aktif
-                    ? "border-bata ring-2 ring-bata/20"
-                    : "border-krem-gelap opacity-70 hover:opacity-100"
+                    ? "border-pandan ring-2 ring-pandan/20"
+                    : "border-beras-gelap opacity-70 hover:opacity-100"
                 }`}
               >
                 <Image

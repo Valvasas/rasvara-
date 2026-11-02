@@ -66,7 +66,7 @@ export function LencanaKategori({
 
   return (
     <span
-      className={`lencana bg-krem-tua text-kayu-sedang border-transparent ${className}`}
+      className={`lencana bg-beras-tua text-arang-sedang border-transparent ${className}`}
     >
       {label}
     </span>

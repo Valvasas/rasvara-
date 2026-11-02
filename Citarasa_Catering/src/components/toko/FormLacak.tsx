@@ -20,7 +20,7 @@ export function FormLacak({ pesanAwal }: FormLacakProps) {
   return (
     <form action={action} className="space-y-5" noValidate>
       {pesan && (
-        <div role="alert" className={state?.pesan ? "kotak-galat" : "kotak-info bg-krem-tua border-krem-gelap text-kayu"}>
+        <div role="alert" className={state?.pesan ? "kotak-galat" : "kotak-info bg-beras-tua border-beras-gelap text-arang"}>
           {pesan}
         </div>
       )}

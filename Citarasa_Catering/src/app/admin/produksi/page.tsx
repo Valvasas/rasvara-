@@ -87,11 +87,11 @@ export default async function HalamanProduksi({ searchParams }: HalamanProduksiP
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="judul-halaman flex items-center gap-3">
-            <IkonWajan className="w-8 h-8 text-bata jangan-cetak" />
+            <IkonWajan className="w-8 h-8 text-pandan jangan-cetak" />
             Rekap masak
           </h1>
           <p className="teks-redup mt-1">
-            {labelHari(dariInputTanggal(tanggal))} · <span className="font-semibold text-kayu">{tanggalPanjang(dariInputTanggal(tanggal))}</span>
+            {labelHari(dariInputTanggal(tanggal))} · <span className="font-semibold text-arang">{tanggalPanjang(dariInputTanggal(tanggal))}</span>
           </p>
         </div>
         <TombolCetakHalaman />
@@ -126,8 +126,8 @@ export default async function HalamanProduksi({ searchParams }: HalamanProduksiP
           { label: "Diantar", nilai: diantar },
         ].map((k) => (
           <li key={k.label} className="kartu p-4">
-            <p className="text-[13px] text-kayu-sedang">{k.label}</p>
-            <p className="mt-0.5 text-2xl sm:text-3xl font-bold text-kayu angka-tabel">{k.nilai.toLocaleString("id-ID")}</p>
+            <p className="text-[13px] text-arang-sedang">{k.label}</p>
+            <p className="mt-0.5 text-2xl sm:text-3xl font-bold text-arang angka-tabel">{k.nilai.toLocaleString("id-ID")}</p>
           </li>
         ))}
       </ul>
@@ -153,12 +153,12 @@ export default async function HalamanProduksi({ searchParams }: HalamanProduksiP
                 <tbody>
                   {perMenu.map((m) => (
                     <tr key={`${m.namaMenu}|${m.satuan}`}>
-                      <td className="font-semibold text-kayu">{m.namaMenu}</td>
+                      <td className="font-semibold text-arang">{m.namaMenu}</td>
                       <td className="text-right whitespace-nowrap">
-                        <span className="text-xl font-bold text-bata-tua angka-tabel">{(m._sum.jumlah ?? 0).toLocaleString("id-ID")}</span>{" "}
-                        <span className="text-kayu-sedang">{m.satuan}</span>
+                        <span className="text-xl font-bold text-pandan-tua angka-tabel">{(m._sum.jumlah ?? 0).toLocaleString("id-ID")}</span>{" "}
+                        <span className="text-arang-sedang">{m.satuan}</span>
                       </td>
-                      <td className="text-right text-kayu-sedang angka-tabel">{m._count._all}</td>
+                      <td className="text-right text-arang-sedang angka-tabel">{m._count._all}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -177,25 +177,25 @@ export default async function HalamanProduksi({ searchParams }: HalamanProduksiP
             )}
             {[...perJam.entries()].map(([jamSiap, kelompok]) => (
               <div key={jamSiap} className="kartu overflow-hidden break-inside-avoid">
-                <div className="flex items-center justify-between gap-3 px-5 py-3 bg-kunyit-lembut/60 border-b border-krem-gelap">
-                  <p className="text-lg font-bold text-kayu angka-tabel">Siap {jamTampil(jamSiap)} WIB</p>
+                <div className="flex items-center justify-between gap-3 px-5 py-3 bg-kunyit-lembut/60 border-b border-beras-gelap">
+                  <p className="text-lg font-bold text-arang angka-tabel">Siap {jamTampil(jamSiap)} WIB</p>
                   <p className="text-[14px] text-kunyit-tua font-semibold">{kelompok.length} pesanan</p>
                 </div>
-                <ul className="divide-y divide-krem-gelap">
+                <ul className="divide-y divide-beras-gelap">
                   {kelompok.map((p) => (
                     <li key={p.kode} className="px-5 py-4 grid gap-3 sm:grid-cols-[1fr_1.2fr]">
                       <div className="min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <Link href={`/pesanan/${p.kode}`} className="font-bold text-kayu hover:text-bata">
+                          <Link href={`/pesanan/${p.kode}`} className="font-bold text-arang hover:text-pandan">
                             {p.namaPemesan}
                           </Link>
                           <LencanaStatus status={p.status} />
                         </div>
-                        <p className="text-[13px] text-kayu-sedang font-mono">{p.kode}</p>
-                        <p className="mt-1.5 flex items-start gap-1.5 text-[14px] text-kayu">
+                        <p className="text-[13px] text-arang-sedang font-mono">{p.kode}</p>
+                        <p className="mt-1.5 flex items-start gap-1.5 text-[14px] text-arang">
                           {p.caraAmbil === "DIANTAR" ? (
                             <>
-                              <IkonTruk className="w-4 h-4 mt-0.5 shrink-0 text-bata-tua" />
+                              <IkonTruk className="w-4 h-4 mt-0.5 shrink-0 text-pandan-tua" />
                               <span>
                                 {p.alamatAntar}
                                 {p.latitude != null && p.longitude != null && (
@@ -203,7 +203,7 @@ export default async function HalamanProduksi({ searchParams }: HalamanProduksiP
                                     href={`https://www.google.com/maps/search/?api=1&query=${p.latitude},${p.longitude}`}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="jangan-cetak ml-1.5 inline-flex items-center gap-0.5 text-bata font-semibold hover:underline"
+                                    className="jangan-cetak ml-1.5 inline-flex items-center gap-0.5 text-pandan font-semibold hover:underline"
                                   >
                                     <IkonLokasi className="w-3.5 h-3.5" /> Peta
                                   </a>
@@ -212,22 +212,22 @@ export default async function HalamanProduksi({ searchParams }: HalamanProduksiP
                             </>
                           ) : (
                             <>
-                              <IkonToko className="w-4 h-4 mt-0.5 shrink-0 text-kayu-sedang" />
+                              <IkonToko className="w-4 h-4 mt-0.5 shrink-0 text-arang-sedang" />
                               Ambil sendiri
                             </>
                           )}
                         </p>
-                        <p className="text-[13px] text-kayu-sedang angka-tabel">{teleponTampil(p.teleponPemesan)}</p>
+                        <p className="text-[13px] text-arang-sedang angka-tabel">{teleponTampil(p.teleponPemesan)}</p>
                       </div>
                       <div>
                         <ul className="space-y-1 text-[15px]">
                           {p.item.map((it) => (
                             <li key={it.id} className="flex justify-between gap-3">
-                              <span className="text-kayu">
+                              <span className="text-arang">
                                 {it.namaMenu}
                                 {it.catatan && <span className="block text-[13px] text-kunyit-tua">↳ {it.catatan}</span>}
                               </span>
-                              <span className="font-bold text-kayu angka-tabel whitespace-nowrap">
+                              <span className="font-bold text-arang angka-tabel whitespace-nowrap">
                                 {it.jumlah} {it.satuan}
                               </span>
                             </li>

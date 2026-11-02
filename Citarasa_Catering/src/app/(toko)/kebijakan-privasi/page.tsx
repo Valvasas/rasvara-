@@ -93,16 +93,16 @@ export default async function HalamanKebijakanPrivasi() {
           berfungsi. Tidak ada cookie iklan maupun cookie pelacak pihak ketiga,
           sehingga tidak ada banner persetujuan yang perlu Anda klik.
         </p>
-        <div className="overflow-x-auto rounded-2xl border border-krem-gelap">
+        <div className="overflow-x-auto rounded-2xl border border-beras-gelap">
           <table className="w-full text-sm">
-            <thead className="bg-krem-tua text-kayu">
+            <thead className="bg-beras-tua text-arang">
               <tr>
                 <th className="text-left font-bold px-4 py-3">Nama</th>
                 <th className="text-left font-bold px-4 py-3">Fungsi</th>
                 <th className="text-left font-bold px-4 py-3">Umur</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-krem-gelap bg-white">
+            <tbody className="divide-y divide-beras-gelap bg-white">
               <tr>
                 <td className="px-4 py-3 font-mono text-xs">sesi_citarasa</td>
                 <td className="px-4 py-3">

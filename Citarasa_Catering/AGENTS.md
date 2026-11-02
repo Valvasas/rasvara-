@@ -78,6 +78,9 @@ Ini adalah aturan bisnis yang sudah didesain sengaja. Kalau perubahanmu menyentu
 3. **Satu pesanan maksimal satu baris kas.** `CatatanKas.pesananId` unique — mencegah pencatatan ganda saat "Tandai Lunas" diklik lebih dari sekali.
 4. **Semua tanggal dihitung dalam WIB** (Asia/Jakarta), terlepas dari timezone server. Selalu pakai helper di `src/lib/format.ts`, jangan `new Date()`/`Date.now()` mentah untuk logika tanggal bisnis.
 5. **Kode pesanan bukan kunci akses.** Untuk melihat detail pesanan, pengunjung harus: memesan/melacak dari device itu (cookie `pesanan_saya` bertanda tangan — halaman lacak mewajibkan kode + nomor HP cocok), ATAU login sebagai akun yang **memiliki** pesanan itu (`Pesanan.penggunaId`), ATAU login sebagai dapur. **Jangan pernah memberi akses karena `sesi.telepon === pesanan.teleponPemesan`**: nomor HP saat mendaftar tidak diverifikasi (belum ada OTP), jadi siapa pun bisa mendaftar dengan nomor orang lain. Pesanan tamu baru tersambung ke akun lewat `klaimPesananTamu()` (cookie perangkat + nomor sama). Pakai helper di `src/lib/kepemilikan.ts`.
+   Sesi **semua peran** (termasuk pelanggan) dicocokkan ke `Pengguna.sesiSejak`
+   di `bacaSesi()`, dibandingkan per detik (`tokenMasihBerlaku`) karena `iat`
+   JWT bersatuan detik — jangan ubah jadi pembandingan milidetik.
 6. **Nomor telepon adalah identitas login**, bukan email (email di `Pengguna` opsional).
 7. **Menu yang pernah dipesan tidak boleh dihapus**, hanya di-nonaktifkan (`Menu.aktif = false`), supaya riwayat pesanan tidak korup (relasi `ItemPesanan.menuId` — `onDelete: SetNull`, jangan diubah jadi cascade delete).
 8. **Statistik tidak boleh bisa dibongkar menjadi identitas.** Alamat IP tidak pernah disimpan; pengunjung unik dihitung dari SHA-256 atas (IP + user agent + garam harian acak). Garam hari berjalan disimpan di tabel `GaramHarian` (supaya semua instans serverless memakai garam yang sama) dan baris hari sebelumnya **dihapus** begitu hari berganti — jangan pernah menyimpan garam lama atau menurunkannya dari rahasia tetap. Tabel `BatasLaju` hanya menyimpan HMAC kunci, bukan IP/nomor mentah. Semua tabel analitik menyimpan angka teragregasi per hari, bukan baris per kunjungan, dan `rapikanPath()` menyamarkan kode pesanan sebelum disimpan. Jangan menambahkan penyimpanan IP mentah, cookie pelacak, atau layanan analitik pihak ketiga — begitu salah satunya masuk, situs ini wajib memasang banner persetujuan cookie dan janji di halaman kebijakan privasi jadi tidak benar.
@@ -134,13 +137,30 @@ Kode ini sengaja memakai istilah domain berbahasa Indonesia untuk model, variabe
 
 ## 8b. Design system (wajib diikuti saat menambah UI)
 
+- **Identitas merek (v3, 2026-11-02): sehat · matang · lezat · cepat & tepat.**
+  Tiap janji = satu keputusan visual, alasannya tertulis di kepala `globals.css`:
+  - `pandan` (hijau, merek & aksi utama) = sehat/segar; `kunyit` (emas, aksen)
+    = matang (warna kerak Maillard); `cabai` (merah-oranye, HEMAT: terlaris,
+    sedang dimasak, lencana keranjang) = selera; `beras` (permukaan) & `arang`
+    (teks) netral. Token lama `krem/bata/kayu/daun` sudah TIDAK ADA.
+  - Presisi: jam, kode pesanan, & nominal penting memakai `.font-presisi`
+    (JetBrains Mono); label kecil kapital `.label-atas`; ornamen `.garis-ukur`,
+    `.cap-presisi`, `.tiket-atas`/`.tiket-bawah`. Judul `.font-tampil`
+    (Bricolage Grotesque), teks Plus Jakarta Sans. Sudut 10–14px, bukan 24px.
+  - Logo = `<TandaMerek>` (piring + daun emas = jarum jam), dipakai juga oleh
+    favicon/ikon/OG. `<Wordmark nama={pengaturan.namaUsaha}>` — jangan
+    hardcode nama usaha.
 - Token warna & kelas komponen ada di `src/app/globals.css`: `tombol-utama`,
-  `tombol-kedua`, `tombol-hantu`, `kartu`, `isian`, `label`, `lencana`, `tabel`,
-  `pil`, `kotak-sukses/galat/peringatan`. Pakai kelas ini, jangan menulis ulang
-  deretan utilitas untuk tombol/isian.
+  `tombol-kedua`, `tombol-emas`, `tombol-hantu`, `kartu`, `isian`, `label`,
+  `lencana`, `tabel`, `pil`, `kotak-sukses/galat/peringatan`. Pakai kelas ini,
+  jangan menulis ulang deretan utilitas untuk tombol/isian.
 - Teks di atas latar `*-lembut` memakai varian `*-tua` (kontras AA). Latar gelap
-  (`bg-kayu`) hanya untuk dua hal: toast dan satu pita ajakan di beranda —
-  jangan dijadikan latar bagian konten biasa.
+  merek (`.permukaan-pandan`) hanya untuk "bingkai": pita status dapur, kepala
+  beranda, kaki toko, panel merek halaman masuk, sidebar dapur, dan toast —
+  jangan dijadikan latar bagian konten biasa. Di atasnya, aksi utama memakai
+  `tombol-emas` (pandan di atas pandan tidak terlihat).
+- Warna status pesanan bersifat semantik (lib/pesanan.ts): baru = kunyit
+  (perlu perhatian), diterima = arang, dimasak = cabai (api), siap = pandan pekat.
 - Isian formulir minimal 16px (`.isian` sudah begitu): di bawah itu Safari
   iPhone memperbesar halaman setiap kolom disentuh.
 - Ilustrasi = komponen SVG di `src/components/ilustrasi/Ilustrasi.tsx` (bukan

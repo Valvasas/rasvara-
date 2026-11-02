@@ -1,23 +1,32 @@
 import Link from "next/link";
-import { jamTampil, linkWhatsapp, rupiah, sedangBuka } from "@/lib/format";
+import {
+  jamTampil,
+  linkWhatsapp,
+  menitSekarangWib,
+  rupiah,
+  sedangBuka,
+  tanggalPanjang,
+} from "@/lib/format";
+import { jamSiapTercepatHariIni, labelDurasi, labelJamMenit } from "@/lib/jadwal";
 import { ambilPengaturan, rekeningLengkap } from "@/lib/pengaturan";
-import { ambilMenuFavorit, ambilPetaTerjual, ambilRingkasanKategori } from "@/lib/menu";
+import {
+  ambilJadwalDapurHariIni,
+  ambilMenuFavorit,
+  ambilPetaTerjual,
+  ambilRingkasanKategori,
+} from "@/lib/menu";
 import { LABEL_KATEGORI, URUTAN_KATEGORI } from "@/lib/pesanan";
 import { KartuMenu } from "@/components/toko/KartuMenu";
 import { Muncul } from "@/components/Muncul";
-import { IlustrasiHero, IlustrasiKoki } from "@/components/ilustrasi/Ilustrasi";
+import { TandaMerek } from "@/components/TandaMerek";
 import {
   IkonApi,
   IkonDompet,
   IkonJam,
-  IkonKalender,
-  IkonKeranjang,
   IkonKotakNasi,
-  IkonMangkuk,
   IkonNasiGoreng,
   IkonPanahKanan,
   IkonSnack,
-  IkonStruk,
   IkonTruk,
   IkonTumpeng,
   IkonWhatsapp,
@@ -25,34 +34,35 @@ import {
 import type { KategoriMenu } from "@/generated/prisma/client";
 
 const GAYA_KATEGORI: Record<KategoriMenu, { Ikon: typeof IkonKotakNasi; latar: string; ikon: string }> = {
-  NASI_KOTAK: { Ikon: IkonKotakNasi, latar: "bg-bata-lembut", ikon: "text-bata-tua" },
-  SNACK: { Ikon: IkonSnack, latar: "bg-kunyit-lembut", ikon: "text-kunyit-tua" },
-  TUMPENG: { Ikon: IkonTumpeng, latar: "bg-daun-lembut", ikon: "text-daun-tua" },
-  NASI_GORENG: { Ikon: IkonNasiGoreng, latar: "bg-[#F3E4DA]", ikon: "text-bata-tua" },
+  NASI_KOTAK: { Ikon: IkonKotakNasi, latar: "bg-pandan-lembut", ikon: "text-pandan-tua" },
+  SNACK: { Ikon: IkonSnack, latar: "bg-arang-lembut", ikon: "text-arang" },
+  TUMPENG: { Ikon: IkonTumpeng, latar: "bg-kunyit-lembut", ikon: "text-kunyit-tua" },
+  NASI_GORENG: { Ikon: IkonNasiGoreng, latar: "bg-cabai-lembut", ikon: "text-cabai-tua" },
 };
 
-const LANGKAH = [
-  { judul: "Pilih menu", isi: "Tekan “Tambah” di menu yang kamu mau. Bisa campur banyak menu.", Ikon: IkonMangkuk },
-  { judul: "Cek keranjang", isi: "Atur jumlah porsi. Total harga langsung terlihat.", Ikon: IkonKeranjang },
-  { judul: "Atur jadwal & bayar", isi: "Pilih tanggal, jam, diantar atau ambil. Transfer atau tunai.", Ikon: IkonKalender },
-  { judul: "Pantau pesanan", isi: "Lihat status masakanmu dari ponsel, kapan saja.", Ikon: IkonStruk },
+/** Empat tahap yang dilihat pembeli di halaman status — ditata seperti penggaris waktu. */
+const ALUR = [
+  { kode: "01", judul: "Pesan & jadwalkan", isi: "Pilih menu, tanggal, dan jam siap. Total final langsung terlihat — tidak ada biaya kejutan." },
+  { kode: "02", judul: "Dikonfirmasi dapur", isi: "Dapur memeriksa kuota hari itu lalu menerima pesananmu. Kamu dapat kabar di halaman status." },
+  { kode: "03", judul: "Dimasak hari-H", isi: "Dimasak di hari acara, dihitung mundur dari jam siap supaya tetap hangat saat dibuka." },
+  { kode: "04", judul: "Siap tepat jamnya", isi: "Diantar atau diambil sesuai jadwal. Statusnya bisa kamu pantau dari ponsel." },
 ];
 
 export default async function BerandaToko() {
-  const [favorit, ringkasan, pengaturan, terjual] = await Promise.all([
+  const [favorit, ringkasan, pengaturan, terjual, jadwal] = await Promise.all([
     ambilMenuFavorit(8),
     ambilRingkasanKategori(),
     ambilPengaturan(),
     ambilPetaTerjual(),
+    ambilJadwalDapurHariIni(),
   ]);
 
   const kategoriAda = URUTAN_KATEGORI.map((k) => ringkasan.find((r) => r.kategori === k)).filter(
     (r): r is NonNullable<typeof r> => Boolean(r && r.jumlah > 0)
   );
-  const hargaTermurah = kategoriAda.length
-    ? Math.min(...kategoriAda.map((k) => k.hargaTermurah))
-    : null;
+  const hargaTermurah = kategoriAda.length ? Math.min(...kategoriAda.map((k) => k.hargaTermurah)) : null;
   const buka = sedangBuka(pengaturan.jamBuka, pengaturan.jamTutup);
+  const tercepat = jamSiapTercepatHariIni({ menitSekarang: menitSekarangWib(), jedaMenit: pengaturan.jedaMinimumMenit });
 
   const waUrl = pengaturan.whatsapp
     ? linkWhatsapp(
@@ -69,7 +79,7 @@ export default async function BerandaToko() {
       : pengaturan.minOrderAntar > 0
       ? { Ikon: IkonTruk, judul: "Gratis ongkir", isi: `Belanja min. ${rupiah(pengaturan.minOrderAntar)}` }
       : { Ikon: IkonTruk, judul: "Diantar atau ambil", isi: `Ongkir ${rupiah(pengaturan.ongkirDefault)}` },
-    { Ikon: IkonJam, judul: `Buka ${jamTampil(pengaturan.jamBuka)}–${jamTampil(pengaturan.jamTutup)}`, isi: "Pesan online 24 jam" },
+    { Ikon: IkonJam, judul: `Dapur ${jamTampil(pengaturan.jamBuka)}–${jamTampil(pengaturan.jamTutup)}`, isi: "Pesan online 24 jam" },
     {
       Ikon: IkonDompet,
       judul: rekeningLengkap(pengaturan) ? "Transfer atau tunai" : "Bayar tunai",
@@ -79,86 +89,173 @@ export default async function BerandaToko() {
 
   return (
     <>
-      {/* Hero */}
-      <section className="permukaan-hangat border-b border-krem-gelap/60 overflow-hidden">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 pt-6 pb-10 sm:pt-12 sm:pb-16 grid gap-4 md:gap-8 md:grid-cols-[1.05fr_1fr] items-center">
-          <div className="order-2 md:order-1">
-            <p className="anim-masuk inline-flex items-center gap-2 rounded-full bg-white/80 border border-krem-gelap px-3 py-1.5 text-[14px] font-semibold text-kayu">
-              <span className="relative flex w-2.5 h-2.5">
-                <span className={`absolute inset-0 rounded-full ${buka ? "bg-daun anim-denyut" : "bg-kayu-sedang"}`} />
-              </span>
-              {buka ? "Dapur sedang buka" : `Dapur buka pukul ${jamTampil(pengaturan.jamBuka)}`}
-              <span className="text-kayu-sedang font-medium">· pesan kapan saja</span>
+      {/* ============ Kepala merek ============ */}
+      <section className="permukaan-pandan relative overflow-hidden">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 pt-10 pb-12 sm:pt-16 sm:pb-20 grid gap-10 lg:gap-14 lg:grid-cols-[1.15fr_1fr] items-center">
+          <div>
+            <p className="anim-masuk font-presisi text-[12px] sm:text-[13px] uppercase tracking-[0.18em] text-kunyit-terang">
+              Nasi kotak · Tumpeng · Snack box · Nasi goreng
             </p>
             <h1
-              className="anim-masuk font-tampil mt-4 text-[2.15rem] leading-[1.12] sm:text-5xl font-bold text-kayu"
+              className="anim-masuk font-tampil mt-4 text-[2.6rem] leading-[0.98] sm:text-[4.1rem] font-extrabold text-beras"
               style={{ ["--tunda" as string]: "60ms" }}
             >
-              Nasi kotak, tumpeng &amp; snack box{" "}
-              <span className="relative whitespace-nowrap text-bata">
-                untuk acaramu
-                <svg aria-hidden="true" viewBox="0 0 200 12" className="absolute left-0 -bottom-1.5 w-full h-3 text-kunyit">
-                  <path d="M2 8 C 50 2, 150 2, 198 7" stroke="currentColor" strokeWidth="4" strokeLinecap="round" fill="none" />
-                </svg>
+              Matang sempurna,
+              <br />
+              tiba{" "}
+              <span className="relative inline-block text-kunyit-terang">
+                tepat waktu.
+                <span aria-hidden="true" className="garis-ukur absolute -bottom-2 left-0 right-0 !opacity-60" />
               </span>
             </h1>
             <p
-              className="anim-masuk mt-5 text-[17px] sm:text-lg text-kayu-sedang leading-relaxed max-w-xl"
+              className="anim-masuk mt-7 text-[17px] sm:text-lg text-beras/80 leading-relaxed max-w-xl"
               style={{ ["--tunda" as string]: "120ms" }}
             >
-              Dimasak hari itu juga, siap tepat di jam acara. Pilih menu, masukkan keranjang, lalu pantau
-              masakanmu dari ponsel.
+              Dimasak hari itu juga di dapur {pengaturan.namaUsaha}. Harga final terlihat sebelum pesan, jam siap
+              dijadwalkan sampai menitnya, dan statusnya bisa kamu pantau dari ponsel.
             </p>
 
-            <div className="anim-masuk mt-7 flex flex-col sm:flex-row gap-3" style={{ ["--tunda" as string]: "180ms" }}>
-              <Link href="/menu" className="tombol-utama tombol-besar">
+            <div className="anim-masuk mt-8 flex flex-col sm:flex-row gap-3" style={{ ["--tunda" as string]: "180ms" }}>
+              <Link href="/menu" className="tombol-emas tombol-besar">
                 Lihat menu &amp; pesan
                 <IkonPanahKanan className="w-5 h-5" />
               </Link>
-              <Link href="/lacak" className="tombol-kedua tombol-besar">
+              <Link
+                href="/lacak"
+                className="tombol tombol-besar border border-white/25 text-beras hover:bg-white/10"
+              >
                 Lacak pesanan
               </Link>
             </div>
 
             {hargaTermurah !== null && (
-              <p className="anim-masuk mt-5 text-[15px] text-kayu-sedang" style={{ ["--tunda" as string]: "240ms" }}>
-                Mulai <span className="font-bold text-kayu angka-tabel">{rupiah(hargaTermurah)}</span> per porsi
+              <p className="anim-masuk mt-6 font-presisi text-[13px] text-beras/70" style={{ ["--tunda" as string]: "240ms" }}>
+                MULAI <span className="font-bold text-beras">{rupiah(hargaTermurah)}</span> / PORSI
               </p>
             )}
           </div>
 
-          <div className="order-1 md:order-2 anim-masuk-skala">
-            <IlustrasiHero className="w-full max-w-[300px] sm:max-w-[420px] md:max-w-none mx-auto" />
+          {/* Papan jadwal: janji "cepat & tepat" dalam angka nyata hari ini */}
+          <div className="anim-masuk-skala" style={{ ["--tunda" as string]: "200ms" }}>
+            <div className="text-arang drop-shadow-[0_24px_40px_rgba(0,0,0,0.35)]">
+              <div className="tiket-atas px-5 sm:px-6 pt-5 pb-6">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="label-atas">Jadwal dapur hari ini</p>
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-bold ${
+                      buka ? "bg-pandan-lembut text-pandan-tua" : "bg-arang-lembut text-arang-sedang"
+                    }`}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full ${buka ? "bg-pandan anim-denyut" : "bg-arang-sedang"}`} />
+                    {buka ? "Buka" : "Tutup"}
+                  </span>
+                </div>
+                <p className="mt-1 text-[14px] text-arang-sedang">{tanggalPanjang(new Date())}</p>
+
+                <div className="mt-4 flex items-end justify-between gap-4">
+                  {/* Tanpa jeda persiapan dari pemilik, "siap tercepat" tidak bisa
+                      dijanjikan dengan jujur — tampilkan jam layanan dapur saja. */}
+                  <div>
+                    <p className="text-[13px] font-semibold text-arang-sedang">
+                      {tercepat !== null ? "Siap paling cepat hari ini" : "Jam layanan dapur"}
+                    </p>
+                    <p className="mt-1 font-presisi font-bold leading-none tracking-tight text-arang">
+                      {tercepat !== null ? (
+                        <span className="text-[2.6rem] sm:text-[3rem]">{labelJamMenit(tercepat)}</span>
+                      ) : (
+                        <span className="text-[2rem] sm:text-[2.4rem]">
+                          {jamTampil(pengaturan.jamBuka)}–{jamTampil(pengaturan.jamTutup)}
+                        </span>
+                      )}
+                      <span className="ml-1.5 text-[15px] font-semibold text-arang-sedang">WIB</span>
+                    </p>
+                  </div>
+                  <TandaMerek ukuran={52} varian="polos" beranimasi className="shrink-0" />
+                </div>
+                {pengaturan.jedaMinimumMenit > 0 && (
+                  <p className="mt-2 text-[13px] text-arang-sedang">
+                    Dapur butuh {labelDurasi(pengaturan.jedaMinimumMenit)} persiapan untuk pesanan hari-H.
+                  </p>
+                )}
+              </div>
+
+              <div className="tiket-bawah px-5 sm:px-6 pt-5 pb-5">
+                {jadwal.kuota.length > 0 ? (
+                  <>
+                    <p className="label-atas">Sisa kuota hari ini</p>
+                    <ul className="mt-3 space-y-3">
+                      {jadwal.kuota.map((k, i) => {
+                        const persen = Math.round((k.sisa / k.kapasitas) * 100);
+                        return (
+                          <li key={k.slug}>
+                            <Link href={`/menu/${k.slug}`} className="group block">
+                              <span className="flex items-baseline justify-between gap-3 text-[14px]">
+                                <span className="min-w-0 truncate font-semibold group-hover:text-pandan-tua">{k.nama}</span>
+                                <span className="shrink-0 font-presisi text-[13px] text-arang-sedang">
+                                  <span className={`font-bold ${k.sisa === 0 ? "text-cabai-tua" : "text-arang"}`}>{k.sisa}</span>/{k.kapasitas}
+                                </span>
+                              </span>
+                              <span className="mt-1.5 block h-1.5 rounded-full bg-beras-tua overflow-hidden">
+                                <span
+                                  className={`block h-full rounded-full anim-tumbuh-datar ${persen <= 15 ? "bg-cabai" : "bg-pandan"}`}
+                                  style={{ width: `${Math.max(2, persen)}%`, ["--tunda" as string]: `${300 + i * 90}ms` }}
+                                />
+                              </span>
+                            </Link>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </>
+                ) : (
+                  <p className="text-[14px] text-arang-sedang">
+                    <span className="font-semibold text-arang">{jadwal.bisaHariIni} menu</span> bisa dipesan untuk hari ini juga.
+                  </p>
+                )}
+                {jadwal.preorderTerlama > 0 && (
+                  <p className="mt-4 flex items-start gap-2 text-[13px] leading-snug text-arang-sedang">
+                    <span className="cap-presisi">H-{jadwal.preorderTerlama}</span>
+                    Tumpeng &amp; menu besar dipesan paling lambat {jadwal.preorderTerlama} hari sebelumnya.
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Kategori — deret ikon bundar ala marketplace */}
+      {/* ============ Kategori ============ */}
       {kategoriAda.length > 0 && (
-        <section aria-labelledby="judul-kategori" className="mx-auto max-w-6xl px-4 sm:px-6 pt-8 sm:pt-12">
-          <h2 id="judul-kategori" className="judul-bagian">
-            Mau pesan apa?
-          </h2>
-          <ul className="mt-4 grid grid-cols-4 gap-2 sm:gap-4">
+        <section aria-labelledby="judul-kategori" className="mx-auto max-w-6xl px-4 sm:px-6 pt-10 sm:pt-14">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="label-atas">Katalog</p>
+              <h2 id="judul-kategori" className="judul-bagian mt-1 !text-2xl sm:!text-3xl">
+                Mau pesan apa?
+              </h2>
+            </div>
+          </div>
+          <ul className="mt-5 grid grid-cols-2 lg:grid-cols-4 gap-3">
             {kategoriAda.map((k, i) => {
               const g = GAYA_KATEGORI[k.kategori];
               return (
                 <li key={k.kategori} className="anim-masuk" style={{ ["--tunda" as string]: `${i * 60}ms` }}>
                   <Link
                     href={`/menu?kategori=${k.kategori}`}
-                    className="group flex flex-col sm:flex-row items-center gap-2 sm:gap-4 h-full rounded-2xl p-2 sm:p-4 sm:bg-white sm:border sm:border-krem-gelap text-center sm:text-left transition-[transform,box-shadow,border-color] hover:-translate-y-0.5 sm:hover:shadow-[var(--shadow-angkat)] sm:hover:border-bata/30"
+                    className="group flex items-center gap-3 sm:gap-4 h-full kartu p-3 sm:p-4 kartu-interaktif"
                   >
                     <span
-                      className={`w-16 h-16 sm:w-14 sm:h-14 shrink-0 rounded-full sm:rounded-2xl ${g.latar} ${g.ikon} flex items-center justify-center transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6`}
+                      className={`w-12 h-12 sm:w-14 sm:h-14 shrink-0 rounded-[12px] ${g.latar} ${g.ikon} flex items-center justify-center transition-transform duration-300 group-hover:-rotate-6`}
                     >
-                      <g.Ikon className="w-8 h-8 sm:w-7 sm:h-7" />
+                      <g.Ikon className="w-7 h-7" />
                     </span>
                     <span className="min-w-0">
-                      <span className="block text-[13.5px] sm:text-base font-semibold text-kayu leading-tight">
+                      <span className="block text-[15px] sm:text-base font-bold text-arang leading-tight">
                         {LABEL_KATEGORI[k.kategori]}
                       </span>
-                      <span className="hidden sm:block text-[13px] text-kayu-sedang mt-0.5">
-                        {k.jumlah} menu · mulai {rupiah(k.hargaTermurah)}
+                      <span className="block font-presisi text-[11.5px] sm:text-[12px] uppercase text-arang-sedang mt-1">
+                        {k.jumlah} menu · {rupiah(k.hargaTermurah)}+
                       </span>
                     </span>
                   </Link>
@@ -169,41 +266,39 @@ export default async function BerandaToko() {
         </section>
       )}
 
-      {/* Info layanan */}
-      <section aria-label="Info layanan" className="mx-auto max-w-6xl px-4 sm:px-6 pt-6 sm:pt-8">
+      {/* ============ Info layanan ============ */}
+      <section aria-label="Info layanan" className="mx-auto max-w-6xl px-4 sm:px-6 pt-4">
         <ul className="-mx-4 px-4 sm:mx-0 sm:px-0 flex sm:grid sm:grid-cols-3 gap-3 overflow-x-auto tanpa-scrollbar snap-x">
           {infoLayanan.map(({ Ikon, judul, isi }) => (
             <li
               key={judul}
-              className="snap-start shrink-0 w-[78%] sm:w-auto flex items-center gap-3 rounded-2xl bg-kunyit-lembut/70 border border-kunyit/25 px-4 py-3"
+              className="snap-start shrink-0 w-[78%] sm:w-auto flex items-center gap-3 rounded-[12px] border border-dashed border-beras-gelap bg-white/60 px-4 py-3"
             >
-              <span className="w-10 h-10 shrink-0 rounded-xl bg-white text-kunyit-tua flex items-center justify-center">
-                <Ikon className="w-5 h-5" />
-              </span>
+              <Ikon className="w-5 h-5 shrink-0 text-pandan" />
               <span className="min-w-0">
-                <span className="block font-semibold text-kayu leading-tight">{judul}</span>
-                <span className="block text-[13px] text-kunyit-tua mt-0.5 truncate">{isi}</span>
+                <span className="block font-semibold text-arang leading-tight">{judul}</span>
+                <span className="block text-[13px] text-arang-sedang mt-0.5 truncate">{isi}</span>
               </span>
             </li>
           ))}
         </ul>
       </section>
 
-      {/* Terlaris */}
-      <section aria-labelledby="judul-favorit" className="mx-auto max-w-6xl px-4 sm:px-6 pt-10 sm:pt-14">
+      {/* ============ Terlaris ============ */}
+      <section aria-labelledby="judul-favorit" className="mx-auto max-w-6xl px-4 sm:px-6 pt-12 sm:pt-16">
         <div className="flex items-end justify-between gap-4">
           <div>
-            <h2 id="judul-favorit" className="flex items-center gap-2 font-tampil text-2xl sm:text-3xl font-bold text-kayu">
-              {favorit.dariPesanan && <IkonApi className="w-7 h-7 text-bata" />}
-              {favorit.dariPesanan ? "Paling laris" : "Pilihan dari dapur kami"}
+            <p className="label-atas flex items-center gap-1.5">
+              {favorit.dariPesanan && <IkonApi className="w-3.5 h-3.5 text-cabai" />}
+              {favorit.dariPesanan ? "90 hari terakhir" : "Rekomendasi dapur"}
+            </p>
+            <h2 id="judul-favorit" className="judul-bagian mt-1 !text-2xl sm:!text-3xl">
+              {favorit.dariPesanan ? "Paling sering dipesan" : "Pilihan dari dapur kami"}
             </h2>
-            {favorit.dariPesanan && (
-              <p className="teks-redup mt-1">Paling sering dipesan 3 bulan terakhir.</p>
-            )}
           </div>
           <Link
             href="/menu"
-            className="shrink-0 inline-flex items-center gap-1 min-h-[44px] text-[15px] font-semibold text-bata hover:text-bata-tua"
+            className="shrink-0 inline-flex items-center gap-1 min-h-[44px] text-[15px] font-semibold text-pandan-tua hover:text-pandan"
           >
             Lihat semua <IkonPanahKanan className="w-4 h-4" />
           </Link>
@@ -229,60 +324,66 @@ export default async function BerandaToko() {
         )}
       </section>
 
-      {/* Cara pesan */}
-      <section aria-labelledby="judul-cara" className="mx-auto max-w-6xl px-4 sm:px-6 pt-14 sm:pt-20">
-        <h2 id="judul-cara" className="font-tampil text-2xl sm:text-3xl font-bold text-kayu text-center">
-          Pesan semudah belanja online
-        </h2>
-        <p className="teks-redup mt-2 text-center">Empat langkah, tanpa perlu telepon bolak-balik.</p>
-        <ol className="relative mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <span
-            aria-hidden="true"
-            className="hidden lg:block absolute top-8 left-[12%] right-[12%] border-t-2 border-dashed border-kunyit/50"
-          />
-          {LANGKAH.map(({ judul, isi, Ikon }, i) => (
-            <Muncul as="li" key={judul} tunda={i * 90} className="relative kartu p-5 lg:bg-transparent lg:border-0 lg:text-center">
-              <span className="relative z-10 mx-0 lg:mx-auto w-16 h-16 rounded-2xl bg-white border-2 border-kunyit/40 text-bata flex items-center justify-center shadow-[var(--shadow-lembut)]">
-                <Ikon className="w-7 h-7" />
-                <span className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-bata text-white text-sm font-bold flex items-center justify-center ring-4 ring-krem">
-                  {i + 1}
+      {/* ============ Alur: penggaris waktu ============ */}
+      <section aria-labelledby="judul-cara" className="mx-auto max-w-6xl px-4 sm:px-6 pt-16 sm:pt-24">
+        <div className="grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:gap-14 items-start">
+          <div className="lg:sticky lg:top-24">
+            <p className="label-atas">Cara kerja dapur</p>
+            <h2 id="judul-cara" className="font-tampil mt-2 text-[2rem] sm:text-[2.6rem] font-extrabold text-arang leading-[1.02]">
+              Presisi dari
+              <br />
+              pesan sampai siap.
+            </h2>
+            <p className="teks-redup mt-4 max-w-md">
+              Tanpa telepon bolak-balik. Setiap tahap tercatat dengan jam, jadi kamu selalu tahu masakanmu sedang di mana.
+            </p>
+            <Link href="/menu" className="tombol-utama mt-6">
+              Mulai pesan
+              <IkonPanahKanan className="w-4 h-4" />
+            </Link>
+          </div>
+
+          <ol className="relative">
+            <span aria-hidden="true" className="absolute left-[19px] top-3 bottom-3 w-px bg-beras-gelap" />
+            {ALUR.map((a, i) => (
+              <Muncul as="li" key={a.kode} tunda={i * 90} className="relative flex gap-5 pb-8 last:pb-0">
+                <span className="relative z-10 w-10 h-10 shrink-0 rounded-full bg-white border-2 border-pandan text-pandan-tua font-presisi text-[13px] font-bold flex items-center justify-center">
+                  {a.kode}
                 </span>
-              </span>
-              <p className="mt-4 text-lg font-bold text-kayu">{judul}</p>
-              <p className="mt-1 text-[15px] text-kayu-sedang leading-relaxed">{isi}</p>
-            </Muncul>
-          ))}
-        </ol>
+                <span className="pt-1.5">
+                  <span className="block font-tampil text-xl font-bold text-arang">{a.judul}</span>
+                  <span className="block mt-1.5 text-[15px] text-arang-sedang leading-relaxed max-w-lg">{a.isi}</span>
+                </span>
+              </Muncul>
+            ))}
+          </ol>
+        </div>
       </section>
 
-      {/* Konsultasi */}
-      <section className="mx-auto max-w-6xl px-4 sm:px-6 py-14 sm:py-20">
-        <Muncul className="relative overflow-hidden rounded-3xl bg-kayu text-white p-6 sm:p-10 grid gap-6 sm:grid-cols-[1fr_auto] items-center">
-          <div
-            aria-hidden="true"
-            className="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-bata/30 blur-2xl"
-          />
+      {/* ============ Konsultasi ============ */}
+      <section className="mx-auto max-w-6xl px-4 sm:px-6 pt-16 sm:pt-24">
+        <Muncul className="relative overflow-hidden rounded-[18px] border border-kunyit/40 bg-kunyit-lembut p-6 sm:p-10 grid gap-6 lg:grid-cols-[1fr_auto] items-center">
           <div className="relative">
-            <p className="text-[15px] font-semibold text-kunyit-terang">Acara besar atau menu khusus?</p>
-            <h2 className="font-tampil mt-2 text-2xl sm:text-3xl font-bold leading-tight">
-              Ngobrol langsung dengan dapur, gratis konsultasi.
+            <p className="label-atas !text-kunyit-tua">Acara besar · menu khusus</p>
+            <h2 className="font-tampil mt-2 text-[1.75rem] sm:text-[2.2rem] font-extrabold text-arang leading-[1.08] max-w-2xl">
+              Hitung porsi &amp; anggaran bareng dapur — gratis konsultasi.
             </h2>
-            <p className="mt-3 text-white/80 max-w-lg">
-              Pernikahan, syukuran, rapat kantor — ceritakan jumlah tamu &amp; anggaranmu, kami bantu susun menunya.
+            <p className="mt-3 text-arang-sedang max-w-xl">
+              Pernikahan, syukuran, rapat kantor: ceritakan jumlah tamu &amp; anggaranmu, kami bantu susun menu yang pas
+              porsinya.
             </p>
-            <div className="mt-6 flex flex-col sm:flex-row gap-3">
-              {waUrl ? (
-                <a href={waUrl} target="_blank" rel="noopener noreferrer" className="tombol-wa tombol-besar">
-                  <IkonWhatsapp className="w-5 h-5" />
-                  Chat WhatsApp
-                </a>
-              ) : null}
-              <Link href="/menu" className="tombol tombol-besar bg-white/10 text-white hover:bg-white/20 border border-white/20">
-                Lihat semua menu
-              </Link>
-            </div>
           </div>
-          <IlustrasiKoki className="relative hidden sm:block w-48 lg:w-56" />
+          <div className="flex flex-col sm:flex-row lg:flex-col gap-3">
+            {waUrl && (
+              <a href={waUrl} target="_blank" rel="noopener noreferrer" className="tombol-utama tombol-besar">
+                <IkonWhatsapp className="w-5 h-5" />
+                Konsultasi via WhatsApp
+              </a>
+            )}
+            <Link href="/menu" className="tombol-kedua tombol-besar">
+              Lihat semua menu
+            </Link>
+          </div>
         </Muncul>
       </section>
     </>

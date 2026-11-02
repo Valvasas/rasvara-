@@ -28,7 +28,7 @@ export default async function HalamanUbahMenu({ params, searchParams }: HalamanU
 
   return (
     <div className="max-w-3xl">
-      <Link href="/admin/menu" className="inline-flex items-center gap-1.5 text-sm text-kayu-sedang hover:text-kayu">
+      <Link href="/admin/menu" className="inline-flex items-center gap-1.5 text-sm text-arang-sedang hover:text-arang">
         <IkonPanahKiri className="w-4 h-4" /> Menu
       </Link>
       <div className="mt-3 flex flex-wrap items-end justify-between gap-4">
@@ -36,7 +36,7 @@ export default async function HalamanUbahMenu({ params, searchParams }: HalamanU
           <h1 className="judul-halaman">{menu.nama}</h1>
           <p className="teks-redup mt-1">
             Dipesan {menu._count.item} kali ·{" "}
-            <Link href={`/menu/${menu.slug}`} target="_blank" className="text-bata hover:underline">
+            <Link href={`/menu/${menu.slug}`} target="_blank" className="text-pandan hover:underline">
               lihat di toko ↗
             </Link>
           </p>

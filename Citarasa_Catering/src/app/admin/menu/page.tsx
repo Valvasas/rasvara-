@@ -136,27 +136,27 @@ export default async function HalamanAdminMenu({ searchParams }: HalamanAdminMen
                 <tr key={m.id}>
                   <td>
                     <div className="flex items-center gap-3">
-                      <div className="relative w-11 h-11 shrink-0 rounded-lg overflow-hidden bg-krem-tua border border-krem-gelap flex items-center justify-center">
+                      <div className="relative w-11 h-11 shrink-0 rounded-lg overflow-hidden bg-beras-tua border border-beras-gelap flex items-center justify-center">
                         {m.foto[0] ? (
                           <Image src={m.foto[0].url} alt="" fill sizes="44px" className="object-cover" />
                         ) : (
-                          <IkonFoto className="w-4 h-4 text-kayu-sedang/50" />
+                          <IkonFoto className="w-4 h-4 text-arang-sedang/50" />
                         )}
                       </div>
                       <div className="min-w-0">
-                        <Link href={`/admin/menu/${m.id}`} className="font-medium text-kayu hover:text-bata">
+                        <Link href={`/admin/menu/${m.id}`} className="font-medium text-arang hover:text-pandan">
                           {m.nama}
                         </Link>
-                        <p className="text-xs text-kayu-sedang">{m._count.foto} foto</p>
+                        <p className="text-xs text-arang-sedang">{m._count.foto} foto</p>
                       </div>
                     </div>
                   </td>
-                  <td className="text-kayu-sedang whitespace-nowrap">{LABEL_KATEGORI[m.kategori]}</td>
+                  <td className="text-arang-sedang whitespace-nowrap">{LABEL_KATEGORI[m.kategori]}</td>
                   <td className="text-right angka-tabel whitespace-nowrap">
                     {rupiah(m.harga)}
-                    <span className="text-kayu-sedang text-xs"> /{m.satuan}</span>
+                    <span className="text-arang-sedang text-xs"> /{m.satuan}</span>
                   </td>
-                  <td className="text-xs text-kayu-sedang whitespace-nowrap">
+                  <td className="text-xs text-arang-sedang whitespace-nowrap">
                     Min. {m.minPesan}
                     {m.preorderHari > 0 && ` · H-${m.preorderHari}`}
                     {m.kapasitasHarian && ` · ${m.kapasitasHarian}/hari`}

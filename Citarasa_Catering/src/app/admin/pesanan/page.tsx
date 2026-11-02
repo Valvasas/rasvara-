@@ -165,23 +165,23 @@ export default async function HalamanSemuaPesanan({ searchParams }: HalamanSemua
               {daftar.map((p) => (
                 <tr key={p.kode}>
                   <td>
-                    <Link href={`/pesanan/${p.kode}`} className="font-mono text-xs font-medium text-bata hover:underline">
+                    <Link href={`/pesanan/${p.kode}`} className="font-mono text-xs font-medium text-pandan hover:underline">
                       {p.kode}
                     </Link>
                   </td>
                   <td>
-                    <p className="font-medium text-kayu">{p.namaPemesan}</p>
-                    <p className="text-xs text-kayu-sedang">{teleponTampil(p.teleponPemesan)}</p>
+                    <p className="font-medium text-arang">{p.namaPemesan}</p>
+                    <p className="text-xs text-arang-sedang">{teleponTampil(p.teleponPemesan)}</p>
                   </td>
                   <td className="whitespace-nowrap">
                     {tanggalPendek(p.tanggalAcara)}
-                    <span className="text-kayu-sedang"> · {jamTampil(p.jamAcara)}</span>
+                    <span className="text-arang-sedang"> · {jamTampil(p.jamAcara)}</span>
                   </td>
                   <td className="max-w-[220px]">
                     <p className="truncate">
                       {p.item[0] ? `${p.item[0].namaMenu} ×${p.item[0].jumlah}` : "—"}
                     </p>
-                    {p._count.item > 1 && <p className="text-xs text-kayu-sedang">+{p._count.item - 1} menu lain</p>}
+                    {p._count.item > 1 && <p className="text-xs text-arang-sedang">+{p._count.item - 1} menu lain</p>}
                   </td>
                   {adalahPemilik && <td className="text-right angka-tabel whitespace-nowrap">{rupiah(p.total)}</td>}
                   <td><LencanaStatus status={p.status} /></td>

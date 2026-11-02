@@ -7,8 +7,8 @@ export default function TidakDitemukan() {
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-12 text-center permukaan-hangat">
       <Wordmark href="/" />
       <Ilustrasi404 className="mt-6 w-64 sm:w-72" />
-      <p className="text-sm font-bold text-bata tracking-widest">404</p>
-      <h1 className="font-tampil mt-2 text-3xl font-bold text-kayu">Waduh, halamannya tumpah!</h1>
+      <p className="font-presisi text-sm font-bold text-pandan tracking-[0.3em]">GALAT 404</p>
+      <h1 className="font-tampil mt-2 text-3xl font-bold text-arang">Waduh, halamannya tumpah!</h1>
       <p className="teks-redup mt-3 max-w-sm">
         Alamatnya mungkin salah ketik, atau menunya sudah tidak tersedia. Yuk balik ke menu.
       </p>

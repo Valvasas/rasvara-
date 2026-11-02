@@ -22,44 +22,44 @@ export function KerangkaLegal({
   return (
     <div className="mx-auto max-w-2xl px-4 sm:px-6 py-10 sm:py-14 space-y-8">
       <div className="space-y-3">
-        <div className="text-xs text-kayu-sedang flex items-center gap-1.5">
-          <Link href="/" className="hover:text-bata font-medium">
+        <div className="text-xs text-arang-sedang flex items-center gap-1.5">
+          <Link href="/" className="hover:text-pandan font-medium">
             Beranda
           </Link>
           <span aria-hidden="true">/</span>
-          <span className="text-kayu font-semibold">{judul}</span>
+          <span className="text-arang font-semibold">{judul}</span>
         </div>
 
-        <h1 className="text-3xl sm:text-4xl font-bold text-kayu font-tampil">
+        <h1 className="text-3xl sm:text-4xl font-bold text-arang font-tampil">
           {judul}
         </h1>
 
-        <p className="text-sm text-kayu-sedang">
+        <p className="text-sm text-arang-sedang">
           Terakhir diperbarui: {diperbaruiPada}
         </p>
       </div>
 
-      <div className="p-5 rounded-2xl bg-krem-tua border border-krem-gelap">
-        <p className="text-sm text-kayu leading-relaxed">
+      <div className="p-5 rounded-2xl bg-beras-tua border border-beras-gelap">
+        <p className="text-sm text-arang leading-relaxed">
           <strong className="font-semibold">Ringkasnya:</strong> {ringkasan}
         </p>
       </div>
 
-      <div className="space-y-7 text-kayu leading-relaxed">{children}</div>
+      <div className="space-y-7 text-arang leading-relaxed">{children}</div>
 
-      <div className="pt-6 border-t border-krem-gelap flex flex-wrap gap-3 text-sm">
+      <div className="pt-6 border-t border-beras-gelap flex flex-wrap gap-3 text-sm">
         <Link
           href="/kebijakan-privasi"
-          className="font-medium text-bata hover:underline"
+          className="font-medium text-pandan hover:underline"
         >
           Kebijakan Privasi
         </Link>
-        <span className="text-krem-gelap" aria-hidden="true">
+        <span className="text-beras-gelap" aria-hidden="true">
           |
         </span>
         <Link
           href="/syarat-ketentuan"
-          className="font-medium text-bata hover:underline"
+          className="font-medium text-pandan hover:underline"
         >
           Syarat &amp; Ketentuan
         </Link>
@@ -77,8 +77,8 @@ export function SeksiLegal({
 }) {
   return (
     <section className="space-y-3">
-      <h2 className="text-xl font-semibold text-kayu">{judul}</h2>
-      <div className="space-y-3 text-[15px] text-kayu-sedang leading-relaxed">
+      <h2 className="text-xl font-semibold text-arang">{judul}</h2>
+      <div className="space-y-3 text-[15px] text-arang-sedang leading-relaxed">
         {children}
       </div>
     </section>

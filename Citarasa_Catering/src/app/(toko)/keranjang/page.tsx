@@ -16,7 +16,7 @@ export default async function HalamanKeranjang() {
   return (
     <div className="mx-auto max-w-6xl px-4 sm:px-6 pt-5 pb-10 sm:pt-10 sm:pb-14">
       <LangkahPesan aktif={1} />
-      <h1 className="mt-5 font-tampil text-[1.75rem] sm:text-4xl font-bold text-kayu">Keranjang</h1>
+      <h1 className="mt-5 font-tampil text-[1.75rem] sm:text-4xl font-bold text-arang">Keranjang</h1>
       <div className="mt-5">
         <IsiKeranjang menuTerbaru={menu.map(dataKeranjangDariMenu)} />
       </div>

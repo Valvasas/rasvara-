@@ -56,10 +56,10 @@ export function KomponenPaginasi({
   const kelasTombol = (aktif: boolean, nonaktif = false) =>
     `min-h-[40px] min-w-[40px] px-3 rounded-lg text-sm font-medium transition-colors inline-flex items-center justify-center angka-tabel ${
       nonaktif
-        ? "opacity-40 pointer-events-none text-kayu-sedang"
+        ? "opacity-40 pointer-events-none text-arang-sedang"
         : aktif
-        ? "bg-kayu text-white"
-        : "text-kayu hover:bg-krem-tua"
+        ? "bg-arang text-white"
+        : "text-arang hover:bg-beras-tua"
     }`;
 
   return (
@@ -80,7 +80,7 @@ export function KomponenPaginasi({
           <span
             key={`jeda-${i}`}
             aria-hidden="true"
-            className="px-1 text-sm text-kayu-sedang select-none"
+            className="px-1 text-sm text-arang-sedang select-none"
           >
             &hellip;
           </span>

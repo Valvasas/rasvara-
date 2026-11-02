@@ -42,10 +42,10 @@ type KunciRentang = (typeof RENTANG)[number]["kunci"];
 
 const WARNA_TITIK: Record<StatusPesanan, string> = {
   BARU: "bg-kunyit",
-  DIKONFIRMASI: "bg-kayu-sedang",
-  DIPROSES: "bg-bata",
-  SIAP: "bg-daun",
-  SELESAI: "bg-daun",
+  DIKONFIRMASI: "bg-arang-sedang",
+  DIPROSES: "bg-cabai",
+  SIAP: "bg-pandan",
+  SELESAI: "bg-pandan",
   DIBATALKAN: "bg-bahaya",
 };
 
@@ -142,7 +142,7 @@ export default async function HalamanPapanDapur({ searchParams }: HalamanPapanDa
           {hanyaCekBayar && <input type="hidden" name="bayar" value="cek" />}
           <div className="relative w-full sm:w-64">
             <label htmlFor="cari-pesanan" className="sr-only">Cari pesanan</label>
-            <IkonCari className="w-4 h-4 text-kayu-sedang absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <IkonCari className="w-4 h-4 text-arang-sedang absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               id="cari-pesanan"
               type="search"
@@ -212,17 +212,17 @@ export default async function HalamanPapanDapur({ searchParams }: HalamanPapanDa
           const jumlah = jumlahStatus(status);
           return (
             <section key={status} aria-labelledby={`kolom-${status}`} className="min-w-0">
-              <h2 id={`kolom-${status}`} className="flex items-center gap-2 px-1 text-sm font-semibold text-kayu">
+              <h2 id={`kolom-${status}`} className="flex items-center gap-2 px-1 text-sm font-semibold text-arang">
                 <span aria-hidden="true" className={`w-2 h-2 rounded-full ${WARNA_TITIK[status]}`} />
                 {INFO_STATUS[status].label}
-                <span className="ml-auto text-kayu-sedang font-normal angka-tabel">{jumlah}</span>
+                <span className="ml-auto text-arang-sedang font-normal angka-tabel">{jumlah}</span>
               </h2>
 
               {/* Di layar lebar tiap kolom bergulir sendiri, jadi keempat tahap
                   tetap terlihat sejajar dan halaman tidak memanjang ribuan piksel. */}
               <div className="mt-3 space-y-3 xl:max-h-[calc(100vh-260px)] xl:overflow-y-auto gulir-tipis xl:pr-1 xl:-mr-1">
                 {daftar.length === 0 ? (
-                  <p className="rounded-2xl border border-dashed border-krem-gelap px-4 py-8 text-center text-sm text-kayu-sedang">
+                  <p className="rounded-2xl border border-dashed border-beras-gelap px-4 py-8 text-center text-sm text-arang-sedang">
                     Kosong
                   </p>
                 ) : (
@@ -233,15 +233,15 @@ export default async function HalamanPapanDapur({ searchParams }: HalamanPapanDa
                       <article key={p.id} className="kartu p-4">
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <p className="text-xs text-kayu-sedang">
+                            <p className="text-xs text-arang-sedang">
                               {tanggalPendek(p.tanggalAcara)} ·{" "}
-                              <span className="font-semibold text-kayu">{jamTampil(p.jamAcara)}</span>
+                              <span className="font-semibold text-arang">{jamTampil(p.jamAcara)}</span>
                             </p>
-                            <h3 className="mt-1 font-semibold text-kayu truncate">{p.namaPemesan}</h3>
+                            <h3 className="mt-1 font-semibold text-arang truncate">{p.namaPemesan}</h3>
                           </div>
                           <Link
                             href={`/pesanan/${p.kode}`}
-                            className="font-mono text-[11px] text-kayu-sedang hover:text-bata shrink-0 mt-0.5"
+                            className="font-mono text-[11px] text-arang-sedang hover:text-pandan shrink-0 mt-0.5"
                           >
                             {p.kode.slice(-6)}
                           </Link>
@@ -250,11 +250,11 @@ export default async function HalamanPapanDapur({ searchParams }: HalamanPapanDa
                         <ul className="mt-3 space-y-1 text-sm">
                           {itemTampil.map((it) => (
                             <li key={it.id} className="flex justify-between gap-2">
-                              <span className="text-kayu truncate">{it.namaMenu}</span>
-                              <span className="font-semibold text-kayu angka-tabel">×{it.jumlah}</span>
+                              <span className="text-arang truncate">{it.namaMenu}</span>
+                              <span className="font-semibold text-arang angka-tabel">×{it.jumlah}</span>
                             </li>
                           ))}
-                          {sisa > 0 && <li className="text-xs text-kayu-sedang">+{sisa} menu lain</li>}
+                          {sisa > 0 && <li className="text-xs text-arang-sedang">+{sisa} menu lain</li>}
                         </ul>
 
                         {p.catatan && (
@@ -263,7 +263,7 @@ export default async function HalamanPapanDapur({ searchParams }: HalamanPapanDa
                           </p>
                         )}
 
-                        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-kayu-sedang">
+                        <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-arang-sedang">
                           {p.caraAmbil === "DIANTAR" && (
                             <span className="inline-flex items-center gap-1" title={p.alamatAntar ?? undefined}>
                               <IkonTruk className="w-3.5 h-3.5" /> Antar
@@ -275,7 +275,7 @@ export default async function HalamanPapanDapur({ searchParams }: HalamanPapanDa
                               href={`https://www.google.com/maps/search/?api=1&query=${p.latitude},${p.longitude}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-bata hover:underline"
+                              className="inline-flex items-center gap-1 text-pandan hover:underline"
                             >
                               <IkonLokasi className="w-3.5 h-3.5" /> Peta
                             </a>
@@ -286,7 +286,7 @@ export default async function HalamanPapanDapur({ searchParams }: HalamanPapanDa
                               href={p.buktiBayarUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-bata hover:underline"
+                              className="inline-flex items-center gap-1 text-pandan hover:underline"
                             >
                               <IkonLampiran className="w-3.5 h-3.5" /> Bukti
                             </a>
@@ -295,9 +295,9 @@ export default async function HalamanPapanDapur({ searchParams }: HalamanPapanDa
 
                         <div className="mt-3 flex items-center justify-between gap-2">
                           {adalahPemilik ? (
-                            <span className="font-semibold text-kayu angka-tabel">{rupiah(p.total)}</span>
+                            <span className="font-semibold text-arang angka-tabel">{rupiah(p.total)}</span>
                           ) : (
-                            <span className="text-xs text-kayu-sedang">{p.caraBayar === "TUNAI" ? "Tunai" : "Transfer"}</span>
+                            <span className="text-xs text-arang-sedang">{p.caraBayar === "TUNAI" ? "Tunai" : "Transfer"}</span>
                           )}
                           <LencanaBayar statusBayar={p.statusBayar} />
                         </div>
@@ -311,7 +311,7 @@ export default async function HalamanPapanDapur({ searchParams }: HalamanPapanDa
                                 href={linkWhatsapp(p.teleponPemesan, kabar.pesan)}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="tombol tombol-kecil flex-1 bg-daun-lembut text-daun-tua border border-daun/20 hover:bg-daun hover:text-white"
+                                className="tombol tombol-kecil flex-1 min-w-0 whitespace-normal leading-tight text-left py-2 bg-white text-arang border border-beras-gelap hover:bg-beras-tua [&>svg]:text-[#1A9E4B] [&>svg]:shrink-0"
                               >
                                 <IkonWhatsapp className="w-4 h-4" />
                                 {kabar.label}
@@ -330,7 +330,7 @@ export default async function HalamanPapanDapur({ searchParams }: HalamanPapanDa
                           );
                         })()}
 
-                        <div className="mt-3 pt-3 border-t border-krem-gelap">
+                        <div className="mt-3 pt-3 border-t border-beras-gelap">
                           <AksiPesanan
                             kode={p.kode}
                             status={p.status}
@@ -347,7 +347,7 @@ export default async function HalamanPapanDapur({ searchParams }: HalamanPapanDa
                 {jumlah > daftar.length && (
                   <Link
                     href={`/admin/pesanan?status=${status}${kataKunci ? `&q=${encodeURIComponent(kataKunci)}` : ""}`}
-                    className="block rounded-xl px-4 py-3 text-center text-sm font-medium text-bata hover:bg-bata-lembut"
+                    className="block rounded-xl px-4 py-3 text-center text-sm font-medium text-pandan hover:bg-pandan-lembut"
                   >
                     Lihat semua {jumlah} pesanan →
                   </Link>

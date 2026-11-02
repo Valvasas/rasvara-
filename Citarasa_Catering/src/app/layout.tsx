@@ -1,26 +1,42 @@
 import type { Metadata, Viewport } from "next";
-import { Archivo, Domine } from "next/font/google";
+import { Bricolage_Grotesque, JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import { alamatSitus } from "@/lib/situs";
 import { Pemberitahuan } from "@/components/Pemberitahuan";
 import "./globals.css";
 
-const archivo = Archivo({
+/*
+ * Tiga suara tipografi, masing-masing satu tugas:
+ * - Plus Jakarta Sans (teks): dirancang untuk identitas kota Jakarta —
+ *   huruf lokal, x-height tinggi, tetap jelas di 15px pada layar ponsel murah.
+ * - Bricolage Grotesque (judul): grotesk berkarakter dengan sumbu optik;
+ *   memberi kepribadian tanpa jatuh ke serif "artisan" yang klise.
+ * - JetBrains Mono (presisi): jam siap, kode pesanan, nominal — angka yang
+ *   harus terbaca tepat, tidak boleh tertukar 1/l atau 0/O.
+ * Semuanya font variabel (satu berkas per keluarga) dan di-host sendiri oleh
+ * next/font, jadi tidak ada permintaan ke Google saat halaman dibuka.
+ */
+const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-archivo",
+  variable: "--font-jakarta",
   display: "swap",
 });
 
-const domine = Domine({
+const bricolage = Bricolage_Grotesque({
   subsets: ["latin"],
-  weight: ["400", "700"],
-  variable: "--font-domine",
+  variable: "--font-bricolage",
+  axes: ["opsz"],
   display: "swap",
 });
 
-const JUDUL = "Citarasa Catering — Masakan Hangat, Siap Tepat Waktu";
+const jetbrains = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-jetbrains",
+  display: "swap",
+});
+
+const JUDUL = "Citarasa Catering — Sehat, Matang, Tepat Waktu";
 const DESKRIPSI =
-  "Catering rumahan terpercaya: snack box, nasi kotak, tumpeng, dan nasi goreng. Dapur higienis, rasa mantap, siap tepat waktu.";
+  "Nasi kotak, tumpeng, snack box, dan nasi goreng yang dimasak hari itu juga. Harga final sebelum pesan, jadwal siap sampai menitnya, status bisa dipantau dari ponsel.";
 
 export const metadata: Metadata = {
   // Wajib ada supaya URL gambar Open Graph dirender absolut. Tanpa ini,
@@ -65,7 +81,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#FFFCF7",
+  themeColor: "#0A3A2C",
   // Pengguna tetap boleh mencubit-perbesar: banyak orang tua mengandalkannya.
   maximumScale: 5,
 };
@@ -88,11 +104,11 @@ export default function RootLayout({
   return (
     // suppressHydrationWarning: atribut data-teks sengaja dipasang skrip di
     // bawah sebelum React mengambil alih, jadi HTML server dan klien memang beda.
-    <html lang="id" className={`${archivo.variable} ${domine.variable}`} suppressHydrationWarning>
+    <html lang="id" className={`${jakarta.variable} ${bricolage.variable} ${jetbrains.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: SKRIP_AWAL }} />
       </head>
-      <body className="bg-krem text-kayu min-h-screen flex flex-col selection:bg-bata selection:text-white">
+      <body className="bg-beras text-arang min-h-screen flex flex-col selection:bg-kunyit-terang selection:text-arang">
         <a
           href="#isi"
           className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] tombol-utama"

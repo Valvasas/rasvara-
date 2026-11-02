@@ -21,3 +21,15 @@ DATABASE_URL=... node scripts/uji-e2e/e2e.cjs
 
 Keluar dengan kode 0 hanya bila semua langkah lulus **dan** tidak ada galat
 konsol, galat halaman, atau respons 5xx selama uji.
+
+## Uji akun & keamanan (v3)
+
+`e2e-akun.cjs` menguji daftar (sandi umum ditolak, sesi langsung berlaku),
+"Ingat saya", keluar dari perangkat lain, banner sandi bawaan & daftar
+kesiapan di dashboard, reset sandi pelanggan oleh pemilik, portal dapur, dan
+halaman lupa sandi. Jalankan pada database yang **baru di-seed** (sebelum
+`e2e.cjs`, yang mengganti sandi pemilik):
+
+```bash
+DATABASE_URL=... node scripts/uji-e2e/e2e-akun.cjs
+```

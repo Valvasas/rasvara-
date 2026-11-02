@@ -58,8 +58,8 @@ export function AksiPesanan({ kode, status, statusBayar, total, adalahPemilik }:
 
   if (mode === "konfirmasi-lunas") {
     return (
-      <div className="rounded-xl bg-daun-lembut p-3 space-y-2.5">
-        <p className="text-sm text-daun-tua">
+      <div className="rounded-xl bg-pandan-lembut p-3 space-y-2.5">
+        <p className="text-sm text-pandan-tua">
           Tandai lunas? <span className="font-semibold">{rupiah(total)}</span> akan dicatat di Buku Kas.
         </p>
         <div className="flex gap-2">
@@ -146,7 +146,7 @@ export function AksiPesanan({ kode, status, statusBayar, total, adalahPemilik }:
         )
       )}
 
-      <div className="flex items-center gap-1 -mx-1">
+      <div className="flex flex-wrap items-center gap-x-1 -mx-1">
         {adalahPemilik && !lunas && !perluLunasDulu && (
           <button type="button" disabled={isPending} onClick={() => setMode("konfirmasi-lunas")} className="tombol-hantu tombol-kecil px-2">
             Tandai lunas

@@ -29,7 +29,7 @@ export function TombolToggleMenu({ id, aktif, nama }: { id: string; aktif: boole
         onClick={ubah}
         disabled={isPending}
         className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors cursor-pointer disabled:opacity-50 ${
-          aktif ? "bg-daun" : "bg-krem-gelap"
+          aktif ? "bg-pandan" : "bg-beras-gelap"
         }`}
       >
         <span
@@ -39,7 +39,7 @@ export function TombolToggleMenu({ id, aktif, nama }: { id: string; aktif: boole
           }`}
         />
       </button>
-      <span className={`text-xs ${galat ? "text-bahaya" : "text-kayu-sedang"}`}>
+      <span className={`text-xs ${galat ? "text-bahaya" : "text-arang-sedang"}`}>
         {galat ? "Gagal, coba lagi" : aktif ? "Tampil" : "Disembunyikan"}
       </span>
     </span>

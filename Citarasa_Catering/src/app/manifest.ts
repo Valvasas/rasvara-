@@ -18,8 +18,8 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
     description: pengaturan.tagline,
     start_url: "/",
     display: "standalone",
-    background_color: "#FBF7EE",
-    theme_color: "#C2410C",
+    background_color: "#F7F7F1",
+    theme_color: "#0A3A2C",
     lang: "id",
     orientation: "portrait",
     icons: [

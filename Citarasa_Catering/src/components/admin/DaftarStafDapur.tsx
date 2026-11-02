@@ -57,12 +57,12 @@ export function DaftarStafDapur({ daftarAwal }: { daftarAwal: StafItem[] }) {
       {daftarAwal.length === 0 ? (
         <p className="teks-redup">Belum ada staf. Staf hanya bisa melihat papan pesanan dan memajukan status masakan.</p>
       ) : (
-        <ul className="divide-y divide-krem-gelap border-y border-krem-gelap">
+        <ul className="divide-y divide-beras-gelap border-y border-beras-gelap">
           {daftarAwal.map((s) => (
             <li key={s.id} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
               <div>
-                <p className="font-medium text-kayu">{s.nama}</p>
-                <p className="text-xs text-kayu-sedang">
+                <p className="font-medium text-arang">{s.nama}</p>
+                <p className="text-xs text-arang-sedang">
                   {teleponTampil(s.telepon)} · sejak {tanggalPendek(s.dibuatPada)}
                 </p>
               </div>
@@ -85,7 +85,7 @@ export function DaftarStafDapur({ daftarAwal }: { daftarAwal: StafItem[] }) {
       )}
 
       {bukaForm ? (
-        <form ref={formRef} onSubmit={kirim} noValidate className="rounded-xl border border-krem-gelap p-4 space-y-4">
+        <form ref={formRef} onSubmit={kirim} noValidate className="rounded-xl border border-beras-gelap p-4 space-y-4">
           {state && !state.sukses && state.pesan && <div role="alert" className="kotak-galat">{state.pesan}</div>}
           <div className="grid gap-4 sm:grid-cols-3">
             <div>

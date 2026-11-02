@@ -167,11 +167,16 @@ ke domain final dan redeploy.
 
 ## 6. Onboarding Pemilik 🔴
 
-Login di `/masuk` dengan nomor pemilik dan sandi sementara, lalu:
+Login lewat **portal dapur** (`/masuk?ke=/admin`, juga tertaut di kaki toko) dengan
+nomor pemilik dan sandi sementara. Beranda dashboard menampilkan **Kesiapan toko**:
+daftar periksa yang menagih semua butir di bawah (dan menandai yang kritis) sampai
+lengkap — termasuk banner merah selama sandi bawaan seed masih dipakai. Lalu:
 
 - [ ] **Ganti sandi sementara** (`/admin/pengaturan` → bagian Ganti sandi) — paling pertama
 - [ ] `/admin/pengaturan`: **nomor WhatsApp** aktif, **alamat usaha**, jam buka/tutup,
-      ongkos kirim, minimum order antar, **jeda minimum pesanan hari-H**
+      ongkos kirim, minimum order antar, **jeda minimum pesanan hari-H** — tanpa jeda,
+      pita "siap tercepat" di setiap halaman toko sengaja tidak tampil (janji
+      "tercepat = sekarang" tidak jujur)
 - [ ] **Rekening bank** (nama bank, nomor, atas nama). Selama kosong, pembeli hanya bisa
       bayar tunai — disengaja supaya tidak ada rekening palsu
 - [ ] **Menu**: sesuaikan 13 menu contoh (harga, foto, kapasitas harian), nonaktifkan yang

@@ -42,7 +42,8 @@ export const INFO_STATUS: Record<StatusPesanan, InfoStatus> = {
     labelPelanggan: "Menunggu dikonfirmasi",
     aksiLanjut: "Terima pesanan",
     statusLanjut: "DIKONFIRMASI",
-    kelas: "bg-kunyit-lembut text-kunyit-tua border-kunyit/30",
+    // Emas = butuh perhatian, belum ada yang menyentuhnya.
+    kelas: "bg-kunyit-lembut text-kunyit-tua border-kunyit/40",
     penjelasan: "Pesanan baru masuk dan menunggu jawaban Anda.",
   },
   DIKONFIRMASI: {
@@ -50,7 +51,8 @@ export const INFO_STATUS: Record<StatusPesanan, InfoStatus> = {
     labelPelanggan: "Pesanan diterima",
     aksiLanjut: "Mulai masak",
     statusLanjut: "DIPROSES",
-    kelas: "bg-kayu-lembut text-kayu border-kayu/15",
+    // Netral = sudah aman di antrean.
+    kelas: "bg-arang-lembut text-arang border-arang/15",
     penjelasan: "Sudah Anda terima, menunggu giliran dimasak.",
   },
   DIPROSES: {
@@ -58,7 +60,8 @@ export const INFO_STATUS: Record<StatusPesanan, InfoStatus> = {
     labelPelanggan: "Sedang dimasak",
     aksiLanjut: "Tandai siap",
     statusLanjut: "SIAP",
-    kelas: "bg-bata-lembut text-bata-tua border-bata/20",
+    // Cabai = api menyala, sedang di wajan.
+    kelas: "bg-cabai-lembut text-cabai-tua border-cabai/20",
     penjelasan: "Dapur sedang mengerjakan pesanan ini.",
   },
   SIAP: {
@@ -66,7 +69,8 @@ export const INFO_STATUS: Record<StatusPesanan, InfoStatus> = {
     labelPelanggan: "Siap diambil / diantar",
     aksiLanjut: "Selesaikan",
     statusLanjut: "SELESAI",
-    kelas: "bg-daun-lembut text-daun-tua border-daun/20",
+    // Pandan pekat = matang, tinggal diserahkan.
+    kelas: "bg-pandan text-white border-pandan",
     penjelasan: "Masakan sudah siap, tinggal diserahkan ke pemesan.",
   },
   SELESAI: {
@@ -74,7 +78,7 @@ export const INFO_STATUS: Record<StatusPesanan, InfoStatus> = {
     labelPelanggan: "Selesai",
     aksiLanjut: null,
     statusLanjut: null,
-    kelas: "bg-daun-lembut text-daun-tua border-daun/20",
+    kelas: "bg-pandan-lembut text-pandan-tua border-pandan/20",
     penjelasan: "Pesanan sudah diserahkan dan beres.",
   },
   DIBATALKAN: {
@@ -106,7 +110,7 @@ export const INFO_BAYAR: Record<StatusBayar, { label: string; kelas: string }> =
   },
   LUNAS: {
     label: "Lunas",
-    kelas: "bg-daun-lembut text-daun-tua border-daun/20",
+    kelas: "bg-pandan-lembut text-pandan-tua border-pandan/20",
   },
 };
 
